@@ -10,11 +10,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertCircle, Search, Check } from "lucide-react"
+import { AlertCircle, Search, Check, Mail, LogIn, KeyRound } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import { Logo } from "@/components/logo"
 
 type Club = {
   id: number
@@ -29,6 +30,8 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
+  const [existingUser, setExistingUser] = useState(false)
   const supabase = createClient()
 
   // Club selection state
@@ -60,10 +63,36 @@ export default function RegisterPage() {
     fetchClubs()
   }, [supabase])
 
+  // Check if email exists before attempting registration
+  const checkEmailExists = async (email: string) => {
+    try {
+      // First, try to sign in with a deliberately wrong password to check if the email exists
+      // This is a workaround since Supabase doesn't provide a direct way to check if an email exists
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password: "check_if_email_exists_" + Math.random().toString(36),
+      })
+
+      // If the error message indicates the user exists but password is wrong, the email exists
+      if (
+        error &&
+        (error.message.includes("Invalid login credentials") || error.message.includes("Invalid email or password"))
+      ) {
+        return true
+      }
+
+      return false
+    } catch (error) {
+      console.error("Error checking if email exists:", error)
+      return false
+    }
+  }
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
+    setExistingUser(false)
 
     if (password !== confirmPassword) {
       setError("Passwords do not match")
@@ -78,7 +107,16 @@ export default function RegisterPage() {
     }
 
     try {
-      // Sign up the user
+      // First check if the email already exists
+      const emailExists = await checkEmailExists(email)
+
+      if (emailExists) {
+        setExistingUser(true)
+        setLoading(false)
+        return
+      }
+
+      // If email doesn't exist, proceed with sign up
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -90,7 +128,18 @@ export default function RegisterPage() {
         },
       })
 
+      // Double-check for existing user errors
       if (authError) {
+        if (
+          authError.message.includes("already registered") ||
+          authError.message.includes("already exists") ||
+          authError.message.includes("already taken") ||
+          authError.message.includes("User already registered")
+        ) {
+          setExistingUser(true)
+          setLoading(false)
+          return
+        }
         throw authError
       }
 
@@ -108,11 +157,16 @@ export default function RegisterPage() {
         }
       }
 
-      // Redirect to dashboard or a confirmation page
-      router.push("/auth/verification")
+      // Show success message
+      setSuccess(true)
+
+      // Redirect to verification page after a short delay
+      setTimeout(() => {
+        router.push("/auth/verification")
+      }, 2000)
     } catch (error: any) {
+      console.error("Registration error:", error)
       setError(error.message || "An error occurred during registration")
-    } finally {
       setLoading(false)
     }
   }
@@ -120,11 +174,101 @@ export default function RegisterPage() {
   const filteredClubs =
     search === "" ? clubs : clubs.filter((club) => club.name.toLowerCase().includes(search.toLowerCase()))
 
+  // If user already exists, show the existing user message
+  if (existingUser) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-footylabs-darkblue px-4 py-12">
+        <div className="mb-8">
+          <Logo className="text-white" />
+        </div>
+        <Card className="w-full max-w-md border-0 shadow-lg">
+          <CardHeader className="space-y-1">
+            <div className="flex justify-center mb-4">
+              <AlertCircle className="h-12 w-12 text-amber-500" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-center text-footylabs-blue">Account Already Exists</CardTitle>
+            <CardDescription className="text-center">
+              An account with email <span className="font-medium">{email}</span> is already registered
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 text-center">
+            <p className="text-sm text-muted-foreground">
+              You can log in with your existing account or reset your password if you've forgotten it.
+            </p>
+            <div className="flex flex-col space-y-3">
+              <Button
+                className="w-full bg-footylabs-blue hover:bg-footylabs-blue/90 flex items-center justify-center"
+                onClick={() => router.push("/auth/login")}
+              >
+                <LogIn className="mr-2 h-4 w-4" />
+                Log in to your account
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full flex items-center justify-center"
+                onClick={() => router.push("/auth/reset-password")}
+              >
+                <KeyRound className="mr-2 h-4 w-4" />
+                Reset your password
+              </Button>
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-center">
+            <Button
+              variant="link"
+              className="text-sm text-muted-foreground"
+              onClick={() => {
+                setExistingUser(false)
+                setEmail("")
+                setPassword("")
+                setConfirmPassword("")
+                setSelectedClub(null)
+              }}
+            >
+              Try with a different email
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    )
+  }
+
+  // If registration was successful, show confirmation message
+  if (success) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-footylabs-darkblue px-4 py-12">
+        <div className="mb-8">
+          <Logo className="text-white" />
+        </div>
+        <Card className="w-full max-w-md border-0 shadow-lg">
+          <CardHeader className="space-y-1">
+            <div className="flex justify-center mb-4">
+              <Mail className="h-12 w-12 text-footylabs-blue" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-center text-footylabs-blue">Confirm Your Email</CardTitle>
+            <CardDescription className="text-center">
+              We've sent a verification link to <span className="font-medium">{email}</span>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+            <p className="text-sm text-muted-foreground">
+              Please check your email inbox and click on the verification link to complete your account setup. You'll be
+              redirected to the verification page in a moment...
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-12">
-      <Card className="w-full max-w-md">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-footylabs-darkblue px-4 py-12">
+      <div className="mb-8">
+        <Logo className="text-white" />
+      </div>
+      <Card className="w-full max-w-md border-0 shadow-lg">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
+          <CardTitle className="text-2xl font-bold text-footylabs-blue">Create an account</CardTitle>
           <CardDescription>Enter your email, create a password, and select your club to get started</CardDescription>
         </CardHeader>
         <CardContent>
@@ -212,7 +356,7 @@ export default function RegisterPage() {
               </Popover>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full bg-footylabs-blue hover:bg-footylabs-blue/90" disabled={loading}>
               {loading ? "Creating account..." : "Create account"}
             </Button>
           </form>
@@ -220,7 +364,7 @@ export default function RegisterPage() {
         <CardFooter className="flex flex-col">
           <div className="text-sm text-muted-foreground mt-2">
             Already have an account?{" "}
-            <Link href="/auth/login" className="text-primary underline-offset-4 hover:underline">
+            <Link href="/auth/login" className="text-footylabs-blue underline-offset-4 hover:underline">
               Login
             </Link>
           </div>

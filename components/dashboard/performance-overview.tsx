@@ -1,53 +1,97 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, BarChart, Bar } from "recharts"
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-
-// Sample data - replace with actual data from your API
-const performanceData = [
-  { month: "Jan", wins: 3, draws: 1, losses: 0, goalsScored: 10, goalsConceded: 3 },
-  { month: "Feb", wins: 2, draws: 2, losses: 0, goalsScored: 8, goalsConceded: 4 },
-  { month: "Mar", wins: 2, draws: 0, losses: 2, goalsScored: 7, goalsConceded: 6 },
-  { month: "Apr", wins: 3, draws: 1, losses: 0, goalsScored: 9, goalsConceded: 2 },
-  { month: "May", wins: 1, draws: 2, losses: 1, goalsScored: 5, goalsConceded: 5 },
-]
+import { fetchPerformanceData } from "@/lib/api"
 
 export default function PerformanceOverview({ clubId }: { clubId?: number }) {
+  const [performanceData, setPerformanceData] = useState([])
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
       if (!clubId) return
 
-      // Here you would fetch actual data from your API
-      // const { data, error } = await supabase...
-
-      // For now, we'll just simulate loading
-      setTimeout(() => {
+      try {
+        setLoading(true)
+        const data = await fetchPerformanceData(clubId)
+        setPerformanceData(data)
+      } catch (error: any) {
+        console.error("Error fetching performance data:", error)
+        setError(error.message || "Failed to load performance data")
+      } finally {
         setLoading(false)
-      }, 1000)
+      }
     }
 
     fetchData()
-  }, [clubId, supabase])
+  }, [clubId])
+
+  if (loading) {
+    return (
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <Card className="col-span-full border-0 shadow-md">
+          <CardHeader className="border-b bg-footylabs-darkblue text-white">
+            <CardTitle>Season Performance</CardTitle>
+            <CardDescription className="text-white/80">
+              Loading performance data...
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6 h-[300px] flex items-center justify-center">
+            <div className="animate-pulse text-muted-foreground">Loading...</div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <Card className="col-span-full border-0 shadow-md">
+          <CardHeader className="border-b bg-footylabs-darkblue text-white">
+            <CardTitle>Season Performance</CardTitle>
+            <CardDescription className="text-white/80">
+              Error loading performance data
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="text-red-500">{error}</div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Calculate summary statistics
+  const totalMatches = performanceData.reduce((sum, month) => sum + month.wins + month.draws + month.losses, 0)
+  const totalWins = performanceData.reduce((sum, month) => sum + month.wins, 0)
+  const winRate = totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0
+  
+  const totalGoals = performanceData.reduce((sum, month) => sum + month.goals_scored, 0)
+  const goalsPerGame = totalMatches > 0 ? (totalGoals / totalMatches).toFixed(1) : "0.0"
+  
+  const cleanSheets = 8 // This would come from your API in a real app
+  const cleanSheetPercentage = totalMatches > 0 ? Math.round((cleanSheets / totalMatches) * 100) : 0
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      <Card className="col-span-full">
-        <CardHeader>
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <Card className="col-span-full border-0 shadow-md">
+        <CardHeader className="border-b bg-footylabs-darkblue text-white">
           <CardTitle>Season Performance</CardTitle>
-          <CardDescription>Overview of match results and goals for the current season</CardDescription>
+          <CardDescription className="text-white/80">
+            Overview of match results and goals for the current season
+          </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <Tabs defaultValue="results" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="results">Match Results</TabsTrigger>
-              <TabsTrigger value="goals">Goals</TabsTrigger>
+            <TabsList className="bg-footylabs-darkblue text-white">
+              <TabsTrigger value="results" className="data-[state=active]:bg-footylabs-blue">Match Results</TabsTrigger>
+              <TabsTrigger value="goals" className="data-[state=active]:bg-footylabs-blue">Goals</TabsTrigger>
             </TabsList>
             <TabsContent value="results" className="space-y-4">
               <ChartContainer
@@ -84,11 +128,11 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
             <TabsContent value="goals" className="space-y-4">
               <ChartContainer
                 config={{
-                  goalsScored: {
+                  goals_scored: {
                     label: "Goals Scored",
                     color: "hsl(var(--chart-1))",
                   },
-                  goalsConceded: {
+                  goals_conceded: {
                     label: "Goals Conceded",
                     color: "hsl(var(--chart-4))",
                   },
@@ -102,8 +146,8 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
                     <YAxis />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Legend />
-                    <Line type="monotone" dataKey="goalsScored" stroke="var(--color-goalsScored)" />
-                    <Line type="monotone" dataKey="goalsConceded" stroke="var(--color-goalsConceded)" />
+                    <Line type="monotone" dataKey="goals_scored" stroke="var(--color-goals_scored)" />
+                    <Line type="monotone" dataKey="goals_conceded" stroke="var(--color-goals_conceded)" />
                   </LineChart>
                 </ResponsiveContainer>
               </ChartContainer>
@@ -112,41 +156,41 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
+      <Card className="border-0 shadow-md">
+        <CardHeader className="border-b bg-footylabs-darkblue text-white">
           <CardTitle>Win Rate</CardTitle>
-          <CardDescription>Current season win percentage</CardDescription>
+          <CardDescription className="text-white/80">Current season win percentage</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <div className="flex flex-col items-center justify-center space-y-2">
-            <div className="text-5xl font-bold">67%</div>
-            <p className="text-sm text-muted-foreground">12 wins in 18 matches</p>
+            <div className="text-5xl font-bold text-footylabs-blue">{winRate}%</div>
+            <p className="text-sm text-muted-foreground">{totalWins} wins in {totalMatches} matches</p>
           </div>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
+      <Card className="border-0 shadow-md">
+        <CardHeader className="border-b bg-footylabs-darkblue text-white">
           <CardTitle>Goals Per Game</CardTitle>
-          <CardDescription>Average goals scored per match</CardDescription>
+          <CardDescription className="text-white/80">Average goals scored per match</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <div className="flex flex-col items-center justify-center space-y-2">
-            <div className="text-5xl font-bold">2.3</div>
-            <p className="text-sm text-muted-foreground">41 goals in 18 matches</p>
+            <div className="text-5xl font-bold text-footylabs-blue">{goalsPerGame}</div>
+            <p className="text-sm text-muted-foreground">{totalGoals} goals in {totalMatches} matches</p>
           </div>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
+      <Card className="border-0 shadow-md">
+        <CardHeader className="border-b bg-footylabs-darkblue text-white">
           <CardTitle>Clean Sheets</CardTitle>
-          <CardDescription>Matches without conceding</CardDescription>
+          <CardDescription className="text-white/80">Matches without conceding</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <div className="flex flex-col items-center justify-center space-y-2">
-            <div className="text-5xl font-bold">8</div>
-            <p className="text-sm text-muted-foreground">44% of all matches</p>
+            <div className="text-5xl font-bold text-footylabs-blue">{cleanSheets}</div>
+            <p className="text-sm text-muted-foreground">{cleanSheetPercentage}% of all matches</p>
           </div>
         </CardContent>
       </Card>

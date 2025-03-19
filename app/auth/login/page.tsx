@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Logo } from "@/components/logo"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -46,10 +47,13 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-12">
-      <Card className="w-full max-w-md">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-footylabs-darkblue px-4 py-12">
+      <div className="mb-8">
+        <Logo className="text-white" />
+      </div>
+      <Card className="w-full max-w-md border-0 shadow-lg">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Login</CardTitle>
+          <CardTitle className="text-2xl font-bold text-footylabs-blue">Login</CardTitle>
           <CardDescription>Enter your email and password to access your account</CardDescription>
         </CardHeader>
         <CardContent>
@@ -76,7 +80,7 @@ export default function LoginPage() {
                 <Label htmlFor="password">Password</Label>
                 <Link
                   href="/auth/reset-password"
-                  className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                  className="text-sm font-medium text-footylabs-blue underline-offset-4 hover:underline"
                 >
                   Forgot password?
                 </Link>
@@ -89,7 +93,7 @@ export default function LoginPage() {
                 required
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full bg-footylabs-blue hover:bg-footylabs-blue/90" disabled={loading}>
               {loading ? "Logging in..." : "Login"}
             </Button>
           </form>
@@ -97,7 +101,7 @@ export default function LoginPage() {
         <CardFooter className="flex flex-col">
           <div className="text-sm text-muted-foreground mt-2">
             Don&apos;t have an account?{" "}
-            <Link href="/auth/register" className="text-primary underline-offset-4 hover:underline">
+            <Link href="/auth/register" className="text-footylabs-blue underline-offset-4 hover:underline">
               Sign up
             </Link>
           </div>
