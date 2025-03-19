@@ -1,73 +1,40 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { fetchTeamComparison } from "@/lib/api"
+
+// Sample data - replace with actual data from your API
+const comparisonData = [
+  { attribute: "Attack", yourTeam: 85, leagueAverage: 70 },
+  { attribute: "Defense", yourTeam: 78, leagueAverage: 72 },
+  { attribute: "Possession", yourTeam: 65, leagueAverage: 50 },
+  { attribute: "Passing", yourTeam: 80, leagueAverage: 65 },
+  { attribute: "Physical", yourTeam: 75, leagueAverage: 73 },
+  { attribute: "Tactical", yourTeam: 82, leagueAverage: 68 },
+]
 
 export default function TeamComparison({ clubId }: { clubId?: number }) {
-  const [comparisonData, setComparisonData] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const supabase = createClient()
 
   useEffect(() => {
     const fetchData = async () => {
       if (!clubId) return
-      
-      try {
-        setLoading(true)
-        const data = await fetchTeamComparison(clubId)
-        setComparisonData(data)
-      } catch (error: any) {
-        console.error("Error fetching team comparison:", error)
-        setError(error.message || "Failed to load team comparison data")
-      } finally {
+
+      // Here you would fetch actual data from your API
+      // const { data, error } = await supabase...
+
+      // For now, we'll just simulate loading
+      setTimeout(() => {
         setLoading(false)
-      }
+      }, 1000)
     }
 
     fetchData()
-  }, [clubId])
-
-  if (loading) {
-    return (
-      <Card className="border-0 shadow-md">
-        <CardHeader className="border-b bg-footylabs-darkblue text-white">
-          <CardTitle>Team Comparison</CardTitle>
-          <CardDescription className="text-white/80">
-            Loading comparison data...
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6 h-[400px] flex items-center justify-center">
-          <div className="animate-pulse text-muted-foreground">Loading...</div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (error) {
-    return (
-      <Card className="border-0 shadow-md">
-        <CardHeader className="border-b bg-footylabs-darkblue text-white">
-          <CardTitle>Team Comparison</CardTitle>
-          <CardDescription className="text-white/80">
-            Error loading comparison data
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="text-red-500">{error}</div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  // Transform data keys to match our component expectations
-  const formattedData = comparisonData.map(item => ({
-    attribute: item.attribute,
-    yourTeam: item.your_team,
-    leagueAverage: item.league_average
-  }))
+  }, [clubId, supabase])
 
   return (
     <Card className="border-0 shadow-md">
@@ -92,13 +59,25 @@ export default function TeamComparison({ clubId }: { clubId?: number }) {
           className="h-[400px]"
         >
           <ResponsiveContainer width="100%" height="100%">
-            <RadarChart data={formattedData}>
+            <RadarChart data={comparisonData}>
               <PolarGrid />
               <PolarAngleAxis dataKey="attribute" />
               <PolarRadiusAxis angle={30} domain={[0, 100]} />
               <ChartTooltip content={<ChartTooltipContent />} />
-              <Radar name="Your Team" dataKey="yourTeam" stroke="var(--color-yourTeam)" fill="var(--color-yourTeam)" fillOpacity={0.6} />
-              <Radar name="League Average" dataKey="leagueAverage" stroke="var(--color-leagueAverage)" fill="var(--color-leagueAverage)" fillOpacity={0.6} />
+              <Radar
+                name="Your Team"
+                dataKey="yourTeam"
+                stroke="var(--color-yourTeam)"
+                fill="var(--color-yourTeam)"
+                fillOpacity={0.6}
+              />
+              <Radar
+                name="League Average"
+                dataKey="leagueAverage"
+                stroke="var(--color-leagueAverage)"
+                fill="var(--color-leagueAverage)"
+                fillOpacity={0.6}
+              />
               <Legend />
             </RadarChart>
           </ResponsiveContainer>

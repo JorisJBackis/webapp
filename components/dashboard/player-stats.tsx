@@ -1,96 +1,55 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Search } from 'lucide-react'
-import { fetchClubPlayers } from "@/lib/api"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Search } from "lucide-react"
 
-type Player = {
-  id: number
-  name: string
-  position: string
-  stats: {
-    appearances: number
-    goals: number
-    assists: number
-    rating: number
-  }
-}
+// Sample data - replace with actual data from your API
+const samplePlayers = [
+  { id: 1, name: "John Smith", position: "Forward", appearances: 18, goals: 12, assists: 7, rating: 8.2 },
+  { id: 2, name: "David Johnson", position: "Midfielder", appearances: 17, goals: 5, assists: 10, rating: 7.9 },
+  { id: 3, name: "Michael Brown", position: "Defender", appearances: 18, goals: 1, assists: 2, rating: 7.5 },
+  { id: 4, name: "Robert Wilson", position: "Goalkeeper", appearances: 16, goals: 0, assists: 0, rating: 7.8 },
+  { id: 5, name: "James Taylor", position: "Forward", appearances: 15, goals: 9, assists: 3, rating: 7.7 },
+  { id: 6, name: "Daniel Anderson", position: "Midfielder", appearances: 18, goals: 3, assists: 8, rating: 7.6 },
+  { id: 7, name: "Christopher Martinez", position: "Defender", appearances: 17, goals: 0, assists: 1, rating: 7.3 },
+  { id: 8, name: "Matthew Thomas", position: "Midfielder", appearances: 16, goals: 4, assists: 5, rating: 7.5 },
+]
 
 export default function PlayerStats({ clubId }: { clubId?: number }) {
-  const [players, setPlayers] = useState<Player[]>([])
+  const [players, setPlayers] = useState(samplePlayers)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [positionFilter, setPositionFilter] = useState("all")
+  const supabase = createClient()
 
   useEffect(() => {
     const fetchData = async () => {
       if (!clubId) return
-      
-      try {
-        setLoading(true)
-        const data = await fetchClubPlayers(clubId)
-        setPlayers(data)
-      } catch (error: any) {
-        console.error("Error fetching players:", error)
-        setError(error.message || "Failed to load player data")
-      } finally {
+
+      // Here you would fetch actual data from your API
+      // const { data, error } = await supabase...
+
+      // For now, we'll just simulate loading
+      setTimeout(() => {
         setLoading(false)
-      }
+      }, 1000)
     }
 
     fetchData()
-  }, [clubId])
+  }, [clubId, supabase])
 
   // Filter players based on search and position
-  const filteredPlayers = players.filter(player => {
+  const filteredPlayers = players.filter((player) => {
     const matchesSearch = player.name.toLowerCase().includes(search.toLowerCase())
     const matchesPosition = positionFilter === "all" || player.position.toLowerCase() === positionFilter.toLowerCase()
     return matchesSearch && matchesPosition
   })
-
-  if (loading) {
-    return (
-      <Card className="border-0 shadow-md">
-        <CardHeader className="border-b bg-footylabs-darkblue text-white">
-          <CardTitle>Player Statistics</CardTitle>
-          <CardDescription className="text-white/80">
-            Loading player data...
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6 h-[300px] flex items-center justify-center">
-          <div className="animate-pulse text-muted-foreground">Loading...</div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (error) {
-    return (
-      <Card className="border-0 shadow-md">
-        <CardHeader className="border-b bg-footylabs-darkblue text-white">
-          <CardTitle>Player Statistics</CardTitle>
-          <CardDescription className="text-white/80">
-            Error loading player data
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="text-red-500">{error}</div>
-        </CardContent>
-      </Card>
-    )
-  }
 
   return (
     <Card className="border-0 shadow-md">
@@ -112,10 +71,7 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            <Select
-              value={positionFilter}
-              onValueChange={setPositionFilter}
-            >
+            <Select value={positionFilter} onValueChange={setPositionFilter}>
               <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by position" />
               </SelectTrigger>
@@ -146,16 +102,21 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
                   <TableRow key={player.id}>
                     <TableCell className="font-medium">{player.name}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="bg-footylabs-blue/10 text-footylabs-blue border-footylabs-blue/20">
+                      <Badge
+                        variant="outline"
+                        className="bg-footylabs-blue/10 text-footylabs-blue border-footylabs-blue/20"
+                      >
                         {player.position}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">{player.stats.appearances}</TableCell>
-                    <TableCell className="text-right">{player.stats.goals}</TableCell>
-                    <TableCell className="text-right">{player.stats.assists}</TableCell>
+                    <TableCell className="text-right">{player.appearances}</TableCell>
+                    <TableCell className="text-right">{player.goals}</TableCell>
+                    <TableCell className="text-right">{player.assists}</TableCell>
                     <TableCell className="text-right font-medium">
-                      <span className={`${player.stats.rating >= 8.0 ? 'text-green-600' : player.stats.rating >= 7.0 ? 'text-amber-600' : 'text-red-600'}`}>
-                        {player.stats.rating.toFixed(1)}
+                      <span
+                        className={`${player.rating >= 8.0 ? "text-green-600" : player.rating >= 7.0 ? "text-amber-600" : "text-red-600"}`}
+                      >
+                        {player.rating.toFixed(1)}
                       </span>
                     </TableCell>
                   </TableRow>
