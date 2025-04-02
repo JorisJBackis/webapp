@@ -54,7 +54,8 @@ const config = {
           foreground: "hsl(var(--card-foreground))",
         },
         footylabs: {
-          blue: "#3949AB",
+          blue: "#3949AB", // Original blue
+          newblue: "#31348D", // New blue from the logo (updated)
           darkblue: "#0D1B2A",
           teal: "#1E3A8A",
           light: "#F8FAFC",

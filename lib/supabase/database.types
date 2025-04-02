@@ -1,0 +1,106 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  public: {
+    Tables: {
+      clubs: {
+        Row: {
+          id: number
+          name: string
+          logo_url: string | null
+          created_at: string
+          league: string | null
+        }
+        Insert: {
+          name: string
+          logo_url?: string | null
+          created_at?: string
+          league?: string | null
+        }
+        Update: {
+          name?: string
+          logo_url?: string | null
+          created_at?: string
+          league?: string | null
+        }
+      }
+      players: {
+        Row: {
+          id: number
+          name: string
+          club_id: number | null
+          position: string
+          stats: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          name: string
+          club_id?: number | null
+          position: string
+          stats?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          name?: string
+          club_id?: number | null
+          position?: string
+          stats?: Json
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      profiles: {
+        Row: {
+          id: string
+          club_id: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          club_id?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          club_id?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      get_latest_players_for_club: {
+        Args: {
+          p_club_id: number
+        }
+        Returns: {
+          id: number
+          name: string
+          position: string
+          stats: Json
+          updated_at: string
+        }[]
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
