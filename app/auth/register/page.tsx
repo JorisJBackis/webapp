@@ -16,6 +16,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { Logo } from "@/components/logo"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 type Club = {
   id: number
@@ -66,24 +67,25 @@ export default function RegisterPage() {
   // Check if email exists before attempting registration
   const checkEmailExists = async (email: string) => {
     try {
-      // First, try to sign in with a deliberately wrong password to check if the email exists
-      // This is a workaround since Supabase doesn't provide a direct way to check if an email exists
-      const { error } = await supabase.auth.signInWithPassword({
+      // Use the signInWithOtp method instead, which is more reliable for checking email existence
+      const { error } = await supabase.auth.signInWithOtp({
         email,
-        password: "check_if_email_exists_" + Math.random().toString(36),
+        options: {
+          shouldCreateUser: false, // This ensures we only check if the user exists
+        },
       })
 
-      // If the error message indicates the user exists but password is wrong, the email exists
-      if (
-        error &&
-        (error.message.includes("Invalid login credentials") || error.message.includes("Invalid email or password"))
-      ) {
-        return true
+      // If the error message indicates the user doesn't exist, return false
+      if (error && error.message.includes("User not found")) {
+        return false
       }
 
-      return false
+      // If there's no error or a different error, the user likely exists
+      // For other errors, we'll assume the user doesn't exist to allow registration to proceed
+      return !error
     } catch (error) {
       console.error("Error checking if email exists:", error)
+      // If there's an exception, assume the user doesn't exist to allow registration
       return false
     }
   }
@@ -111,6 +113,7 @@ export default function RegisterPage() {
       const emailExists = await checkEmailExists(email)
 
       if (emailExists) {
+        console.log("Email exists check returned true for:", email)
         setExistingUser(true)
         setLoading(false)
         return
@@ -128,8 +131,10 @@ export default function RegisterPage() {
         },
       })
 
-      // Double-check for existing user errors
+      // Add a fallback check for the authError to catch any "already registered" errors
       if (authError) {
+        console.error("Auth error during signup:", authError)
+
         if (
           authError.message.includes("already registered") ||
           authError.message.includes("already exists") ||
@@ -177,16 +182,16 @@ export default function RegisterPage() {
   // If user already exists, show the existing user message
   if (existingUser) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-footylabs-darkblue px-4 py-12">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 py-12">
         <div className="mb-8">
-          <Logo className="text-white" />
+          <Logo />
         </div>
-        <Card className="w-full max-w-md border-0 shadow-lg">
+        <Card className="w-full max-w-md border-0 shadow-lg bg-gray-50">
           <CardHeader className="space-y-1">
             <div className="flex justify-center mb-4">
               <AlertCircle className="h-12 w-12 text-amber-500" />
             </div>
-            <CardTitle className="text-2xl font-bold text-center text-footylabs-blue">Account Already Exists</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center text-[#3144C3]">Account Already Exists</CardTitle>
             <CardDescription className="text-center">
               An account with email <span className="font-medium">{email}</span> is already registered
             </CardDescription>
@@ -197,7 +202,7 @@ export default function RegisterPage() {
             </p>
             <div className="flex flex-col space-y-3">
               <Button
-                className="w-full bg-footylabs-blue hover:bg-footylabs-blue/90 flex items-center justify-center"
+                className="w-full bg-[#3144C3] hover:bg-[#3144C3]/90 flex items-center justify-center"
                 onClick={() => router.push("/auth/login")}
               >
                 <LogIn className="mr-2 h-4 w-4" />
@@ -205,7 +210,7 @@ export default function RegisterPage() {
               </Button>
               <Button
                 variant="outline"
-                className="w-full flex items-center justify-center"
+                className="w-full flex items-center justify-center border-[#3144C3] text-[#3144C3]"
                 onClick={() => router.push("/auth/reset-password")}
               >
                 <KeyRound className="mr-2 h-4 w-4" />
@@ -236,16 +241,16 @@ export default function RegisterPage() {
   // If registration was successful, show confirmation message
   if (success) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-footylabs-darkblue px-4 py-12">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 py-12">
         <div className="mb-8">
-          <Logo className="text-white" />
+          <Logo />
         </div>
-        <Card className="w-full max-w-md border-0 shadow-lg">
+        <Card className="w-full max-w-md border-0 shadow-lg bg-gray-50">
           <CardHeader className="space-y-1">
             <div className="flex justify-center mb-4">
-              <Mail className="h-12 w-12 text-footylabs-blue" />
+              <Mail className="h-12 w-12 text-[#3144C3]" />
             </div>
-            <CardTitle className="text-2xl font-bold text-center text-footylabs-blue">Confirm Your Email</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center text-[#3144C3]">Confirm Your Email</CardTitle>
             <CardDescription className="text-center">
               We've sent a verification link to <span className="font-medium">{email}</span>
             </CardDescription>
@@ -262,13 +267,13 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-footylabs-darkblue px-4 py-12">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 py-12">
       <div className="mb-8">
-        <Logo className="text-white" />
+        <Logo />
       </div>
-      <Card className="w-full max-w-md border-0 shadow-lg">
+      <Card className="w-full max-w-md border-0 shadow-lg bg-gray-50">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-footylabs-blue">Create an account</CardTitle>
+          <CardTitle className="text-2xl font-bold text-[#3144C3]">Create an account</CardTitle>
           <CardDescription>Enter your email, create a password, and select your club to get started</CardDescription>
         </CardHeader>
         <CardContent>
@@ -324,7 +329,21 @@ export default function RegisterPage() {
                     className="w-full justify-between"
                     disabled={loadingClubs}
                   >
-                    {loadingClubs ? "Loading clubs..." : selectedClub ? selectedClub.name : "Select your club..."}
+                    {loadingClubs ? (
+                      "Loading clubs..."
+                    ) : selectedClub ? (
+                      <div className="flex items-center">
+                        <Avatar className="h-6 w-6 mr-2">
+                          <AvatarImage src={selectedClub.logo_url || ""} alt={selectedClub.name} />
+                          <AvatarFallback className="bg-[#3144C3] text-white text-xs">
+                            {selectedClub.name.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        {selectedClub.name}
+                      </div>
+                    ) : (
+                      "Select your club..."
+                    )}
                     <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
@@ -342,11 +361,21 @@ export default function RegisterPage() {
                               setSelectedClub(club)
                               setOpen(false)
                             }}
+                            className="flex items-center"
                           >
-                            <Check
-                              className={cn("mr-2 h-4 w-4", selectedClub?.id === club.id ? "opacity-100" : "opacity-0")}
-                            />
+                            <Avatar className="h-6 w-6 mr-2">
+                              <AvatarImage src={club.logo_url || ""} alt={club.name} />
+                              <AvatarFallback className="bg-[#3144C3] text-white text-xs">
+                                {club.name.charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
                             {club.name}
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                selectedClub?.id === club.id ? "opacity-100" : "opacity-0",
+                              )}
+                            />
                           </CommandItem>
                         ))}
                       </CommandGroup>
@@ -356,7 +385,7 @@ export default function RegisterPage() {
               </Popover>
             </div>
 
-            <Button type="submit" className="w-full bg-footylabs-blue hover:bg-footylabs-blue/90" disabled={loading}>
+            <Button type="submit" className="w-full bg-[#3144C3] hover:bg-[#3144C3]/90" disabled={loading}>
               {loading ? "Creating account..." : "Create account"}
             </Button>
           </form>
@@ -364,7 +393,7 @@ export default function RegisterPage() {
         <CardFooter className="flex flex-col">
           <div className="text-sm text-muted-foreground mt-2">
             Already have an account?{" "}
-            <Link href="/auth/login" className="text-footylabs-blue underline-offset-4 hover:underline">
+            <Link href="/auth/login" className="text-[#3144C3] underline-offset-4 hover:underline">
               Login
             </Link>
           </div>

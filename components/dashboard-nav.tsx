@@ -27,15 +27,19 @@ export default function DashboardNav() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-footylabs-darkblue text-white">
+    <header className="sticky top-0 z-50 w-full border-b bg-white text-[#31348D]">
       <div className="container flex h-16 items-center">
         <div className="mr-4 flex">
-          <Logo className="text-white" />
+          <Logo className="text-[#31348D]" />
         </div>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <nav className="flex items-center space-x-2">
             <Link href="/dashboard">
-              <Button variant={pathname === "/dashboard" ? "default" : "ghost"} size="sm" className="text-white">
+              <Button
+                variant={pathname === "/dashboard" ? "default" : "ghost"}
+                size="sm"
+                className={pathname === "/dashboard" ? "bg-[#31348D] text-white" : "text-[#31348D]"}
+              >
                 <Home className="mr-2 h-4 w-4" />
                 Dashboard
               </Button>
@@ -44,7 +48,7 @@ export default function DashboardNav() {
               <Button
                 variant={pathname === "/dashboard/analytics" ? "default" : "ghost"}
                 size="sm"
-                className="text-white"
+                className={pathname === "/dashboard/analytics" ? "bg-[#31348D] text-white" : "text-[#31348D]"}
               >
                 <BarChart className="mr-2 h-4 w-4" />
                 Analytics
@@ -53,7 +57,7 @@ export default function DashboardNav() {
           </nav>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 rounded-full text-white">
+              <Button variant="ghost" size="sm" className="h-8 w-8 rounded-full text-[#31348D]">
                 <User className="h-4 w-4" />
                 <span className="sr-only">User menu</span>
               </Button>

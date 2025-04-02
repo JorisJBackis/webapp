@@ -58,8 +58,8 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
       try {
         // Call the database function using rpc()
         const { data: latestPlayers, error: rpcError } = await supabase.rpc(
-            "get_latest_players_for_club", // Name of the function we created
-            { p_club_id: clubId } // Pass the clubId as parameter
+          "get_latest_players_for_club", // Name of the function we created
+          { p_club_id: clubId }, // Pass the clubId as parameter
         )
 
         if (rpcError) {
@@ -106,129 +106,125 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
     return matchesSearch && matchesPosition
   })
 
-  // Rest of the JSX rendering remains the same...
-  // (Card, Table, Loading, Error, Empty states etc.)
   return (
-      <Card className="border-0 shadow-md">
-        <CardHeader className="border-b bg-footylabs-darkblue text-white">
-          <CardTitle>Player Statistics</CardTitle>
-          <CardDescription className="text-white/80">
-            Latest performance metrics for all players in the current season
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          {/* Search and Filter inputs ... */}
-          <div className="flex flex-col space-y-4">
-            <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder="Search players..."
-                    className="pl-8"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-              <Select value={positionFilter} onValueChange={setPositionFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder="Filter by position" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Positions</SelectItem>
-                  <SelectItem value="Goalkeeper">Goalkeeper</SelectItem>
-                  <SelectItem value="Centre Back">Centre Back</SelectItem>
-                  <SelectItem value="Full Back">Full Back</SelectItem>
-                  <SelectItem value="Defensive Midfielder">Defensive Midfielder</SelectItem>
-                  <SelectItem value="Central Midfielder">Central Midfielder</SelectItem>
-                  <SelectItem value="Attacking Midfielder">Attacking Midfielder</SelectItem>
-                  <SelectItem value="Winger">Winger</SelectItem>
-                  <SelectItem value="Centre Forward">Centre Forward</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+    <Card className="border-0 shadow-md">
+      <CardHeader className="border-b bg-gray-100">
+        <CardTitle className="text-[#31348D]">Player Statistics</CardTitle>
+        <CardDescription className="text-black/70">
+          Latest performance metrics for all players in the current season
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="pt-6">
+        {/* Search and Filter inputs ... */}
+        <div className="flex flex-col space-y-4">
+          <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search players..."
+                className="pl-8"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
             </div>
+            <Select value={positionFilter} onValueChange={setPositionFilter}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Filter by position" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Positions</SelectItem>
+                <SelectItem value="Goalkeeper">Goalkeeper</SelectItem>
+                <SelectItem value="Centre Back">Centre Back</SelectItem>
+                <SelectItem value="Full Back">Full Back</SelectItem>
+                <SelectItem value="Defensive Midfielder">Defensive Midfielder</SelectItem>
+                <SelectItem value="Central Midfielder">Central Midfielder</SelectItem>
+                <SelectItem value="Attacking Midfielder">Attacking Midfielder</SelectItem>
+                <SelectItem value="Winger">Winger</SelectItem>
+                <SelectItem value="Centre Forward">Centre Forward</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-            {/* Error Alert */}
-            {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-5 w-5" />
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-            )}
+          {/* Error Alert */}
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-5 w-5" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-            {/* Table */}
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader className="bg-footylabs-darkblue">
+          {/* Table */}
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader className="bg-gray-100">
+                <TableRow>
+                  <TableHead className="text-black">Name</TableHead>
+                  <TableHead className="text-black">Position</TableHead>
+                  <TableHead className="text-black text-right">Appearances</TableHead>
+                  <TableHead className="text-black text-right">Goals</TableHead>
+                  <TableHead className="text-black text-right">Assists</TableHead>
+                  <TableHead className="text-black text-right">Rating</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {/* Loading State */}
+                {loading && (
                   <TableRow>
-                    <TableHead className="text-white">Name</TableHead>
-                    <TableHead className="text-white">Position</TableHead>
-                    <TableHead className="text-white text-right">Appearances</TableHead>
-                    <TableHead className="text-white text-right">Goals</TableHead>
-                    <TableHead className="text-white text-right">Assists</TableHead>
-                    <TableHead className="text-white text-right">Rating</TableHead>
+                    <TableCell colSpan={6} className="h-24 text-center">
+                      <div className="flex justify-center items-center">
+                        <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                        Loading players...
+                      </div>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {/* Loading State */}
-                  {loading && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
-                          <div className="flex justify-center items-center">
-                            <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-                            Loading players...
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                  )}
+                )}
 
-                  {/* Player Data */}
-                  {!loading &&
-                      filteredPlayers.map((player) => (
-                          <TableRow key={player.id}>
-                            <TableCell className="font-medium">{player.name}</TableCell>
-                            <TableCell>
-                              <Badge
-                                  variant="outline"
-                                  className="bg-footylabs-blue/10 text-footylabs-blue border-footylabs-blue/20"
-                              >
-                                {player.position}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">{player.appearances}</TableCell>
-                            <TableCell className="text-right">{player.goals}</TableCell>
-                            <TableCell className="text-right">{player.assists}</TableCell>
-                            <TableCell className="text-right font-medium">
+                {/* Player Data */}
+                {!loading &&
+                  filteredPlayers.map((player) => (
+                    <TableRow key={player.id}>
+                      <TableCell className="font-medium">{player.name}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="bg-[#31348D]/10 text-[#31348D] border-[#31348D]/20">
+                          {player.position}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">{player.appearances}</TableCell>
+                      <TableCell className="text-right">{player.goals}</TableCell>
+                      <TableCell className="text-right">{player.assists}</TableCell>
+                      <TableCell className="text-right font-medium">
                         <span
-                            className={`${player.rating >= 8.0 ? "text-green-600" : player.rating >= 7.0 ? "text-amber-600" : "text-red-600"}`}
+                          className={`${player.rating >= 8.0 ? "text-green-600" : player.rating >= 7.0 ? "text-amber-600" : "text-red-600"}`}
                         >
                           {player.rating.toFixed(1)}
                         </span>
-                            </TableCell>
-                          </TableRow>
-                      ))}
+                      </TableCell>
+                    </TableRow>
+                  ))}
 
-                  {/* Empty States */}
-                  {!loading && players.length === 0 && !error && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
-                          No players found for this club.
-                        </TableCell>
-                      </TableRow>
-                  )}
-                  {!loading && players.length > 0 && filteredPlayers.length === 0 && !error && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
-                          No players match the current filter.
-                        </TableCell>
-                      </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                {/* Empty States */}
+                {!loading && players.length === 0 && !error && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-24 text-center">
+                      No players found for this club.
+                    </TableCell>
+                  </TableRow>
+                )}
+                {!loading && players.length > 0 && filteredPlayers.length === 0 && !error && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-24 text-center">
+                      No players match the current filter.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
+

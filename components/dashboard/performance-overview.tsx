@@ -39,19 +39,19 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       <Card className="col-span-full border-0 shadow-md">
-        <CardHeader className="border-b bg-footylabs-darkblue text-white">
-          <CardTitle>Season Performance</CardTitle>
-          <CardDescription className="text-white/80">
+        <CardHeader className="border-b bg-gray-100">
+          <CardTitle className="text-[#31348D]">Season Performance</CardTitle>
+          <CardDescription className="text-black/70">
             Overview of match results and goals for the current season
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
           <Tabs defaultValue="results" className="space-y-4">
-            <TabsList className="bg-footylabs-darkblue text-white">
-              <TabsTrigger value="results" className="data-[state=active]:bg-footylabs-blue">
+            <TabsList className="bg-gray-100 text-black">
+              <TabsTrigger value="results" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
                 Match Results
               </TabsTrigger>
-              <TabsTrigger value="goals" className="data-[state=active]:bg-footylabs-blue">
+              <TabsTrigger value="goals" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
                 Goals
               </TabsTrigger>
             </TabsList>
@@ -60,15 +60,15 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
                 config={{
                   wins: {
                     label: "Wins",
-                    color: "hsl(var(--chart-1))",
+                    color: "#22c55e", // Green
                   },
                   draws: {
                     label: "Draws",
-                    color: "hsl(var(--chart-2))",
+                    color: "#f97316", // Orange
                   },
                   losses: {
                     label: "Losses",
-                    color: "hsl(var(--chart-3))",
+                    color: "#ef4444", // Red
                   },
                 }}
                 className="h-[300px]"
@@ -119,39 +119,39 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
       </Card>
 
       <Card className="border-0 shadow-md">
-        <CardHeader className="border-b bg-footylabs-darkblue text-white">
-          <CardTitle>Win Rate</CardTitle>
-          <CardDescription className="text-white/80">Current season win percentage</CardDescription>
+        <CardHeader className="border-b bg-gray-100">
+          <CardTitle className="text-[#31348D]">Win Rate</CardTitle>
+          <CardDescription className="text-black/70">Current season win percentage</CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
           <div className="flex flex-col items-center justify-center space-y-2">
-            <div className="text-5xl font-bold text-footylabs-blue">67%</div>
+            <div className="text-5xl font-bold text-footylabs-newblue">67%</div>
             <p className="text-sm text-muted-foreground">12 wins in 18 matches</p>
           </div>
         </CardContent>
       </Card>
 
       <Card className="border-0 shadow-md">
-        <CardHeader className="border-b bg-footylabs-darkblue text-white">
-          <CardTitle>Goals Per Game</CardTitle>
-          <CardDescription className="text-white/80">Average goals scored per match</CardDescription>
+        <CardHeader className="border-b bg-gray-100">
+          <CardTitle className="text-[#31348D]">Goals Per Game</CardTitle>
+          <CardDescription className="text-black/70">Average goals scored per match</CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
           <div className="flex flex-col items-center justify-center space-y-2">
-            <div className="text-5xl font-bold text-footylabs-blue">2.3</div>
+            <div className="text-5xl font-bold text-footylabs-newblue">2.3</div>
             <p className="text-sm text-muted-foreground">41 goals in 18 matches</p>
           </div>
         </CardContent>
       </Card>
 
       <Card className="border-0 shadow-md">
-        <CardHeader className="border-b bg-footylabs-darkblue text-white">
-          <CardTitle>Clean Sheets</CardTitle>
-          <CardDescription className="text-white/80">Matches without conceding</CardDescription>
+        <CardHeader className="border-b bg-gray-100">
+          <CardTitle className="text-[#31348D]">Clean Sheets</CardTitle>
+          <CardDescription className="text-black/70">Matches without conceding</CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
           <div className="flex flex-col items-center justify-center space-y-2">
-            <div className="text-5xl font-bold text-footylabs-blue">8</div>
+            <div className="text-5xl font-bold text-footylabs-newblue">8</div>
             <p className="text-sm text-muted-foreground">44% of all matches</p>
           </div>
         </CardContent>

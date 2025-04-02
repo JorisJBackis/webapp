@@ -5,36 +5,36 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    --foreground: 238 47% 38%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 238 47% 38%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 238 47% 38%;
 
-    --primary: 229 78% 45%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 238 47% 38%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary-foreground: 238 47% 38%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
     --accent: 210 40% 96.1%;
-    --accent-foreground: 222 47% 11%;
+    --accent-foreground: 238 47% 38%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 229 78% 45%;
+    --ring: 238 47% 38%;
 
     --radius: 0.5rem;
 
-    --chart-1: 229 78% 45%;
+    --chart-1: 238 47% 38%;
     --chart-2: 250 95% 64%;
     --chart-3: 142 76% 36%;
     --chart-4: 341 79% 53%;
@@ -50,7 +50,7 @@
     --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 229 78% 45%;
+    --primary: 238 47% 38%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -67,7 +67,7 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 229 78% 45%;
+    --ring: 238 47% 38%;
   }
 }
 
@@ -81,7 +81,7 @@
 }
 
 .hero-section {
-  background-image: linear-gradient(rgba(13, 27, 42, 0.7), rgba(13, 27, 42, 0.8)), url("/football-field-night.jpg");
+  background-image: linear-gradient(rgba(49, 52, 141, 0.7), rgba(49, 52, 141, 0.8)), url("/football-field-night.jpg");
   background-size: cover;
   background-position: center;
 }

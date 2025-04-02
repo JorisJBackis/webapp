@@ -20,19 +20,19 @@ export default async function DashboardPage() {
   return (
     <div className="container py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-footylabs-blue">{clubName} Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-footylabs-newblue">{clubName} Dashboard</h1>
         <p className="text-muted-foreground">View analytics and insights for your football club</p>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="bg-footylabs-darkblue text-white">
-          <TabsTrigger value="overview" className="data-[state=active]:bg-footylabs-blue">
+        <TabsList className="bg-gray-100 text-black">
+          <TabsTrigger value="overview" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
             Overview
           </TabsTrigger>
-          <TabsTrigger value="players" className="data-[state=active]:bg-footylabs-blue">
+          <TabsTrigger value="players" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
             Players
           </TabsTrigger>
-          <TabsTrigger value="comparison" className="data-[state=active]:bg-footylabs-blue">
+          <TabsTrigger value="comparison" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
             Team Comparison
           </TabsTrigger>
         </TabsList>

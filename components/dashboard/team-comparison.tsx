@@ -38,9 +38,9 @@ export default function TeamComparison({ clubId }: { clubId?: number }) {
 
   return (
     <Card className="border-0 shadow-md">
-      <CardHeader className="border-b bg-footylabs-darkblue text-white">
-        <CardTitle>Team Comparison</CardTitle>
-        <CardDescription className="text-white/80">
+      <CardHeader className="border-b bg-gray-100">
+        <CardTitle className="text-[#31348D]">Team Comparison</CardTitle>
+        <CardDescription className="text-black/70">
           How your team compares to the league average across key metrics
         </CardDescription>
       </CardHeader>

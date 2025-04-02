@@ -14,6 +14,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { Check } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Logo } from "@/components/logo"
 
 type Club = {
   id: number
@@ -110,10 +112,13 @@ export default function SelectClubPage() {
     search === "" ? clubs : clubs.filter((club) => club.name.toLowerCase().includes(search.toLowerCase()))
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-12">
-      <Card className="w-full max-w-md">
+    <div className="flex min-h-screen items-center justify-center bg-white px-4 py-12">
+      <div className="mb-8 absolute top-8">
+        <Logo />
+      </div>
+      <Card className="w-full max-w-md bg-gray-50 shadow-lg">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Select Your Club</CardTitle>
+          <CardTitle className="text-2xl font-bold text-[#3144C3]">Select Your Club</CardTitle>
           <CardDescription>Choose the football club you represent</CardDescription>
         </CardHeader>
         <CardContent>
@@ -130,7 +135,19 @@ export default function SelectClubPage() {
               <Popover open={open} onOpenChange={setOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between">
-                    {selectedClub ? selectedClub.name : "Select a club..."}
+                    {selectedClub ? (
+                      <div className="flex items-center">
+                        <Avatar className="h-6 w-6 mr-2">
+                          <AvatarImage src={selectedClub.logo_url || ""} alt={selectedClub.name} />
+                          <AvatarFallback className="bg-[#3144C3] text-white text-xs">
+                            {selectedClub.name.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        {selectedClub.name}
+                      </div>
+                    ) : (
+                      "Select a club..."
+                    )}
                     <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
@@ -148,11 +165,21 @@ export default function SelectClubPage() {
                               setSelectedClub(club)
                               setOpen(false)
                             }}
+                            className="flex items-center"
                           >
-                            <Check
-                              className={cn("mr-2 h-4 w-4", selectedClub?.id === club.id ? "opacity-100" : "opacity-0")}
-                            />
+                            <Avatar className="h-6 w-6 mr-2">
+                              <AvatarImage src={club.logo_url || ""} alt={club.name} />
+                              <AvatarFallback className="bg-[#3144C3] text-white text-xs">
+                                {club.name.charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
                             {club.name}
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                selectedClub?.id === club.id ? "opacity-100" : "opacity-0",
+                              )}
+                            />
                           </CommandItem>
                         ))}
                       </CommandGroup>
@@ -162,7 +189,7 @@ export default function SelectClubPage() {
               </Popover>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full bg-[#3144C3] hover:bg-[#3144C3]/90" disabled={loading}>
               {loading ? "Saving..." : "Continue"}
             </Button>
           </form>
