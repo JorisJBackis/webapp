@@ -42,7 +42,7 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
         <CardHeader className="border-b bg-gray-100">
           <CardTitle className="text-[#31348D]">Season Performance</CardTitle>
           <CardDescription className="text-black/70">
-            Overview of match results and goals for the current season
+            Overview of match results and goals for Lithuanian A Lyga 2025
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
@@ -77,7 +77,14 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
                   <BarChart data={performanceData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
-                    <YAxis />
+                    <YAxis
+                      label={{
+                        value: "Number of matches",
+                        angle: -90,
+                        position: "insideLeft",
+                        style: { textAnchor: "middle" },
+                      }}
+                    />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Legend />
                     <Bar dataKey="wins" stackId="a" fill="var(--color-wins)" />

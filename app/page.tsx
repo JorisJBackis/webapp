@@ -31,10 +31,10 @@ export default function Home() {
             <div className="flex flex-col items-center justify-center space-y-10 text-center">
               <div className="space-y-2">
                 <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white">
-                  Data Science & AI Solutions for Football
+                  The AI-Driven Recruitment Platform for Modern Football
                 </h1>
                 <p className="mx-auto max-w-[700px] text-lg text-white/80 md:text-xl">
-                  Transforming data into winning strategies for your football club
+                  Where clubs, agents and players meet through data
                 </p>
               </div>
               <div className="space-x-4 pt-4">
