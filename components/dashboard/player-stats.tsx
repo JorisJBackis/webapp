@@ -17,35 +17,128 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { toast } from "@/components/ui/use-toast"
 
-// Type for the data returned by our new DB function
-type LatestPlayer = {
-  id: number
-  name: string
-  position: string | null
-  stats: Database["public"]["Tables"]["players"]["Row"]["stats"]
-  updated_at: string | null
-}
 
-// Type for display (keeping dummy data for now)
-type PlayerDisplayData = {
-  id: number
-  name: string
-  position: string
-  appearances: number
-  goals: number
-  assists: number
-  rating: number
-}
+export type PlayerStats = {
+  "Age"?: number | null;
+  "Goals"?: number | null;
+  "Shots"?: number | null;
+  // ... any specifically typed fields
+} & {
+  [key: string]: number | string | boolean | null;
+};
 
-// Sample player comparison data for the radar chart
-const generatePlayerComparisonData = (playerName: string) => [
-  { attribute: "Pace", [playerName]: Math.floor(Math.random() * 30) + 70, teamAverage: 75 },
-  { attribute: "Shooting", [playerName]: Math.floor(Math.random() * 30) + 70, teamAverage: 72 },
-  { attribute: "Passing", [playerName]: Math.floor(Math.random() * 30) + 70, teamAverage: 78 },
-  { attribute: "Dribbling", [playerName]: Math.floor(Math.random() * 30) + 70, teamAverage: 74 },
-  { attribute: "Defending", [playerName]: Math.floor(Math.random() * 30) + 70, teamAverage: 76 },
-  { attribute: "Physical", [playerName]: Math.floor(Math.random() * 30) + 70, teamAverage: 77 },
-]
+export type LatestPlayer = {
+  id: number;
+  name: string | null;
+  position: string | null;
+  // Now stats is typed as PlayerStats | null
+  stats: PlayerStats | null;
+  updated_at: string | null;
+};
+
+// Define your display type; include the raw stats for later use (like the radar chart)
+export type PlayerDisplayData = {
+  id: number;
+  name: string;
+  position: string;
+  age: number | null;
+  goals: number | null;
+  xG: number | null;
+  assists: number | null;
+  minutes: number | null;
+  contractEnds: string | null;
+  // Include raw stats so you can use them later if needed.
+  stats?: PlayerStats | null;
+};
+
+// Define the key metrics with legend, exactly as desired.
+// This mapping remains the same:
+// Your mapping of metrics per position remains as provided:
+const sixMetricsWithLegend: { [position: string]: [string, string][] } = {
+  'Goalkeeper': [
+    ['Conceded goals per 90', 'low'],
+    ['Accurate passes, %', 'high'],
+    ['xG against per 90', 'low'],
+    ['Prevented goals per 90', 'high'],
+    ['Save rate, %', 'high'],
+    ['Exits per 90', 'high']
+  ],
+  'Full Back': [
+    ['Successful defensive actions per 90', 'high'],
+    ['Defensive duels won, %', 'high'],
+    ['Accurate crosses, %', 'high'],
+    ['Accurate passes, %', 'high'],
+    ['Key passes per 90', 'high'],
+    ['xA per 90', 'high']
+  ],
+  'Centre Back': [
+    ['Successful defensive actions per 90', 'high'],
+    ['Defensive duels won, %', 'high'],
+    ['Aerial duels won, %', 'high'],
+    ['Interceptions per 90', 'high'],
+    ['Accurate passes, %', 'high'],
+    ['Accurate passes to final third per 90', 'high']
+  ],
+  'Defensive Midfielder': [
+    ['Interceptions per 90', 'high'],
+    ['Sliding tackles per 90', 'high'],
+    ['Aerial duels won, %', 'high'],
+    ['Accurate progressive passes per 90', 'high'],
+    ['Accurate passes to final third per 90', 'high'],
+    ['Accurate passes to penalty area per 90', 'high']
+  ],
+  'Central Midfielder': [
+    ['Successful defensive actions per 90', 'high'],
+    ['Defensive duels won, %', 'high'],
+    ['Accurate passes, %', 'high'],
+    ['Accurate passes to final third per 90', 'high'],
+    ['Key passes per 90', 'high'],
+    ['xA per 90', 'high']
+  ],
+  'Attacking Midfielder': [
+    ['Defensive duels won, %', 'high'],
+    ['Successful defensive actions per 90', 'high'],
+    ['Accurate passes to penalty area per 90', 'high'],
+    ['Accurate smart passes per 90', 'high'],
+    ['Goals per 90', 'high'],
+    ['Successful dribbles per 90', 'high']
+  ],
+  'Winger': [
+    ['Non-penalty goals per 90', 'high'],
+    ['xG per 90', 'high'],
+    ['Shots on target per 90', 'high'],
+    ['Successful dribbles per 90', 'high'],
+    ['Assists per 90', 'high'],
+    ['xA per 90', 'high']
+  ],
+  'Centre Forward': [
+    ['Non-penalty goals per 90', 'high'],
+    ['xG per 90', 'high'],
+    ['Shots on target per 90', 'high'],
+    ['Touches in box per 90', 'high'],
+    ['xA per 90', 'high'],
+    ['Offensive duels won, %', 'high']
+  ]
+};
+
+// Radar chart data generator without team average, using real data from stats.
+const generatePlayerComparisonData = (player: PlayerDisplayData) => {
+  // Use the player's position to get the correct metrics;
+  // fallback to a default if the position isn't found.
+  const metrics = sixMetricsWithLegend[player.position] || sixMetricsWithLegend['Centre Forward'];
+  const playerLabel = player.name || "Unknown";
+
+  return metrics.map(([metricName, _direction]) => {
+    // Retrieve the actual metric value from the player's raw stats.
+    // Convert it to a number; if missing or non-numeric, default to 0.
+    const val = player.stats?.[metricName];
+    return {
+      attribute: metricName,
+      [playerLabel]: val != null && !isNaN(Number(val)) ? Number(val) : 0,
+    };
+  });
+};
+
 
 export default function PlayerStats({ clubId }: { clubId?: number }) {
   const [players, setPlayers] = useState<PlayerDisplayData[]>([])
@@ -68,7 +161,7 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
         data: { user },
       } = await supabase.auth.getUser()
       if (user) {
-        setUserEmail(user.email)
+        setUserEmail(user.email ?? null)
       }
     }
 
@@ -102,10 +195,18 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
 
       try {
         // Call the database function using rpc()
-        const { data: latestPlayers, error: rpcError } = await supabase.rpc(
-          "get_latest_players_for_club", // Name of the function we created
-          { p_club_id: clubId }, // Pass the clubId as parameter
-        )
+        const { data, error: rpcError } = await supabase
+            .rpc("get_latest_players_for_club", { p_club_id: clubId })
+
+// Manually assert later when you know it's safe
+        const latestPlayers = data as {
+          id: number
+          name: string
+          position: string
+          stats: PlayerStats | null
+          updated_at: string
+        }[] | null
+
 
         if (rpcError) {
           throw rpcError
@@ -115,19 +216,23 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
 
         if (latestPlayers) {
           // Map the fetched data (type should match 'LatestPlayer')
-          const displayData: PlayerDisplayData[] = latestPlayers.map((player: LatestPlayer) => {
+          const displayData: PlayerDisplayData[] = (latestPlayers || []).map((lp: LatestPlayer) => {
+            // Access the stats JSON (if it exists) without further casts
+            const s = lp.stats;
             return {
-              id: player.id,
-              name: player.name,
-              position: player.position || "Unknown",
-              // --- Dummy Data ---
-              appearances: Math.floor(Math.random() * 20) + 1,
-              goals: Math.floor(Math.random() * 15),
-              assists: Math.floor(Math.random() * 10),
-              rating: Math.round((Math.random() * 3 + 6.5) * 10) / 10,
-              // --- End Dummy Data ---
+              id: lp.id,
+              name: lp.name ?? "Unknown",
+              position: lp.position ?? "Unknown",
+              // Use the exact keys from your stats JSON:
+              age: s?.["Age"] != null ? Number(s["Age"]) : null,
+              goals: s?.["Goals"] != null ? Number(s["Goals"]) : "0",
+              xG: s?.["xG"] != null ? Number(s["xG"]) : "0",
+              assists: s?.["Assists"] != null ? Number(s["Assists"]) : null,
+              minutes: s?.["Minutes played"] != null ? Number(s["Minutes played"]) : "0",
+              contractEnds: s?.["Contract expires"] ?? "Unknown",
+              stats: s // Save the raw stats
             }
-          })
+          });
           setPlayers(displayData)
         }
       } catch (err: any) {
@@ -153,11 +258,11 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
     }
   }
 
-  // Handle player selection
   const handlePlayerClick = (player: PlayerDisplayData) => {
-    setSelectedPlayer(player)
-    setPlayerComparisonData(generatePlayerComparisonData(player.name))
-  }
+    setSelectedPlayer(player);
+    // Pass the entire player (which now includes raw stats) to generate the radar data.
+    setPlayerComparisonData(generatePlayerComparisonData(player));
+  };
 
   // Close player dialog
   const handleCloseDialog = () => {
@@ -287,44 +392,29 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
               <Table>
                 <TableHeader className="bg-gray-100">
                   <TableRow>
-                    <TableHead className="text-black cursor-pointer" onClick={() => handleSort("name")}>
-                      <div className="flex items-center">
-                        Name
-                        <ArrowUpDown className="ml-1 h-4 w-4" />
-                      </div>
+                    <TableHead className="cursor-pointer" onClick={() => handleSort("name")}>
+                      <div className="flex items-center">Name <ArrowUpDown className="ml-1 h-4 w-4" /></div>
                     </TableHead>
-                    <TableHead className="text-black cursor-pointer" onClick={() => handleSort("position")}>
-                      <div className="flex items-center">
-                        Position
-                        <ArrowUpDown className="ml-1 h-4 w-4" />
-                      </div>
+                    <TableHead className="cursor-pointer" onClick={() => handleSort("position")}>
+                      <div className="flex items-center">Position <ArrowUpDown className="ml-1 h-4 w-4" /></div>
                     </TableHead>
-                    <TableHead
-                      className="text-black text-right cursor-pointer"
-                      onClick={() => handleSort("appearances")}
-                    >
-                      <div className="flex items-center justify-end">
-                        Appearances
-                        <ArrowUpDown className="ml-1 h-4 w-4" />
-                      </div>
+                    <TableHead className="text-right cursor-pointer" onClick={() => handleSort("age")}>
+                      <div className="flex items-center justify-end">Age <ArrowUpDown className="ml-1 h-4 w-4" /></div>
                     </TableHead>
-                    <TableHead className="text-black text-right cursor-pointer" onClick={() => handleSort("goals")}>
-                      <div className="flex items-center justify-end">
-                        Goals
-                        <ArrowUpDown className="ml-1 h-4 w-4" />
-                      </div>
+                    <TableHead className="text-right cursor-pointer" onClick={() => handleSort("goals")}>
+                      <div className="flex items-center justify-end">Goals <ArrowUpDown className="ml-1 h-4 w-4" /></div>
                     </TableHead>
-                    <TableHead className="text-black text-right cursor-pointer" onClick={() => handleSort("assists")}>
-                      <div className="flex items-center justify-end">
-                        Assists
-                        <ArrowUpDown className="ml-1 h-4 w-4" />
-                      </div>
+                    <TableHead className="text-right cursor-pointer" onClick={() => handleSort("xG")}>
+                      <div className="flex items-center justify-end">xG <ArrowUpDown className="ml-1 h-4 w-4" /></div>
                     </TableHead>
-                    <TableHead className="text-black text-right cursor-pointer" onClick={() => handleSort("rating")}>
-                      <div className="flex items-center justify-end">
-                        Rating
-                        <ArrowUpDown className="ml-1 h-4 w-4" />
-                      </div>
+                    <TableHead className="text-right cursor-pointer" onClick={() => handleSort("assists")}>
+                      <div className="flex items-center justify-end">Assists <ArrowUpDown className="ml-1 h-4 w-4" /></div>
+                    </TableHead>
+                    <TableHead className="text-right cursor-pointer" onClick={() => handleSort("minutes")}>
+                      <div className="flex items-center justify-end">Minutes <ArrowUpDown className="ml-1 h-4 w-4" /></div>
+                    </TableHead>
+                    <TableHead className="text-right cursor-pointer" onClick={() => handleSort("contractEnds")}>
+                      <div className="flex items-center justify-end">Contract Ends <ArrowUpDown className="ml-1 h-4 w-4" /></div>
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -343,45 +433,45 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
 
                   {/* Player Data */}
                   {!loading &&
-                    filteredPlayers.map((player) => (
-                      <TableRow
-                        key={player.id}
-                        className="cursor-pointer hover:bg-gray-50"
-                        onClick={() => handlePlayerClick(player)}
-                      >
-                        <TableCell className="font-medium">{player.name}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="bg-[#31348D]/10 text-[#31348D] border-[#31348D]/20">
-                            {player.position}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">{player.appearances}</TableCell>
-                        <TableCell className="text-right">{player.goals}</TableCell>
-                        <TableCell className="text-right">{player.assists}</TableCell>
-                        <TableCell className="text-right font-medium">
-                          <span
-                            className={`${player.rating >= 8.0 ? "text-green-600" : player.rating >= 7.0 ? "text-amber-600" : "text-red-600"}`}
+                      filteredPlayers.map((player) => (
+                          <TableRow
+                              key={player.id}
+                              className="cursor-pointer hover:bg-gray-50"
+                              onClick={() => handlePlayerClick(player)}
                           >
-                            {player.rating.toFixed(1)}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                            <TableCell className="font-medium">{player.name}</TableCell>
+                            <TableCell>
+                              <Badge
+                                  variant="outline"
+                                  className="bg-[#31348D]/10 text-[#31348D] border-[#31348D]/20"
+                              >
+                                {player.position}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">{player.age}</TableCell>
+                            <TableCell className="text-right">{player.goals}</TableCell>
+                            <TableCell className="text-right">{player.xG}</TableCell>
+                            <TableCell className="text-right">{player.assists}</TableCell>
+                            <TableCell className="text-right">{player.minutes}</TableCell>
+                            <TableCell className="text-right">{player.contractEnds}</TableCell>
+                          </TableRow>
+                      ))
+                  }
 
                   {/* Empty States */}
                   {!loading && players.length === 0 && !error && (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center">
-                        No players found for this club.
-                      </TableCell>
-                    </TableRow>
+                      <TableRow>
+                        <TableCell colSpan={8} className="h-24 text-center">
+                          No players found for this club.
+                        </TableCell>
+                      </TableRow>
                   )}
                   {!loading && players.length > 0 && filteredPlayers.length === 0 && !error && (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center">
-                        No players match the current filter.
-                      </TableCell>
-                    </TableRow>
+                      <TableRow>
+                        <TableCell colSpan={8} className="h-24 text-center">
+                          No players match the current filter.
+                        </TableCell>
+                      </TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -434,20 +524,16 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
           <div className="mt-4">
             <div className="mb-4 grid grid-cols-3 gap-4">
               <div className="rounded-lg bg-gray-50 p-3 text-center">
-                <div className="text-sm text-gray-500">Appearances</div>
-                <div className="text-xl font-bold text-[#31348D]">{selectedPlayer?.appearances}</div>
+                <div className="text-sm text-gray-500">Minutes</div>
+                <div className="text-xl font-bold text-[#31348D]">{selectedPlayer?.minutes}</div>
               </div>
               <div className="rounded-lg bg-gray-50 p-3 text-center">
                 <div className="text-sm text-gray-500">Goals</div>
                 <div className="text-xl font-bold text-[#31348D]">{selectedPlayer?.goals}</div>
               </div>
               <div className="rounded-lg bg-gray-50 p-3 text-center">
-                <div className="text-sm text-gray-500">Rating</div>
-                <div
-                  className={`text-xl font-bold ${selectedPlayer?.rating && selectedPlayer.rating >= 8.0 ? "text-green-600" : selectedPlayer?.rating && selectedPlayer.rating >= 7.0 ? "text-amber-600" : "text-red-600"}`}
-                >
-                  {selectedPlayer?.rating.toFixed(1)}
-                </div>
+                <div className="text-sm text-gray-500">Assists</div>
+                <div className="text-xl font-bold text-[#31348D]">{selectedPlayer?.assists}</div>
               </div>
             </div>
 
