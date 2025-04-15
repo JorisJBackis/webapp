@@ -21,4 +21,3 @@ export async function GET(request: Request, { params }: { params: { id: string }
     return NextResponse.json({ error: "Failed to fetch players" }, { status: 500 })
   }
 }
-

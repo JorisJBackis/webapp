@@ -7,4 +7,3 @@ export const createClient = () => {
   const cookieStore = cookies()
   return createServerComponentClient<Database>({ cookies: () => cookieStore })
 }
-

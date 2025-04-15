@@ -763,4 +763,3 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
     </>
   )
 }
-

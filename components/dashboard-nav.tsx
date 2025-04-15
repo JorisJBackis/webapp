@@ -51,7 +51,7 @@ export default function DashboardNav() {
                 className={pathname === "/dashboard/analytics" ? "bg-[#31348D] text-white" : "text-[#31348D]"}
               >
                 <BarChart className="mr-2 h-4 w-4" />
-                Analytics
+                Insights
               </Button>
             </Link>
           </nav>
@@ -88,4 +88,3 @@ export default function DashboardNav() {
     </header>
   )
 }
-
