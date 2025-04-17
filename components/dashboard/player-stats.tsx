@@ -2,146 +2,142 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
-import type { Database } from "@/lib/supabase/database.types"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {Search, Loader2, AlertCircle, ArrowUpDown, X, Info} from "lucide-react"
+import { Search, Loader2, AlertCircle, ArrowUpDown, X, Info } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from "recharts"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { ChartContainer, ChartTooltip } from "@/components/ui/chart"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { toast } from "@/components/ui/use-toast"
-import {Switch} from "@/components/ui/switch";
-
+import { Switch } from "@/components/ui/switch"
 
 export type PlayerStats = {
-  "Age"?: number | null;
-  "Goals"?: number | null;
-  "Shots"?: number | null;
+  Age?: number | null
+  Goals?: number | null
+  Shots?: number | null
   // ... any specifically typed fields
 } & {
-  [key: string]: number | string | boolean | null;
-};
+  [key: string]: number | string | boolean | null
+}
 
 export type LatestPlayer = {
-  id: number;
-  name: string | null;
-  position: string | null;
+  id: number
+  name: string | null
+  position: string | null
   // Now stats is typed as PlayerStats | null
-  stats: PlayerStats | null;
-  updated_at: string | null;
-};
+  stats: PlayerStats | null
+  updated_at: string | null
+}
 
 // Define your display type; include the raw stats for later use (like the radar chart)
 export type PlayerDisplayData = {
-  id: number;
-  name: string;
-  position: string;
-  age: number | string | null;
-  goals: number | string;
-  xG: number | string;
-  assists: number | string | null;
-  minutes: number | string;
-  contractEnds: string;
+  id: number
+  name: string
+  position: string
+  age: number | string | null
+  goals: number | string
+  xG: number | string
+  assists: number | string | null
+  minutes: number | string
+  contractEnds: string
+  footylabsScore: number | string | null
   // Include raw stats so you can use them later if needed.
-  stats?: PlayerStats | null;
-};
+  stats?: PlayerStats | null
+}
 
 // Define the key metrics with legend, exactly as desired.
 // This mapping remains the same:
 // Your mapping of metrics per position remains as provided:
 const sixMetricsWithLegend: { [position: string]: [string, string][] } = {
-  'Goalkeeper': [
-    ['Conceded goals per 90_percentile', 'low'],
-    ['Accurate passes, %_percentile', 'high'],
-    ['xG against per 90_percentile', 'low'],
-    ['Prevented goals per 90_percentile', 'high'],
-    ['Save rate, %_percentile', 'high'],
-    ['Exits per 90_percentile', 'high']
+  Goalkeeper: [
+    ["Conceded goals per 90_percentile", "low"],
+    ["Accurate passes, %_percentile", "high"],
+    ["xG against per 90_percentile", "low"],
+    ["Prevented goals per 90_percentile", "high"],
+    ["Save rate, %_percentile", "high"],
+    ["Exits per 90_percentile", "high"],
   ],
-  'Full Back': [
-    ['Successful defensive actions per 90_percentile', 'high'],
-    ['Defensive duels won, %_percentile', 'high'],
-    ['Accurate crosses, %_percentile', 'high'],
-    ['Accurate passes, %_percentile', 'high'],
-    ['Key passes per 90_percentile', 'high'],
-    ['xA per 90_percentile', 'high']
+  "Full Back": [
+    ["Successful defensive actions per 90_percentile", "high"],
+    ["Defensive duels won, %_percentile", "high"],
+    ["Accurate crosses, %_percentile", "high"],
+    ["Accurate passes, %_percentile", "high"],
+    ["Key passes per 90_percentile", "high"],
+    ["xA per 90_percentile", "high"],
   ],
-  'Centre Back': [
-    ['Successful defensive actions per 90_percentile', 'high'],
-    ['Defensive duels won, %_percentile', 'high'],
-    ['Aerial duels won, %_percentile', 'high'],
-    ['Accurate passes to final third per 90_percentile', 'high'],
-    ['Accurate passes, %_percentile', 'high'],
-    ['Interceptions per 90_percentile', 'high'],
-
+  "Centre Back": [
+    ["Successful defensive actions per 90_percentile", "high"],
+    ["Defensive duels won, %_percentile", "high"],
+    ["Aerial duels won, %_percentile", "high"],
+    ["Accurate passes to final third per 90_percentile", "high"],
+    ["Accurate passes, %_percentile", "high"],
+    ["Interceptions per 90_percentile", "high"],
   ],
-  'Defensive Midfielder': [
-    ['Interceptions per 90_percentile', 'high'],
-    ['Sliding tackles per 90_percentile', 'high'],
-    ['Aerial duels won, %_percentile', 'high'],
-    ['Accurate passes to penalty area per 90_percentile', 'high'],
-    ['Accurate passes to final third per 90_percentile', 'high'],
-    ['Accurate progressive passes per 90_percentile', 'high']
-
+  "Defensive Midfielder": [
+    ["Interceptions per 90_percentile", "high"],
+    ["Sliding tackles per 90_percentile", "high"],
+    ["Aerial duels won, %_percentile", "high"],
+    ["Accurate passes to penalty area per 90_percentile", "high"],
+    ["Accurate passes to final third per 90_percentile", "high"],
+    ["Accurate progressive passes per 90_percentile", "high"],
   ],
-  'Central Midfielder': [
-    ['Successful defensive actions per 90_percentile', 'high'],
-    ['Defensive duels won, %_percentile', 'high'],
-    ['Accurate passes, %_percentile', 'high'],
-    ['Accurate passes to final third per 90_percentile', 'high'],
-    ['Key passes per 90_percentile', 'high'],
-    ['xA per 90_percentile', 'high']
+  "Central Midfielder": [
+    ["Successful defensive actions per 90_percentile", "high"],
+    ["Defensive duels won, %_percentile", "high"],
+    ["Accurate passes, %_percentile", "high"],
+    ["Accurate passes to final third per 90_percentile", "high"],
+    ["Key passes per 90_percentile", "high"],
+    ["xA per 90_percentile", "high"],
   ],
-  'Attacking Midfielder': [
-    ['Defensive duels won, %_percentile', 'high'],
-    ['Successful defensive actions per 90_percentile', 'high'],
-    ['Accurate smart passes per 90_percentile', 'high'],
-    ['Accurate passes to penalty area per 90_percentile', 'high'],
-    ['Goals per 90_percentile', 'high'],
-    ['Successful dribbles per 90_percentile', 'high']
+  "Attacking Midfielder": [
+    ["Defensive duels won, %_percentile", "high"],
+    ["Successful defensive actions per 90_percentile", "high"],
+    ["Accurate smart passes per 90_percentile", "high"],
+    ["Accurate passes to penalty area per 90_percentile", "high"],
+    ["Goals per 90_percentile", "high"],
+    ["Successful dribbles per 90_percentile", "high"],
   ],
-  'Winger': [
-    ['Non-penalty goals per 90_percentile', 'high'],
-    ['xG per 90_percentile', 'high'],
-    ['Shots on target per 90_percentile', 'high'],
-    ['Successful dribbles per 90_percentile', 'high'],
-    ['Assists per 90_percentile', 'high'],
-    ['xA per 90_percentile', 'high']
+  Winger: [
+    ["Non-penalty goals per 90_percentile", "high"],
+    ["xG per 90_percentile", "high"],
+    ["Shots on target per 90_percentile", "high"],
+    ["Successful dribbles per 90_percentile", "high"],
+    ["Assists per 90_percentile", "high"],
+    ["xA per 90_percentile", "high"],
   ],
-  'Centre Forward': [
-    ['Non-penalty goals per 90_percentile', 'high'],
-    ['xG per 90_percentile', 'high'],
-    ['Shots on target per 90_percentile', 'high'],
-    ['Touches in box per 90_percentile', 'high'],
-    ['xA per 90_percentile', 'high'],
-    ['Offensive duels won, %_percentile', 'high']
-  ]
-};
+  "Centre Forward": [
+    ["Non-penalty goals per 90_percentile", "high"],
+    ["xG per 90_percentile", "high"],
+    ["Shots on target per 90_percentile", "high"],
+    ["Touches in box per 90_percentile", "high"],
+    ["xA per 90_percentile", "high"],
+    ["Offensive duels won, %_percentile", "high"],
+  ],
+}
 
 // Radar chart data generator without team average, using real data from stats.
 const generatePlayerComparisonData = (player: PlayerDisplayData) => {
   // Use the player's position to get the correct metrics;
   // fallback to a default if the position isn't found.
-  const metrics = sixMetricsWithLegend[player.position] || sixMetricsWithLegend['Centre Forward'];
-  const playerLabel = player.name || "Unknown";
+  const metrics = sixMetricsWithLegend[player.position] || sixMetricsWithLegend["Centre Forward"]
+  const playerLabel = player.name || "Unknown"
 
   return metrics.map(([metricName, _direction]) => {
     // Retrieve the actual metric value from the player's raw stats.
     // Convert it to a number; if missing or non-numeric, default to 0.
-    const val = player.stats?.[metricName];
+    const val = player.stats?.[metricName]
     return {
-      attribute: metricName.replace(/_percentile$/, '').replace(/_/g, ' '),
+      attribute: metricName.replace(/_percentile$/, "").replace(/_/g, " "),
       [playerLabel]: val != null && !isNaN(Number(val)) ? Number(val) * 100 : 0,
-    };
-  });
-};
-
+    }
+  })
+}
 
 export default function PlayerStats({ clubId }: { clubId?: number }) {
   const [players, setPlayers] = useState<PlayerDisplayData[]>([])
@@ -162,23 +158,58 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
   const [suggestLoading, setSuggestLoading] = useState(false)
   const supabase = createClient()
 
+  // Helper function to format the Footylabs Score
+  const formatFootylabsScore = (score: number | string | null): string => {
+    if (score === null || score === undefined || score === "N.A") return "N/A"
+
+    // Convert to number if it's a string
+    const numScore = typeof score === "string" ? Number.parseFloat(score) : score
+
+    // Check if it's a valid number
+    if (isNaN(numScore)) return "N/A"
+
+    // Multiply by 10 and round to 1 decimal place
+    return (Math.round(numScore * 10 * 10) / 10).toFixed(1)
+  }
+
+  // Helper function to get the color based on the score tier
+  const getScoreColor = (score: number | string | null): string => {
+    if (score === null || score === undefined || score === "N.A") return ""
+
+    // Convert to number if it's a string
+    const numScore = typeof score === "string" ? Number.parseFloat(score) : score
+
+    // Check if it's a valid number
+    if (isNaN(numScore)) return ""
+
+    const scaledScore = numScore * 10 // Scale to 0-10 range
+
+    if (scaledScore <= 3.33) {
+      return "text-red-600 font-medium" // Tier 1 (lowest)
+    } else if (scaledScore <= 6.66) {
+      return "text-amber-500 font-medium" // Tier 2 (middle)
+    } else {
+      return "text-green-600 font-medium" // Tier 3 (highest)
+    }
+  }
+
   // Sample player comparison data for the radar chart
   const generatePlayerComparisonData = (player: PlayerDisplayData) => {
-    const metrics = sixMetricsWithLegend[player.position] || sixMetricsWithLegend["Centre Forward"];
-    const playerLabel = player.name || "Unknown";
+    const metrics = sixMetricsWithLegend[player.position] || sixMetricsWithLegend["Centre Forward"]
+    const playerLabel = player.name || "Unknown"
 
     return metrics.map(([metricName, _direction]) => {
-      const readableLabel = metricName.replace(/_percentile$/, "").replace(/_/g, " ");
-      const percentileVal = player.stats?.[metricName];
-      const rawPercentile = percentileVal != null && !isNaN(Number(percentileVal)) ? Number(percentileVal) * 100 : 0;
+      const readableLabel = metricName.replace(/_percentile$/, "").replace(/_/g, " ")
+      const percentileVal = player.stats?.[metricName]
+      const rawPercentile = percentileVal != null && !isNaN(Number(percentileVal)) ? Number(percentileVal) * 100 : 0
 
       return {
         attribute: readableLabel, // Label without "_percentile"
         [playerLabel]: rawPercentile,
         teamAverage: Math.floor(Math.random() * 99) + 1, // 🧪 Dummy average between 65–95
-      };
-    });
-  };
+      }
+    })
+  }
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -220,18 +251,18 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
 
       try {
         // Call the database function using rpc()
-        const { data, error: rpcError } = await supabase
-            .rpc("get_latest_players_for_club", { p_club_id: clubId })
+        const { data, error: rpcError } = await supabase.rpc("get_latest_players_for_club", { p_club_id: clubId })
 
-// Manually assert later when you know it's safe
-        const latestPlayers = data as {
-          id: number
-          name: string
-          position: string
-          stats: PlayerStats | null
-          updated_at: string
-        }[] | null
-
+        // Manually assert later when you know it's safe
+        const latestPlayers = data as
+          | {
+              id: number
+              name: string
+              position: string
+              stats: PlayerStats | null
+              updated_at: string
+            }[]
+          | null
 
         if (rpcError) {
           throw rpcError
@@ -243,7 +274,7 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
           // Map the fetched data (type should match 'LatestPlayer')
           const displayData: PlayerDisplayData[] = (latestPlayers || []).map((lp: LatestPlayer) => {
             // Access the stats JSON (if it exists) without further casts
-            const s = lp.stats;
+            const s = lp.stats
             return {
               id: lp.id,
               name: lp.name ?? "Unknown",
@@ -255,9 +286,10 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
               assists: s?.["Assists"] != null ? Number(s["Assists"]) : null,
               minutes: s?.["Minutes played"] != null ? Number(s["Minutes played"]) : "0",
               contractEnds: s?.["Contract expires"] != null ? String(s["Contract expires"]) : "Unknown",
-              stats: s // Save the raw stats
+              footylabsScore: s?.["avg_percentile"] != null ? Number(s["avg_percentile"]) : null,
+              stats: s, // Save the raw stats
             }
-          });
+          })
           setPlayers(displayData)
         }
       } catch (err: any) {
@@ -284,10 +316,10 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
   }
 
   const handlePlayerClick = (player: PlayerDisplayData) => {
-    setSelectedPlayer(player);
+    setSelectedPlayer(player)
     // Pass the entire player (which now includes raw stats) to generate the radar data.
-    setPlayerComparisonData(generatePlayerComparisonData(player));
-  };
+    setPlayerComparisonData(generatePlayerComparisonData(player))
+  }
 
   // Close player dialog
   const handleCloseDialog = () => {
@@ -296,24 +328,24 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
 
   const toggleLoan = (playerId: number) => {
     setLoanStatus((prev) => {
-      const newStatus = !prev[playerId];
+      const newStatus = !prev[playerId]
       if (newStatus) {
-        setShowLoanPopup(true);
-        setActiveLoanPlayerId(playerId);
+        setShowLoanPopup(true)
+        setActiveLoanPlayerId(playerId)
       }
       return {
         ...prev,
         [playerId]: newStatus,
-      };
-    });
-  };
+      }
+    })
+  }
 
   const getPlayerById = (id: number | null): PlayerDisplayData | null => {
-    if (id === null) return null;
-    return players.find((p) => p.id === id) ?? null;
-  };
+    if (id === null) return null
+    return players.find((p) => p.id === id) ?? null
+  }
 
-  const activePlayer = getPlayerById(activeLoanPlayerId);
+  const activePlayer = getPlayerById(activeLoanPlayerId)
 
   // Handle recruitment suggestion click
   const handleSuggestRecruitment = async () => {
@@ -439,44 +471,75 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
                 <TableHeader className="bg-gray-100">
                   <TableRow>
                     <TableHead className="cursor-pointer text-black font-medium" onClick={() => handleSort("name")}>
-                      <div className="flex items-center">Name <ArrowUpDown className="ml-1 h-4 w-4" /></div>
+                      <div className="flex items-center">
+                        Name <ArrowUpDown className="ml-1 h-4 w-4" />
+                      </div>
                     </TableHead>
                     <TableHead className="cursor-pointer text-black font-medium" onClick={() => handleSort("position")}>
-                      <div className="flex items-center">Position <ArrowUpDown className="ml-1 h-4 w-4" /></div>
+                      <div className="flex items-center">
+                        Position <ArrowUpDown className="ml-1 h-4 w-4" />
+                      </div>
                     </TableHead>
-                    <TableHead className="cursor-pointer text-center text-black font-medium" onClick={() => handleSort("age")}>
+                    <TableHead
+                      className="cursor-pointer text-center text-black font-medium"
+                      onClick={() => handleSort("age")}
+                    >
                       <div className="flex justify-center items-center gap-1">
                         <span>Age</span>
                         <ArrowUpDown className="h-4 w-4" />
                       </div>
                     </TableHead>
-                    <TableHead className="cursor-pointer text-center text-black font-medium" onClick={() => handleSort("goals")}>
+                    <TableHead
+                      className="cursor-pointer text-center text-black font-medium"
+                      onClick={() => handleSort("goals")}
+                    >
                       <div className="flex justify-center items-center gap-1">
                         <span>Goals</span>
                         <ArrowUpDown className="h-4 w-4" />
                       </div>
                     </TableHead>
-                    <TableHead className="cursor-pointer text-center text-black font-medium" onClick={() => handleSort("xG")}>
+                    <TableHead
+                      className="cursor-pointer text-center text-black font-medium"
+                      onClick={() => handleSort("xG")}
+                    >
                       <div className="flex justify-center items-center gap-1">
                         <span>xG</span>
                         <ArrowUpDown className="h-4 w-4" />
                       </div>
                     </TableHead>
-                    <TableHead className="cursor-pointer text-center text-black font-medium" onClick={() => handleSort("assists")}>
+                    <TableHead
+                      className="cursor-pointer text-center text-black font-medium"
+                      onClick={() => handleSort("assists")}
+                    >
                       <div className="flex justify-center items-center gap-1">
                         <span>Assists</span>
                         <ArrowUpDown className="h-4 w-4" />
                       </div>
                     </TableHead>
-                    <TableHead className="cursor-pointer text-center text-black font-medium" onClick={() => handleSort("minutes")}>
+                    <TableHead
+                      className="cursor-pointer text-center text-black font-medium"
+                      onClick={() => handleSort("minutes")}
+                    >
                       <div className="flex justify-center items-center gap-1">
                         <span>Minutes</span>
                         <ArrowUpDown className="h-4 w-4" />
                       </div>
                     </TableHead>
-                    <TableHead className="cursor-pointer text-center text-black font-medium" onClick={() => handleSort("contractEnds")}>
+                    <TableHead
+                      className="cursor-pointer text-center text-black font-medium"
+                      onClick={() => handleSort("contractEnds")}
+                    >
                       <div className="flex justify-center items-center gap-1">
                         <span>Contract Ends</span>
+                        <ArrowUpDown className="h-4 w-4" />
+                      </div>
+                    </TableHead>
+                    <TableHead
+                      className="cursor-pointer text-center text-black font-medium"
+                      onClick={() => handleSort("footylabsScore")}
+                    >
+                      <div className="flex justify-center items-center gap-1">
+                        <span>Footylabs Score</span>
                         <ArrowUpDown className="h-4 w-4" />
                       </div>
                     </TableHead>
@@ -512,52 +575,51 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
 
                   {/* Player Data */}
                   {!loading &&
-                      filteredPlayers.map((player) => (
-                          <TableRow
-                              key={player.id}
-                              className="cursor-pointer hover:bg-gray-50"
-                              onClick={() => handlePlayerClick(player)}
-                          >
-                            <TableCell className="font-medium">{player.name}</TableCell>
-                            <TableCell>
-                              <Badge
-                                  variant="outline"
-                                  className="bg-[#31348D]/10 text-[#31348D] border-[#31348D]/20"
-                              >
-                                {player.position}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-center">{player.age}</TableCell>
-                            <TableCell className="text-center">{player.goals}</TableCell>
-                            <TableCell className="text-center">{player.xG}</TableCell>
-                            <TableCell className="text-center">{player.assists}</TableCell>
-                            <TableCell className="text-center">{player.minutes}</TableCell>
-                            <TableCell className="text-center">{player.contractEnds}</TableCell>
-                            <TableCell className="text-center">
-                              <Switch
-                                  checked={!!loanStatus[player.id]}
-                                  onCheckedChange={() => toggleLoan(player.id)}
-                                  onClick={(e) => e.stopPropagation()} // 🛑 This prevents the row click
-                              />
-                            </TableCell>
-                          </TableRow>
-                      ))
-                  }
+                    filteredPlayers.map((player) => (
+                      <TableRow
+                        key={player.id}
+                        className="cursor-pointer hover:bg-gray-50"
+                        onClick={() => handlePlayerClick(player)}
+                      >
+                        <TableCell className="font-medium">{player.name}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="bg-[#31348D]/10 text-[#31348D] border-[#31348D]/20">
+                            {player.position}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">{player.age}</TableCell>
+                        <TableCell className="text-center">{player.goals}</TableCell>
+                        <TableCell className="text-center">{player.xG}</TableCell>
+                        <TableCell className="text-center">{player.assists}</TableCell>
+                        <TableCell className="text-center">{player.minutes}</TableCell>
+                        <TableCell className="text-center">{player.contractEnds}</TableCell>
+                        <TableCell className={`text-center ${getScoreColor(player.footylabsScore)}`}>
+                          {formatFootylabsScore(player.footylabsScore)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Switch
+                            checked={!!loanStatus[player.id]}
+                            onCheckedChange={() => toggleLoan(player.id)}
+                            onClick={(e) => e.stopPropagation()} // 🛑 This prevents the row click
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
 
                   {/* Empty States */}
                   {!loading && players.length === 0 && !error && (
-                      <TableRow>
-                        <TableCell colSpan={8} className="h-24 text-center">
-                          No players found for this club.
-                        </TableCell>
-                      </TableRow>
+                    <TableRow>
+                      <TableCell colSpan={8} className="h-24 text-center">
+                        No players found for this club.
+                      </TableCell>
+                    </TableRow>
                   )}
                   {!loading && players.length > 0 && filteredPlayers.length === 0 && !error && (
-                      <TableRow>
-                        <TableCell colSpan={8} className="h-24 text-center">
-                          No players match the current filter.
-                        </TableCell>
-                      </TableRow>
+                    <TableRow>
+                      <TableCell colSpan={8} className="h-24 text-center">
+                        No players match the current filter.
+                      </TableCell>
+                    </TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -608,7 +670,7 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
           </DialogHeader>
 
           <div className="mt-4">
-            <div className="mb-4 grid grid-cols-3 gap-4">
+            <div className="mb-4 grid grid-cols-4 gap-4">
               <div className="rounded-lg bg-gray-50 p-3 text-center">
                 <div className="text-sm text-gray-500">Minutes</div>
                 <div className="text-xl font-bold text-[#31348D]">{selectedPlayer?.minutes}</div>
@@ -620,6 +682,12 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
               <div className="rounded-lg bg-gray-50 p-3 text-center">
                 <div className="text-sm text-gray-500">Assists</div>
                 <div className="text-xl font-bold text-[#31348D]">{selectedPlayer?.assists}</div>
+              </div>
+              <div className="rounded-lg bg-gray-50 p-3 text-center">
+                <div className="text-sm text-gray-500">Footylabs Score</div>
+                <div className={`text-xl font-bold ${getScoreColor(selectedPlayer?.footylabsScore)}`}>
+                  {formatFootylabsScore(selectedPlayer?.footylabsScore)}
+                </div>
               </div>
             </div>
 
@@ -643,34 +711,40 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
                     <PolarAngleAxis dataKey="attribute" />
                     <PolarRadiusAxis angle={30} domain={[0, 100]} />
                     <ChartTooltip
-                        content={({ active, payload, label }) => {
-                          if (!active || !payload || payload.length === 0) return null;
+                      content={({ active, payload, label }) => {
+                        if (!active || !payload || payload.length === 0) return null
 
-                          return (
-                              <div className="rounded-md border bg-white p-3 shadow-sm text-xs">
-                                {/* Stat name with (percentile) */}
-                                <div className="font-semibold text-[#31348D]">
-                                  {label} <span className="text-[#31348D]">(percentile)</span>
-                                </div>
+                        return (
+                          <div className="rounded-md border bg-white p-3 shadow-sm text-xs">
+                            {/* Stat name with (percentile) */}
+                            <div className="font-semibold text-[#31348D]">
+                              {label} <span className="text-[#31348D]">(percentile)</span>
+                            </div>
 
-                                {/* Values for each line (player + team) */}
-                                <div className="mt-1 space-y-1">
-                                  {payload.map((entry, idx) => {
-                                    const color = entry.name === "Team Average" ? entry.color : "#9CA3AF";
-                                    const value = entry.value;
-                                    const formattedValue = isNaN(Number(value))
-                                        ? "-"
-                                        : `${Number(value).toFixed(0)}%`;
+                            {/* Values for each line (player + team) */}
+                            <div className="mt-1 space-y-1">
+                              {payload.map((entry, idx) => {
+                                const color = entry.name === "Team Average" ? entry.color : "#9CA3AF"
+                                const value = entry.value
+                                const formattedValue = isNaN(Number(value)) ? "-" : `${Number(value).toFixed(0)}%`
 
-                                    return (
-                                        <div key={idx} className="flex justify-between items-center">
-                <span className="flex items-center gap-1 text-[#4B5563]">
-                  <span className="inline-block h-2 w-2 rounded-sm" style={{ backgroundColor: color }}></span><span className="mr-1">{entry.name}</span></span><span className="font-mono text-[#31348D] font-medium">{formattedValue}</span></div>);
-                                  })}
-                                </div>
-                              </div>
-                          );
-                        }}
+                                return (
+                                  <div key={idx} className="flex justify-between items-center">
+                                    <span className="flex items-center gap-1 text-[#4B5563]">
+                                      <span
+                                        className="inline-block h-2 w-2 rounded-sm"
+                                        style={{ backgroundColor: color }}
+                                      ></span>
+                                      <span className="mr-1">{entry.name}</span>
+                                    </span>
+                                    <span className="font-mono text-[#31348D] font-medium">{formattedValue}</span>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )
+                      }}
                     />
                     <Radar
                       name={selectedPlayer.name}
@@ -696,69 +770,74 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
       </Dialog>
 
       {activePlayer && (
-          <Dialog open={showLoanPopup} onOpenChange={setShowLoanPopup}>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle className="text-[#31348D]">
-                  Make <span className="text-[#31348D] font-extrabold">{activePlayer.name}</span> available for loan
-                </DialogTitle>
-                <DialogDescription className="text-gray-600 mt-1">
-                  You just marked <strong>{activePlayer.name}</strong> as available for loan. <br />
-                  Who should be able to see this availability?
-                </DialogDescription>
-              </DialogHeader>
+        <Dialog open={showLoanPopup} onOpenChange={setShowLoanPopup}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-[#31348D]">
+                Make <span className="text-[#31348D] font-extrabold">{activePlayer.name}</span> available for loan
+              </DialogTitle>
+              <DialogDescription className="text-gray-600 mt-1">
+                You just marked <strong>{activePlayer.name}</strong> as available for loan. <br />
+                Who should be able to see this availability?
+              </DialogDescription>
+            </DialogHeader>
 
-              <div className="flex flex-col gap-2 mt-4">
-                <Button
-                    variant={selectedAudience === "clubs" ? "default" : "outline"}
-                    className={selectedAudience === "clubs" ? "w-full bg-[#31348D] text-white" : "w-full"}
-                    onClick={() => setSelectedAudience("clubs")}
-                >
-                  Clubs
-                </Button>
+            <div className="flex flex-col gap-2 mt-4">
+              <Button
+                variant={selectedAudience === "clubs" ? "default" : "outline"}
+                className={selectedAudience === "clubs" ? "w-full bg-[#31348D] text-white" : "w-full"}
+                onClick={() => setSelectedAudience("clubs")}
+              >
+                Clubs
+              </Button>
 
-                <Button
-                    variant={selectedAudience === "agents" ? "default" : "outline"}
-                    className={selectedAudience === "agents" ? "w-full bg-[#31348D] text-white" : "w-full"}
-                    onClick={() => setSelectedAudience("agents")}
-                >
-                  Agents
-                </Button>
+              <Button
+                variant={selectedAudience === "agents" ? "default" : "outline"}
+                className={selectedAudience === "agents" ? "w-full bg-[#31348D] text-white" : "w-full"}
+                onClick={() => setSelectedAudience("agents")}
+              >
+                Agents
+              </Button>
 
-                <Button
-                    variant={selectedAudience === "both" ? "default" : "outline"}
-                    className={selectedAudience === "both" ? "w-full bg-[#31348D] text-white" : "w-full"}
-                    onClick={() => setSelectedAudience("both")}
-                >
-                  Clubs and Agents
-                </Button>
-              </div>
+              <Button
+                variant={selectedAudience === "both" ? "default" : "outline"}
+                className={selectedAudience === "both" ? "w-full bg-[#31348D] text-white" : "w-full"}
+                onClick={() => setSelectedAudience("both")}
+              >
+                Clubs and Agents
+              </Button>
+            </div>
 
-              <div className="flex justify-end mt-4 space-x-2">
-                <Button variant="ghost" onClick={() => {
+            <div className="flex justify-end mt-4 space-x-2">
+              <Button
+                variant="ghost"
+                onClick={() => {
                   if (activeLoanPlayerId !== null) {
                     setLoanStatus((prev) => ({
                       ...prev,
                       [activeLoanPlayerId]: false,
-                    }));
+                    }))
                   }
 
-                  setShowLoanPopup(false);
-                  setActiveLoanPlayerId(null);
-                  setSelectedAudience(null); // optional: reset radio choice too
-                }}>Cancel</Button>
-                <Button
-                    onClick={() => {
-                      // Later: handle selected audience with activePlayer
-                      setShowLoanPopup(false)
-                    }}
-                    disabled={!selectedAudience}
-                >
-                  Confirm
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+                  setShowLoanPopup(false)
+                  setActiveLoanPlayerId(null)
+                  setSelectedAudience(null) // optional: reset radio choice too
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  // Later: handle selected audience with activePlayer
+                  setShowLoanPopup(false)
+                }}
+                disabled={!selectedAudience}
+              >
+                Confirm
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </>
   )
