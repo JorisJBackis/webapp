@@ -47,6 +47,8 @@ export type PlayerDisplayData = {
   minutes: number | string
   contractEnds: string
   footylabsScore: number | string | null
+  onLoan: boolean
+  loanVisibility: string | null
   // Include raw stats so you can use them later if needed.
   stats?: PlayerStats | null
 }
@@ -152,11 +154,17 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
   const [clubData, setClubData] = useState<{ id: number; name: string } | null>(null)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [loanStatus, setLoanStatus] = useState<Record<number, boolean>>({})
+  const [loanVisibilityMap, setLoanVisibilityMap] = useState<Record<number, string | null>>({})
   const [showLoanPopup, setShowLoanPopup] = useState(false)
   const [activeLoanPlayerId, setActiveLoanPlayerId] = useState<number | null>(null)
   const [selectedAudience, setSelectedAudience] = useState<string | null>(null)
   const [suggestLoading, setSuggestLoading] = useState(false)
   const supabase = createClient()
+
+
+
+
+
 
   // Helper function to format the Footylabs Score
   const formatFootylabsScore = (score: number | string | null): string => {
@@ -288,9 +296,34 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
               contractEnds: s?.["Contract expires"] != null ? String(s["Contract expires"]) : "Unknown",
               footylabsScore: s?.["avg_percentile"] != null ? Number(s["avg_percentile"]) : null,
               stats: s, // Save the raw stats
+              onLoan: false,
+              loanVisibility: null,
             }
           })
-          setPlayers(displayData)
+          // — now pull the existing loan flags for this club in one shot —
+          const { data: loanRows, error: loanError } = await supabase
+              .from("players")
+              .select("id, on_loan, loan_visibility")
+              .eq("club_id", clubId)
+
+          if (!loanError && loanRows) {
+            // build two lookup maps
+            const statusMap: Record<number, boolean> = {}
+            const visMap: Record<number, string | null> = {}
+            loanRows.forEach((r) => {
+              statusMap[r.id] = r.on_loan
+              visMap[r.id] = r.loan_visibility
+            })
+            setLoanStatus(statusMap)
+            setLoanVisibilityMap(visMap)
+
+            displayData.forEach(p => {
+              p.onLoan         = statusMap[p.id] ?? false
+              p.loanVisibility = visMap[p.id]    ?? null
+            })
+
+            setPlayers(displayData)
+          }
         }
       } catch (err: any) {
         console.error("Error fetching players via RPC:", err)
@@ -329,16 +362,73 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
   const toggleLoan = (playerId: number) => {
     setLoanStatus((prev) => {
       const newStatus = !prev[playerId]
-      if (newStatus) {
+
+      if (!newStatus) {
+        updateLoanStatusInDB(playerId, false, null)
+      } else {
         setShowLoanPopup(true)
         setActiveLoanPlayerId(playerId)
       }
+
       return {
         ...prev,
         [playerId]: newStatus,
       }
     })
   }
+
+
+  const updateLoanStatusInDB = async (
+      playerId: number,
+      onLoan: boolean,
+      visibility: string | null
+  ) => {
+    const { error } = await supabase
+        .from("players")
+        .update({ on_loan: onLoan, loan_visibility: visibility })
+        .eq("id", playerId);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update loan status in the database.",
+        variant: "destructive",
+      });
+    } else {
+      setLoanVisibilityMap((prev) => ({
+        ...prev,
+        [playerId]: visibility,
+      }));
+
+      const visLabels: Record<string, string> = {
+        clubs: "clubs",
+        agents: "agents",
+        both: "both clubs and agents",
+      };
+
+      toast({
+        title: "Loan Status Updated",
+        // render a React node instead of a plain string:
+        description: (
+            <>
+              Player marked as {onLoan ? "on loan" : "not on loan"}
+              {visibility && (
+                  <>
+                    {" "}
+                    (visible to{" "}
+                    <strong className="font-bold">
+                      {visLabels[visibility]}
+                    </strong>
+                    )
+                  </>
+              )}
+            </>
+        ),
+      });
+    }
+  };
+
+
 
   const getPlayerById = (id: number | null): PlayerDisplayData | null => {
     if (id === null) return null
@@ -408,6 +498,13 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
         return sortDirection === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)
       } else if (sortColumn === "position") {
         return sortDirection === "asc" ? a.position.localeCompare(b.position) : b.position.localeCompare(a.position)
+      } else if (sortColumn === "onLoan") {
+        // read loan flag from your loanStatus map
+        const aLoan = loanStatus[a.id] ? 1 : 0
+        const bLoan = loanStatus[b.id] ? 1 : 0
+        return sortDirection === "asc"
+        ? aLoan - bLoan
+        : bLoan - aLoan
       } else {
         // For numeric columns
         const aValue = a[sortColumn as keyof PlayerDisplayData] as number
@@ -543,21 +640,27 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
                         <ArrowUpDown className="h-4 w-4" />
                       </div>
                     </TableHead>
-                    <TableHead className="text-cente text-black font-medium">
-                      <TooltipProvider delayDuration={200}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="flex items-center justify-center gap-1 cursor-default">
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        {/* AsChild makes the TableHead itself be the hover‐target + click target */}
+                        <TooltipTrigger asChild>
+                          <TableHead
+                              className="cursor-pointer text-center text-black font-medium"
+                              onClick={() => handleSort("onLoan")}>
+                            <div className="inline-flex items-center justify-center gap-1">
                               <span>On Loan?</span>
+                              <ArrowUpDown className="h-4 w-4" />
                               <Info className="h-4 w-4 text-muted-foreground" />
                             </div>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" sideOffset={22} align="end">
-                            <p className="text-sm text-[#31348D] font-medium">Is this player available for loan?</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </TableHead>
+                          </TableHead>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" sideOffset={6} align="end">
+                          <p className="text-sm text-[#31348D] font-medium">
+                            Is this player available for loan?
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -596,12 +699,31 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
                         <TableCell className={`text-center ${getScoreColor(player.footylabsScore)}`}>
                           {formatFootylabsScore(player.footylabsScore)}
                         </TableCell>
-                        <TableCell className="text-center">
+                        <TableCell className="flex justify-center items-center space-x-2">
+                          {/* the toggle */}
                           <Switch
-                            checked={!!loanStatus[player.id]}
-                            onCheckedChange={() => toggleLoan(player.id)}
-                            onClick={(e) => e.stopPropagation()} // 🛑 This prevents the row click
+                              checked={!!loanStatus[player.id]}
+                              onCheckedChange={() => toggleLoan(player.id)}
+                              onClick={(e) => e.stopPropagation()}
                           />
+
+                          {/* the info‐tooltip */}
+                          <TooltipProvider delayDuration={100}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Info className="h-4 w-4 text-muted-foreground cursor-pointer" />
+                              </TooltipTrigger>
+                              <TooltipContent side="top" align="center">
+                                {(() => {
+                                  const vis = loanVisibilityMap[player.id] || "none"
+                                  if (vis === "both") return "Visible to clubs and agents"
+                                  if (vis === "clubs") return "Visible to clubs only"
+                                  if (vis === "agents") return "Visible to agents only"
+                                  return "Not marked for loan"
+                                })()}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -827,11 +949,15 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
                 Cancel
               </Button>
               <Button
-                onClick={() => {
-                  // Later: handle selected audience with activePlayer
-                  setShowLoanPopup(false)
-                }}
-                disabled={!selectedAudience}
+                  onClick={() => {
+                    if (activeLoanPlayerId !== null && selectedAudience) {
+                      updateLoanStatusInDB(activeLoanPlayerId, true, selectedAudience)
+                    }
+                    setShowLoanPopup(false)
+                    setActiveLoanPlayerId(null)
+                    setSelectedAudience(null)
+                  }}
+                  disabled={!selectedAudience}
               >
                 Confirm
               </Button>
