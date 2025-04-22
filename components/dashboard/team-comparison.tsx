@@ -6,13 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 
+// ACTION: Replace the old TeamStats type with this one
 type TeamStats = {
-  possession: number
-  duelSuccess: number
-  setPieceSuccess: number
-  passAccuracy: number
-  shotAccuracy: number
-}
+  shotsOnTarget: number;
+  shotsAgainstOnTarget: number;
+  touchesInBox: number;
+  ppda: number;
+  possession: number; // Keeping this one from the original list
+};
 
 type ComparisonDataItem = {
   attribute: string
@@ -55,39 +56,35 @@ export default function TeamComparison({ clubId }: { clubId?: number }) {
           return
         }
 
-        // Extract stats from JSON and calculate your team's averages
         const teamStats: TeamStats = {
-          possession: calculateAverageFromJson(teamData, "Possession %"),
-          duelSuccess: calculateAverageFromJson(teamData, "Duel Success %"),
-          setPieceSuccess: calculateAverageFromJson(teamData, "Set Piece Success %"),
-          passAccuracy: calculateAverageFromJson(teamData, "Pass Accuracy"),
-          shotAccuracy: calculateAverageFromJson(teamData, "Shot Accuracy"),
-        }
+          shotsOnTarget: calculateAverageFromJson(teamData, "Shots on Target"),
+          shotsAgainstOnTarget: calculateAverageFromJson(teamData, "Shots Against on Target"),
+          touchesInBox: calculateAverageFromJson(teamData, "Touches in Penalty Area"),
+          ppda: calculateAverageFromJson(teamData, "PPDA"),
+          possession: calculateAverageFromJson(teamData, "Possession %"), // This line remains
+        };
 
         // Calculate league averages
         const leagueStats: TeamStats = {
-          possession: calculateAverageFromJson(allTeamsData, "Possession %"),
-          duelSuccess: calculateAverageFromJson(allTeamsData, "Duel Success %"),
-          setPieceSuccess: calculateAverageFromJson(allTeamsData, "Set Piece Success %"),
-          passAccuracy: calculateAverageFromJson(allTeamsData, "Pass Accuracy"),
-          shotAccuracy: calculateAverageFromJson(allTeamsData, "Shot Accuracy"),
-        }
+          shotsOnTarget: calculateAverageFromJson(allTeamsData, "Shots on Target"),
+          shotsAgainstOnTarget: calculateAverageFromJson(allTeamsData, "Shots Against on Target"),
+          touchesInBox: calculateAverageFromJson(allTeamsData, "Touches in Penalty Area"),
+          ppda: calculateAverageFromJson(allTeamsData, "PPDA"),
+          possession: calculateAverageFromJson(allTeamsData, "Possession %"), // This line remains
+        };
 
         console.log("Team stats:", teamStats)
         console.log("League stats:", leagueStats)
 
         // Format data for the radar chart
+        // ACTION: Replace the old formattedData array with this
         const formattedData: ComparisonDataItem[] = [
-          { attribute: "Possession", yourTeam: teamStats.possession, leagueAverage: leagueStats.possession },
-          { attribute: "Duel Success %", yourTeam: teamStats.duelSuccess, leagueAverage: leagueStats.duelSuccess },
-          {
-            attribute: "Set Piece Success %",
-            yourTeam: teamStats.setPieceSuccess,
-            leagueAverage: leagueStats.setPieceSuccess,
-          },
-          { attribute: "Pass Accuracy", yourTeam: teamStats.passAccuracy, leagueAverage: leagueStats.passAccuracy },
-          { attribute: "Shot Accuracy", yourTeam: teamStats.shotAccuracy, leagueAverage: leagueStats.shotAccuracy },
-        ]
+          { attribute: "Shots For (Target)", yourTeam: teamStats.shotsOnTarget, leagueAverage: leagueStats.shotsOnTarget },
+          { attribute: "Shots Against (Target)", yourTeam: teamStats.shotsAgainstOnTarget, leagueAverage: leagueStats.shotsAgainstOnTarget },
+          { attribute: "Touches in Box", yourTeam: teamStats.touchesInBox, leagueAverage: leagueStats.touchesInBox },
+          { attribute: "PPDA", yourTeam: teamStats.ppda, leagueAverage: leagueStats.ppda }, // Passes Per Defensive Action - lower is often better, might need interpretation/scaling later
+          { attribute: "Possession %", yourTeam: teamStats.possession, leagueAverage: leagueStats.possession },
+        ];
 
         setComparisonData(formattedData)
         setLoading(false)
