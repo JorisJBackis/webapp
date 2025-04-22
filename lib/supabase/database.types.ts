@@ -7,6 +7,31 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          operationName?: string
+          query?: string
+          variables?: Json
+          extensions?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       clubs: {
@@ -48,39 +73,98 @@ export type Database = {
         }
         Relationships: []
       }
+      player_listings: {
+        Row: {
+          asking_price: number | null
+          created_at: string
+          listed_by_club_id: number
+          listing_id: number
+          listing_notes: string | null
+          listing_type: Database["public"]["Enums"]["listing_type_enum"]
+          loan_duration: string | null
+          loan_fee: number | null
+          status: Database["public"]["Enums"]["listing_status_enum"]
+          updated_at: string
+          wyscout_player_id: number
+        }
+        Insert: {
+          asking_price?: number | null
+          created_at?: string
+          listed_by_club_id: number
+          listing_id?: number
+          listing_notes?: string | null
+          listing_type: Database["public"]["Enums"]["listing_type_enum"]
+          loan_duration?: string | null
+          loan_fee?: number | null
+          status?: Database["public"]["Enums"]["listing_status_enum"]
+          updated_at?: string
+          wyscout_player_id: number
+        }
+        Update: {
+          asking_price?: number | null
+          created_at?: string
+          listed_by_club_id?: number
+          listing_id?: number
+          listing_notes?: string | null
+          listing_type?: Database["public"]["Enums"]["listing_type_enum"]
+          loan_duration?: string | null
+          loan_fee?: number | null
+          status?: Database["public"]["Enums"]["listing_status_enum"]
+          updated_at?: string
+          wyscout_player_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_listings_listed_by_club_id_fkey"
+            columns: ["listed_by_club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           club_id: number | null
           created_at: string
           id: number
-          loan_visibility: string | null
+          loan_visibility:
+            | Database["public"]["Enums"]["loan_visibility_enum"]
+            | null
           name: string
           on_loan: boolean | null
           position: string
           stats: Json
           updated_at: string
+          wyscout_player_id: number | null
         }
         Insert: {
           club_id?: number | null
           created_at?: string
           id?: number
-          loan_visibility?: string | null
+          loan_visibility?:
+            | Database["public"]["Enums"]["loan_visibility_enum"]
+            | null
           name: string
           on_loan?: boolean | null
           position: string
           stats?: Json
           updated_at?: string
+          wyscout_player_id?: number | null
         }
         Update: {
           club_id?: number | null
           created_at?: string
           id?: number
-          loan_visibility?: string | null
+          loan_visibility?:
+            | Database["public"]["Enums"]["loan_visibility_enum"]
+            | null
           name?: string
           on_loan?: boolean | null
           position?: string
           stats?: Json
           updated_at?: string
+          wyscout_player_id?: number | null
         }
         Relationships: [
           {
@@ -542,9 +626,44 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_my_player_listings: {
+        Args: { requesting_club_id: number }
+        Returns: {
+          listing_id: number
+          listed_by_club_id: number
+          wyscout_player_id_out: number
+          listing_type: string
+          status: string
+          asking_price: number
+          loan_fee: number
+          loan_duration: string
+          listing_created_at: string
+          player_name: string
+          player_position: string
+        }[]
+      }
+      get_player_listings: {
+        Args: { requesting_club_id: number; listing_status?: string }
+        Returns: {
+          listing_id: number
+          listed_by_club_id: number
+          wyscout_player_id_out: number
+          listing_type: string
+          status: string
+          asking_price: number
+          loan_fee: number
+          loan_duration: string
+          listing_created_at: string
+          player_name: string
+          player_position: string
+          listed_by_club_name: string
+        }[]
+      }
     }
     Enums: {
-      [_ in never]: never
+      listing_status_enum: "active" | "inactive" | "completed"
+      listing_type_enum: "loan" | "transfer"
+      loan_visibility_enum: "clubs" | "agents" | "both"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -658,7 +777,14 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  public: {
+  graphql_public: {
     Enums: {},
+  },
+  public: {
+    Enums: {
+      listing_status_enum: ["active", "inactive", "completed"],
+      listing_type_enum: ["loan", "transfer"],
+      loan_visibility_enum: ["clubs", "agents", "both"],
+    },
   },
 } as const
