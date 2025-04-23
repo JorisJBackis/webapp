@@ -315,6 +315,18 @@ export type Database = {
           "Free Kicks with Shots": number | null
           "Goal Kicks": number | null
           Goals: number | null
+          "Goals Conceded 0-15": number | null
+          "Goals Conceded 16-30": number | null
+          "Goals Conceded 31-45": number | null
+          "Goals Conceded 46-60": number | null
+          "Goals Conceded 61-75": number | null
+          "Goals Conceded 76-90": number | null
+          "Goals Scored 0-15": number | null
+          "Goals Scored 16-30": number | null
+          "Goals Scored 31-45": number | null
+          "Goals Scored 46-60": number | null
+          "Goals Scored 61-75": number | null
+          "Goals Scored 76-90": number | null
           "High Losses": number | null
           "High Recoveries": number | null
           Interceptions: number | null
@@ -424,6 +436,18 @@ export type Database = {
           "Free Kicks with Shots"?: number | null
           "Goal Kicks"?: number | null
           Goals?: number | null
+          "Goals Conceded 0-15"?: number | null
+          "Goals Conceded 16-30"?: number | null
+          "Goals Conceded 31-45"?: number | null
+          "Goals Conceded 46-60"?: number | null
+          "Goals Conceded 61-75"?: number | null
+          "Goals Conceded 76-90"?: number | null
+          "Goals Scored 0-15"?: number | null
+          "Goals Scored 16-30"?: number | null
+          "Goals Scored 31-45"?: number | null
+          "Goals Scored 46-60"?: number | null
+          "Goals Scored 61-75"?: number | null
+          "Goals Scored 76-90"?: number | null
           "High Losses"?: number | null
           "High Recoveries"?: number | null
           Interceptions?: number | null
@@ -533,6 +557,18 @@ export type Database = {
           "Free Kicks with Shots"?: number | null
           "Goal Kicks"?: number | null
           Goals?: number | null
+          "Goals Conceded 0-15"?: number | null
+          "Goals Conceded 16-30"?: number | null
+          "Goals Conceded 31-45"?: number | null
+          "Goals Conceded 46-60"?: number | null
+          "Goals Conceded 61-75"?: number | null
+          "Goals Conceded 76-90"?: number | null
+          "Goals Scored 0-15"?: number | null
+          "Goals Scored 16-30"?: number | null
+          "Goals Scored 31-45"?: number | null
+          "Goals Scored 46-60"?: number | null
+          "Goals Scored 61-75"?: number | null
+          "Goals Scored 76-90"?: number | null
           "High Losses"?: number | null
           "High Recoveries"?: number | null
           Interceptions?: number | null
@@ -621,9 +657,14 @@ export type Database = {
         Returns: {
           id: number
           name: string
-          position: string
+          club_id: number
+          player_pos: string
           stats: Json
+          created_at: string
           updated_at: string
+          on_loan: boolean
+          loan_visibility: string
+          wyscout_player_id: number
         }[]
       }
       get_my_player_listings: {
@@ -639,7 +680,7 @@ export type Database = {
           loan_duration: string
           listing_created_at: string
           player_name: string
-          player_position: string
+          player_pos: string
         }[]
       }
       get_player_listings: {

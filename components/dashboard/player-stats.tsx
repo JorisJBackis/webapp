@@ -286,7 +286,7 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
             return {
               id: lp.id,
               name: lp.name ?? "Unknown",
-              position: lp.position ?? "Unknown",
+              position: lp.player_pos ?? "Unknown",
               // Use the exact keys from your stats JSON:
               age: s?.["Age"] != null ? Number(s["Age"]) : null,
               goals: s?.["Goals"] != null ? Number(s["Goals"]) : "0",
