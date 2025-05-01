@@ -636,7 +636,7 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
                       onClick={() => handleSort("footylabsScore")}
                     >
                       <div className="flex justify-center items-center gap-1">
-                        <span>Footylabs Score</span>
+                        <span>FootyLabs Score</span>
                         <ArrowUpDown className="h-4 w-4" />
                       </div>
                     </TableHead>

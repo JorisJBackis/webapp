@@ -700,6 +700,44 @@ export type Database = {
           listed_by_club_name: string
         }[]
       }
+      get_scouting_players: {
+        Args: {
+          p_requesting_club_id: number
+          p_name_filter?: string
+          p_position_filter?: string
+          p_min_height?: number
+          p_max_height?: number
+          p_foot_filter?: string
+          p_sort_column?: string
+          p_sort_direction?: string
+          p_contract_start?: string
+          p_contract_end?: string
+          p_limit?: number
+          p_offset?: number
+        }
+        Returns: {
+          player_id: number
+          wyscout_player_id: number
+          name: string
+          club_id: number
+          player_pos: string
+          stats: Json
+          updated_at: string
+          on_loan: boolean
+          loan_visibility: string
+          age: number
+          height: number
+          foot: string
+          contract_expiry: string
+          avg_percentile: number
+          club_name: string
+          total_count: number
+        }[]
+      }
+      try_cast_to_date: {
+        Args: { p_text: string }
+        Returns: string
+      }
     }
     Enums: {
       listing_status_enum: "active" | "inactive" | "completed"
