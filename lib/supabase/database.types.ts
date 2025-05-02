@@ -205,6 +205,68 @@ export type Database = {
           },
         ]
       }
+      recruitment_needs: {
+        Row: {
+          budget_loan_fee_max: number | null
+          budget_transfer_max: number | null
+          created_at: string
+          created_by_club_id: number
+          max_age: number | null
+          max_height: number | null
+          min_age: number | null
+          min_height: number | null
+          need_id: number
+          notes: string | null
+          position_needed: string
+          preferred_foot: string | null
+          salary_range: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          budget_loan_fee_max?: number | null
+          budget_transfer_max?: number | null
+          created_at?: string
+          created_by_club_id: number
+          max_age?: number | null
+          max_height?: number | null
+          min_age?: number | null
+          min_height?: number | null
+          need_id?: number
+          notes?: string | null
+          position_needed: string
+          preferred_foot?: string | null
+          salary_range?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          budget_loan_fee_max?: number | null
+          budget_transfer_max?: number | null
+          created_at?: string
+          created_by_club_id?: number
+          max_age?: number | null
+          max_height?: number | null
+          min_age?: number | null
+          min_height?: number | null
+          need_id?: number
+          notes?: string | null
+          position_needed?: string
+          preferred_foot?: string | null
+          salary_range?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruitment_needs_created_by_club_id_fkey"
+            columns: ["created_by_club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recruitment_suggestions: {
         Row: {
           club_id: number | null
@@ -683,6 +745,25 @@ export type Database = {
           player_pos: string
         }[]
       }
+      get_my_recruitment_needs: {
+        Args: { p_requesting_club_id: number }
+        Returns: {
+          need_id: number
+          created_by_club_id: number
+          position_needed: string
+          min_age: number
+          max_age: number
+          min_height: number
+          max_height: number
+          preferred_foot: string
+          status: string
+          budget_transfer_max: number
+          budget_loan_fee_max: number
+          salary_range: string
+          notes: string
+          need_created_at: string
+        }[]
+      }
       get_player_listings: {
         Args: { requesting_club_id: number; listing_status?: string }
         Returns: {
@@ -698,6 +779,25 @@ export type Database = {
           player_name: string
           player_position: string
           listed_by_club_name: string
+        }[]
+      }
+      get_recruitment_needs: {
+        Args: { p_requesting_club_id: number }
+        Returns: {
+          need_id: number
+          created_by_club_id: number
+          position_needed: string
+          min_age: number
+          max_age: number
+          min_height: number
+          max_height: number
+          preferred_foot: string
+          budget_transfer_max: number
+          budget_loan_fee_max: number
+          salary_range: string
+          notes: string
+          need_created_at: string
+          posting_club_name: string
         }[]
       }
       get_scouting_players: {

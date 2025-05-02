@@ -183,6 +183,7 @@ export default function BrowseListings() {
                                     <TableCell>{listing.listing_created_at ? new Date(listing.listing_created_at).toLocaleDateString() : 'N/A'}</TableCell>
                                     <TableCell className="text-right">
                                         <Button variant="outline" size="sm">View Details</Button> {/* TODO: Implement action */}
+                                        <Button size="sm" variant="default" className="ml-2">Contact</Button>
                                     </TableCell>
                                 </TableRow>
                             ))}
