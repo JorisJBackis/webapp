@@ -128,11 +128,7 @@ export type Database = {
           club_id: number | null
           created_at: string
           id: number
-          loan_visibility:
-            | Database["public"]["Enums"]["loan_visibility_enum"]
-            | null
           name: string
-          on_loan: boolean | null
           position: string
           stats: Json
           updated_at: string
@@ -142,11 +138,7 @@ export type Database = {
           club_id?: number | null
           created_at?: string
           id?: number
-          loan_visibility?:
-            | Database["public"]["Enums"]["loan_visibility_enum"]
-            | null
           name: string
-          on_loan?: boolean | null
           position: string
           stats?: Json
           updated_at?: string
@@ -156,11 +148,7 @@ export type Database = {
           club_id?: number | null
           created_at?: string
           id?: number
-          loan_visibility?:
-            | Database["public"]["Enums"]["loan_visibility_enum"]
-            | null
           name?: string
-          on_loan?: boolean | null
           position?: string
           stats?: Json
           updated_at?: string
@@ -704,16 +692,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_latest_players_by_club: {
-        Args: { p_club_id: number }
-        Returns: {
-          id: number
-          name: string
-          position: string
-          stats: Json
-          updated_at: string
-        }[]
-      }
       get_latest_players_for_club: {
         Args: { p_club_id: number }
         Returns: {
@@ -724,9 +702,8 @@ export type Database = {
           stats: Json
           created_at: string
           updated_at: string
-          on_loan: boolean
-          loan_visibility: string
           wyscout_player_id: number
+          listing_status: string
         }[]
       }
       get_my_player_listings: {
@@ -823,14 +800,13 @@ export type Database = {
           player_pos: string
           stats: Json
           updated_at: string
-          on_loan: boolean
-          loan_visibility: string
           age: number
           height: number
           foot: string
           contract_expiry: string
           avg_percentile: number
           club_name: string
+          listing_status: string
           total_count: number
         }[]
       }
