@@ -1,40 +1,43 @@
 // components/common/player-detail-modal.tsx
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Loader2, X } from 'lucide-react';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, Tooltip as RechartsTooltip } from "recharts";
-import { ChartContainer } from "@/components/ui/chart"; // Assuming ChartTooltipContent is part of this or imported separately
-import { Tooltip as ShadTooltip, TooltipContent as ShadTooltipContent, TooltipProvider } from "@/components/ui/tooltip"; // Shadcn Tooltip for button
-import { toast } from '@/components/ui/use-toast'; // Assuming used by suggest button
-import { createClient } from '@/lib/supabase/client'; // For suggest button if kept
+import { ChartContainer } from "@/components/ui/chart";
+import { Tooltip as ShadTooltip, TooltipContent as ShadTooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { toast } from '@/components/ui/use-toast';
+import { createClient } from '@/lib/supabase/client';
+import type { Database } from '@/lib/supabase/database.types'; // Ensure correct path
 
 // --- Type Definitions ---
-// Generic type for player data passed to this modal
-// It should have 'name', 'position' (or 'player_pos'), and 'stats'
 export type PlayerDataForModal = {
-    id: number; // For logging, keys, etc.
+    id: number;
     name: string | null;
-    player_pos?: string | null;   // From get_scouting_players
-    position?: string | null;    // From get_latest_players_for_club (PlayerStats.tsx)
-    stats: { [key: string]: number | string | boolean | null } | null; // The raw stats JSON
-    // Add other fields if your "Suggest Recruitment" button needs them, e.g., club_id
-    club_id?: number | null; // Example if suggest button needs it
-    wyscout_player_id?: number | string | null; // Example
+    player_pos?: string | null;
+    position?: string | null;
+    stats: { [key: string]: number | string | boolean | null } | null;
+    club_id?: number | null;
+    wyscout_player_id?: number | string | null;
+    player_league_name?: string | null; // For fetching correct league averages
 };
 
-// Type for the processed data points for the radar chart and tooltip
 type RadarDataPoint = {
-    attribute: string;          // Readable name for the metric
-    percentile: number;         // Player's percentile value (0-100) for radar line
-    actualValue: string | number; // Player's raw value for the metric (for tooltip)
-    leagueAverage: string | number; // (Dummy) League average for the metric (for tooltip)
+    attribute: string;
+    percentile: number;
+    actualValue: string | number;
+    leagueAverage: string | number;
 };
 
-// Key metrics definition (this should be consistent with what's in PlayerStatsJSON)
-// Ensure all metric keys used here end with '_percentile' if that's how they are in stats JSON
+type PlayerStatsJSON = { [key: string]: number | string | boolean | null };
+
+// Type for data returned by get_metric_averages_for_position_league
+// Ensure this matches your generated database.types.ts
+type MetricAverage = Database['public']['Functions']['get_metric_averages_for_position_league']['Returns'][number];
+
+
 const sixMetricsWithLegend: { [position: string]: string[] } = {
     'Goalkeeper': [ 'Conceded goals per 90_percentile', 'Accurate passes, %_percentile', 'xG against per 90_percentile', 'Prevented goals per 90_percentile', 'Save rate, %_percentile', 'Exits per 90_percentile' ],
     'Full Back': [ 'Successful defensive actions per 90_percentile', 'Defensive duels won, %_percentile', 'Accurate crosses, %_percentile', 'Accurate passes, %_percentile', 'Key passes per 90_percentile', 'xA per 90_percentile' ],
@@ -46,7 +49,6 @@ const sixMetricsWithLegend: { [position: string]: string[] } = {
     'Centre Forward': [ 'Non-penalty goals per 90_percentile', 'xG per 90_percentile', 'Shots on target per 90_percentile', 'Touches in box per 90_percentile', 'xA per 90_percentile', 'Offensive duels won, %_percentile' ]
 };
 
-// Helper functions (copied or defined here for self-containment)
 const formatFootylabsScore = (score: number | string | null | undefined): string => {
     if (score === null || score === undefined) return "N/A";
     const numScore = Number(score);
@@ -64,27 +66,29 @@ const getScoreColor = (score: number | string | null | undefined): string => {
     return "text-green-600 font-medium";
 };
 
-
-// --- Radar Chart Data Generation (Modified to match TeamComparison style) ---
-const generateRadarData = (player: PlayerDataForModal): RadarDataPoint[] => {
+// --- Radar Chart Data Generation (Now uses real league averages) ---
+const generateRadarData = (
+    player: PlayerDataForModal,
+    positionMetricAverages: MetricAverage[] // Pass fetched averages
+): RadarDataPoint[] => {
     if (!player.stats) return [];
-    const currentPosition = player.player_pos ?? player.position ?? 'Other'; // Get the actual position
-    const metrics = sixMetricsWithLegend[currentPosition] || [];
-    if (metrics.length === 0) return [];
+    const currentPosition = player.player_pos ?? player.position ?? 'Other';
+    const percentileMetricKeys = sixMetricsWithLegend[currentPosition] || [];
+    if (percentileMetricKeys.length === 0) return [];
 
-    return metrics.map((metricKey) => {
+    // Create a map for quick lookup of averages by metric_name
+    const averagesMap = new Map(positionMetricAverages.map(avg => [avg.metric_name, avg.average_value]));
+
+    return percentileMetricKeys.map((metricKey) => {
         const actualMetricKey = metricKey.replace(/_percentile$/, '');
-        const readableAttribute = actualMetricKey
-            // .replace(/ per 90/g, '/90')
-            .replace(/, %/g, ' %')
-            .replace(/_/g, ' ');
+        const readableAttribute = actualMetricKey.replace(/ per 90/g, ' per 90').replace(/, %/g, ' %').replace(/_/g, ' ');
 
-        const percentileValue = player.stats![metricKey]; // Access percentile from stats
+        const percentileValue = player.stats![metricKey];
         const playerStatPercent = percentileValue != null && !isNaN(Number(percentileValue))
             ? Math.round(Number(percentileValue) * 100)
             : 0;
 
-        const rawActualValue = player.stats![actualMetricKey]; // Access raw value from stats
+        const rawActualValue = player.stats![actualMetricKey];
         let actualValueDisplay: string | number = 'N/A';
         if (rawActualValue !== null && rawActualValue !== undefined) {
             const numVal = Number(rawActualValue);
@@ -95,40 +99,43 @@ const generateRadarData = (player: PlayerDataForModal): RadarDataPoint[] => {
             }
         }
 
-        // Dummy league average for now
-        const dummyLeagueAverage = (30 + Math.random() * 60).toFixed(2);
+        const leagueAverageForMetric = averagesMap.get(actualMetricKey); // Get from fetched averages
+        let leagueAverageDisplay: string | number = 'N/A';
+        if (leagueAverageForMetric != null && !isNaN(Number(leagueAverageForMetric))) {
+            const numAvg = Number(leagueAverageForMetric);
+            leagueAverageDisplay = actualMetricKey.includes('%') ? `${numAvg.toFixed(1)}%` : numAvg.toFixed(2);
+        }
 
         return {
             attribute: readableAttribute,
-            percentile: playerStatPercent, // This drives the radar line
+            percentile: playerStatPercent,
             actualValue: actualValueDisplay,
-            leagueAverage: dummyLeagueAverage,
+            leagueAverage: leagueAverageDisplay, // Use the fetched and formatted average
         };
     });
 };
 
-// --- Custom Tooltip for Radar Chart ---
+// --- Custom Tooltip (remains the same) ---
 const CustomRadarTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
-        // The data for the hovered point is in payload[0].payload
+// The data for the hovered point is in payload[0].payload
         const dataPoint = payload[0].payload as RadarDataPoint;
         if (!dataPoint) return null;
-
         return (
             <div className="rounded-md border bg-popover p-2.5 shadow-lg text-xs">
                 <div className="font-semibold text-popover-foreground mb-1.5">{dataPoint.attribute}</div>
                 <div className="space-y-1">
                     <div className="flex justify-between items-center">
                         <span className="text-muted-foreground mr-2">Percentile:</span>
-                        <span className="font-medium text-foreground">{dataPoint.percentile}%</span>
+                        <span className="font-mono text-[#31348D] font-medium">{dataPoint.percentile}%</span>
                     </div>
                     <div className="flex justify-between items-center">
                         <span className="text-muted-foreground mr-2">Actual Value:</span>
-                        <span className="font-medium text-foreground">{dataPoint.actualValue}</span>
+                        <span className="font-mono text-[#31348D] font-medium">{dataPoint.actualValue}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground mr-2">League Avg:</span>
-                        <span className="font-medium text-foreground">{dataPoint.leagueAverage}</span>
+                        <span className="text-muted-foreground mr-2">League Average:</span>
+                        <span className="font-mono text-[#31348D] font-medium">{dataPoint.leagueAverage}</span>
                     </div>
                 </div>
             </div>
@@ -143,8 +150,11 @@ export default function PlayerDetailModal({ isOpen, onClose, player }: {
     isOpen: boolean;
     onClose: () => void;
     player: PlayerDataForModal | null;
+    // playerLeague prop is no longer needed here as it's part of the 'player' object
 }) {
     const [radarData, setRadarData] = useState<RadarDataPoint[]>([]);
+    const [positionAverages, setPositionAverages] = useState<MetricAverage[]>([]);
+    const [loadingAverages, setLoadingAverages] = useState(false);
     const [suggestLoading, setSuggestLoading] = useState(false);
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const supabase = createClient();
@@ -157,41 +167,66 @@ export default function PlayerDetailModal({ isOpen, onClose, player }: {
         if (isOpen && supabase) {
             fetchUser();
         }
-    }, [isOpen, supabase]);
+}, [isOpen, supabase]);
 
+    // Fetch position averages when modal opens or player changes
+    useEffect(() => {
+        const fetchAverages = async () => {
+            if (!isOpen || !player || !player.player_league_name) { // Check for player_league_name
+                setPositionAverages([]);
+                setRadarData(player ? generateRadarData(player, []) : []); // Generate with empty averages if no league
+                return;
+            }
+            const currentPosition = player.player_pos ?? player.position ?? 'Other';
+            if (currentPosition === 'Other' || !sixMetricsWithLegend[currentPosition]) {
+                setPositionAverages([]);
+                setRadarData(generateRadarData(player, []));
+                return;
+            }
+
+            setLoadingAverages(true);
+            try {
+                const { data, error } = await supabase.rpc('get_metric_averages_for_position_league', {
+                    p_position_name: currentPosition,
+                    p_league_name: player.player_league_name // Use league from player prop
+                });
+                if (error) throw error;
+                const fetchedAverages = data as MetricAverage[] | null;
+                console.log(`Fetched averages for ${currentPosition} in ${player.player_league_name}:`, fetchedAverages);
+                setPositionAverages(fetchedAverages || []);
+            } catch (err) {
+                console.error("Error fetching position averages:", err);
+                setPositionAverages([]); // Set to empty on error
+            } finally {
+                setLoadingAverages(false);
+            }
+        };
+
+        fetchAverages();
+    }, [isOpen, player, supabase]);
+
+
+    // Generate radar data when player OR positionAverages (or loadingAverages state) change
     useEffect(() => {
         if (isOpen && player) {
-            const generatedData = generateRadarData(player);
-            setRadarData(generatedData);
-            console.log("Generated Radar Data for modal:", generatedData);
-        } else {
+            // Only generate radar data once averages are fetched (or attempted)
+            if (!loadingAverages) {
+                const generatedData = generateRadarData(player, positionAverages);
+                setRadarData(generatedData);
+                console.log("Generated Radar Data for modal with fetched/empty averages:", generatedData);
+            }
+        } else if (!isOpen) {
             setRadarData([]);
         }
-    }, [isOpen, player]);
+    }, [isOpen, player, positionAverages, loadingAverages]);
 
-    const handleSuggestRecruitment = async () => {
-        if (!player || !userEmail || player.club_id === undefined || player.club_id === null) {
-            toast({ title: "Error", description: "Missing required info (player/user/club).", variant: "destructive" });
-            return;
-        }
-        setSuggestLoading(true);
-        try {
-            const { error } = await supabase?.from("recruitment_suggestions").insert({
-                user_email: userEmail,
-                club_id: player.club_id,
-                player_id: player.id, // Use the player.id which should be the DB PK
-                player_name: player.name,
-            });
-            if (error) { console.error(error); toast({ title: "Suggestion Logged (Fallback)", description: "AI analysis pending." }); }
-            else { toast({ title: "Success", description: "Suggestion logged. AI analysis pending." }); }
-        } catch (err) { console.error(err); toast({ title: "Error", description: "Suggestion error.", variant: "destructive" }); }
-        finally { setSuggestLoading(false); }
-    };
+    // ... (handleSuggestRecruitment, JSX for summary cards) ...
+    // The rest of the modal JSX remains largely the same.
+    // The CustomRadarTooltip will now use the real (or N/A) leagueAverage from radarData.
 
     if (!isOpen || !player) return null;
-
     const stats = player.stats as PlayerStatsJSON | null;
-    const displayMinutes = stats?.['Minutes played'] ?? 'N/A';
+    const displayMinutes = stats?.['Minutes played'] ?? 'N/A'; /* ... etc ... */
     const displayGoals = stats?.['Goals'] ?? 'N/A';
     const displayAssists = stats?.['Assists'] ?? 'N/A';
     const displayFootylabsScore = formatFootylabsScore(stats?.['avg_percentile']);
@@ -205,23 +240,14 @@ export default function PlayerDetailModal({ isOpen, onClose, player }: {
                     <DialogTitle className="flex items-center justify-between">
                         <div className="flex items-center">
                             <span className="text-[#31348D]">{player.name}</span>
-                            {/*<TooltipProvider delayDuration={0}>*/}
-                            {/*    <ShadTooltip>*/}
-                            {/*        <ShadTooltipTrigger asChild>*/}
-                            {/*            <Button className="ml-4 bg-[#31348D] text-white hover:bg-[#31348D]/90" onClick={(e) => { e.stopPropagation(); handleSuggestRecruitment(); }} disabled={suggestLoading}>*/}
-                            {/*                {suggestLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing...</>) : ("Suggest Recruitment")}*/}
-                            {/*            </Button>*/}
-                            {/*        </ShadTooltipTrigger>*/}
-                            {/*        <ShadTooltipContent className="bg-gray-700 text-white border-gray-600"><p>Use AI models to find relevant alternatives</p></ShadTooltipContent>*/}
-                            {/*    </ShadTooltip>*/}
-                            {/*</TooltipProvider>*/}
+                            {/* Suggest Recruitment Button is optional here */}
                         </div>
                         <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8"> <X className="h-4 w-4" /> </Button>
                     </DialogTitle>
-                    <DialogDescription>Performance Analysis - Position: {positionDisplay}</DialogDescription>
+                    <DialogDescription>Performance Analysis - Position: {positionDisplay} - League: {player.player_league_name || 'N/A'}</DialogDescription>
                 </DialogHeader>
-
                 <div className="mt-4">
+                    {/* Summary Cards ... */}
                     <div className="mb-6 grid grid-cols-4 gap-4">
                         <div className="rounded-lg bg-gray-50 p-3 text-center"><div className="text-sm text-gray-500">Minutes</div><div className="text-xl font-bold text-[#31348D]">{displayMinutes}</div></div>
                         <div className="rounded-lg bg-gray-50 p-3 text-center"><div className="text-sm text-gray-500">Goals</div><div className="text-xl font-bold text-[#31348D]">{displayGoals}</div></div>
@@ -237,7 +263,7 @@ export default function PlayerDetailModal({ isOpen, onClose, player }: {
                                 <RadarChart
                                     cx="50%" // Explicitly center horizontally
                                     cy="50%" // Explicitly center vertically
-                                    outerRadius="94.6%" // Control how much of the container the radar uses (adjust as needed)
+                                    outerRadius="94.4%" // Control how much of the container the radar uses (adjust as needed)
                                     data={radarData}
                                     margin={{ top: 20, right: 30, bottom: 20, left: 30 }} >
                                     <PolarGrid />
@@ -254,11 +280,7 @@ export default function PlayerDetailModal({ isOpen, onClose, player }: {
                                 </RadarChart>
                             </ResponsiveContainer>
                         </ChartContainer>
-                    ) : (
-                        <div className="text-center text-muted-foreground py-8 h-[400px] flex items-center justify-center"> {/* Match height */}
-                            Radar chart data not available for this player/position.
-                        </div>
-                    )}
+                    ) : !loadingAverages && ( <div className="text-center text-muted-foreground py-8 h-[480px] flex items-center justify-center">Radar chart data not available or position not configured.</div> )}
                 </div>
             </DialogContent>
         </Dialog>

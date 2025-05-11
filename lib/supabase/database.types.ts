@@ -73,6 +73,30 @@ export type Database = {
         }
         Relationships: []
       }
+      league_position_metric_averages: {
+        Row: {
+          average_value: number | null
+          last_calculated: string | null
+          league_name: string
+          metric_name: string
+          position: string
+        }
+        Insert: {
+          average_value?: number | null
+          last_calculated?: string | null
+          league_name: string
+          metric_name: string
+          position: string
+        }
+        Update: {
+          average_value?: number | null
+          last_calculated?: string | null
+          league_name?: string
+          metric_name?: string
+          position?: string
+        }
+        Relationships: []
+      }
       player_listings: {
         Row: {
           asking_price: number | null
@@ -382,6 +406,7 @@ export type Database = {
           Interceptions: number | null
           "Lateral Pass Accuracy": number | null
           "Lateral Passes": number | null
+          League: string | null
           "Long Pass %": number | null
           "Long Pass Accuracy": number | null
           "Long Passes": number | null
@@ -503,6 +528,7 @@ export type Database = {
           Interceptions?: number | null
           "Lateral Pass Accuracy"?: number | null
           "Lateral Passes"?: number | null
+          League?: string | null
           "Long Pass %"?: number | null
           "Long Pass Accuracy"?: number | null
           "Long Passes"?: number | null
@@ -624,6 +650,7 @@ export type Database = {
           Interceptions?: number | null
           "Lateral Pass Accuracy"?: number | null
           "Lateral Passes"?: number | null
+          League?: string | null
           "Long Pass %"?: number | null
           "Long Pass Accuracy"?: number | null
           "Long Passes"?: number | null
@@ -704,6 +731,17 @@ export type Database = {
           updated_at: string
           wyscout_player_id: number
           listing_status: string
+          player_league_name: string
+        }[]
+      }
+      get_metric_averages_for_position_league: {
+        Args: { p_position_name: string; p_league_name: string }
+        Returns: {
+          average_value: number | null
+          last_calculated: string | null
+          league_name: string
+          metric_name: string
+          position: string
         }[]
       }
       get_my_player_listings: {
@@ -778,20 +816,36 @@ export type Database = {
         }[]
       }
       get_scouting_players: {
-        Args: {
-          p_requesting_club_id: number
-          p_name_filter?: string
-          p_position_filter?: string
-          p_min_height?: number
-          p_max_height?: number
-          p_foot_filter?: string
-          p_sort_column?: string
-          p_sort_direction?: string
-          p_contract_start?: string
-          p_contract_end?: string
-          p_limit?: number
-          p_offset?: number
-        }
+        Args:
+          | {
+              p_requesting_club_id: number
+              p_name_filter?: string
+              p_position_filter?: string
+              p_min_height?: number
+              p_max_height?: number
+              p_foot_filter?: string
+              p_sort_column?: string
+              p_sort_direction?: string
+              p_contract_start?: string
+              p_contract_end?: string
+              p_limit?: number
+              p_offset?: number
+            }
+          | {
+              p_requesting_club_id: number
+              p_name_filter?: string
+              p_position_filter?: string
+              p_min_height?: number
+              p_max_height?: number
+              p_foot_filter?: string
+              p_sort_column?: string
+              p_sort_direction?: string
+              p_contract_start?: string
+              p_contract_end?: string
+              p_limit?: number
+              p_offset?: number
+              p_league_filter?: string
+            }
         Returns: {
           player_id: number
           wyscout_player_id: number
@@ -813,6 +867,10 @@ export type Database = {
       try_cast_to_date: {
         Args: { p_text: string }
         Returns: string
+      }
+      update_league_position_averages: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {

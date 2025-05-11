@@ -9,35 +9,34 @@ import type { PostgrestSingleResponse } from '@supabase/supabase-js';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-// Removed Dialog imports as modal is separate
 import { Input } from '@/components/ui/input';
 import { Label } from "@/components/ui/label";
-import { Loader2, AlertCircle, Search, ArrowUpDown, Info, SlidersHorizontal, Filter } from 'lucide-react'; // Removed X
+import { Loader2, AlertCircle, Search, ArrowUpDown, Info, SlidersHorizontal, Filter } from 'lucide-react';
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 // Import the shared modal
-import PlayerDetailModal from '@/components/common/player-detail-modal'; // Adjust path if different
+import PlayerDetailModal from '@/components/common/player-detail-modal'; // Adjust path if needed
+import type { PlayerDataForModal } from '@/components/common/player-detail-modal'; // Import modal type
+
 
 // --- Type Definitions ---
-
-// Type matching the RETURNS TABLE of the get_scouting_players function
 type ScoutingPlayer = Database['public']['Functions']['get_scouting_players']['Returns'][number];
 
-// --- Helper Functions (for table display in this component) ---
+// --- Helper Functions ---
 const formatFootylabsScore = (score: number | string | null | undefined): string => {
-    if (score === null || score === undefined || score === "N/A") return "N/A";
+    if (score === null || score === undefined) return "N/A";
     const numScore = Number(score);
     if (isNaN(numScore)) return "N/A";
-    return (numScore * 10).toFixed(1); // Assuming score is 0-1 percentile, show as 0-100 scale
+    return (numScore * 10).toFixed(1);
 };
 
 const getScoreColor = (score: number | string | null | undefined): string => {
     if (score === null || score === undefined) return "text-muted-foreground";
     const numScore = Number(score);
     if (isNaN(numScore)) return "text-muted-foreground";
-    const scaledScore = numScore * 100; // Scale 0-1 percentile to 0-100
+    const scaledScore = numScore * 100;
     if (scaledScore <= 33.3) return "text-red-600 font-medium";
     if (scaledScore <= 66.6) return "text-amber-500 font-medium";
     return "text-green-600 font-medium";
@@ -61,29 +60,76 @@ export default function LeaguePlayerBrowser({ initialUserClubId }: { initialUser
     const [error, setError] = useState<string | null>(null);
     const supabase = createClient();
 
-    const [filters, setFilters] = useState({ name: '', position: 'all', foot: 'all', minHeight: '', maxHeight: '' });
+    const [leagues, setLeagues] = useState<string[]>([]); // For league filter dropdown
+
+    const [filters, setFilters] = useState({
+        name: '',
+        position: 'all',
+        foot: 'all',
+        minHeight: '',
+        maxHeight: '',
+        league: 'all', // NEW: League filter state
+    });
     const [sortColumn, setSortColumn] = useState<string>('avg_percentile');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(25);
-    const [selectedPlayer, setSelectedPlayer] = useState<ScoutingPlayer | null>(null); // State for modal
+    const [selectedPlayer, setSelectedPlayer] = useState<ScoutingPlayer | null>(null);
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(filters.name);
 
-    useEffect(() => { const handler = setTimeout(() => { setDebouncedSearchTerm(filters.name); }, 500); return () => clearTimeout(handler); }, [filters.name]);
+    useEffect(() => {
+        const handler = setTimeout(() => { setDebouncedSearchTerm(filters.name); }, 500);
+        return () => clearTimeout(handler);
+    }, [filters.name]);
+
+    // Fetch available leagues for the filter dropdown
+    useEffect(() => {
+        const fetchLeagues = async () => {
+            if (!supabase) return;
+            const { data, error: leagueError } = await supabase
+                .from('clubs')
+                .select('league', { count: 'exact', head: false }) // Select distinct leagues
+                // Workaround for distinct: use a view or a function if performance is an issue
+                // For now, fetching all and processing client-side for simplicity
+                .neq('league', null); // Exclude null leagues
+
+
+            if (leagueError) {
+                console.error("Error fetching leagues:", leagueError);
+            } else if (data) {
+                const distinctLeagues = [...new Set(data.map(item => item.league).filter(Boolean))] as string[];
+                setLeagues(distinctLeagues.sort());
+            }
+        };
+        fetchLeagues();
+    }, [supabase]);
+
 
     const fetchData = useCallback(async () => {
-        if (initialUserClubId === null || initialUserClubId === undefined) {
-            setError("Your club information is not available to filter out your own players."); setLoading(false); setPlayers([]); setTotalCount(0); return;
+        if (initialUserClubId === null || initialUserClubId === undefined || !supabase) {
+            setError("User/club context missing or connection error."); setLoading(false); return;
         }
-        if (!supabase) { setError("Connection error."); setLoading(false); return; }
         setLoading(true); setError(null);
         const offset = (currentPage - 1) * itemsPerPage;
-        const contractStart = undefined; const contractEnd = undefined;
 
         try {
             const response: PostgrestSingleResponse<ScoutingPlayer[]> = await supabase.rpc(
                 'get_scouting_players',
-                { p_requesting_club_id: initialUserClubId, p_name_filter: debouncedSearchTerm.trim() === '' ? null : debouncedSearchTerm.trim(), p_position_filter: filters.position === 'all' ? null : filters.position, p_min_height: filters.minHeight === '' ? null : parseInt(filters.minHeight, 10), p_max_height: filters.maxHeight === '' ? null : parseInt(filters.maxHeight, 10), p_foot_filter: filters.foot === 'all' ? null : filters.foot, p_contract_start: contractStart, p_contract_end: contractEnd, p_sort_column: sortColumn, p_sort_direction: sortDirection, p_limit: itemsPerPage, p_offset: offset }
+                {
+                    p_requesting_club_id: initialUserClubId,
+                    p_name_filter: debouncedSearchTerm.trim() === '' ? null : debouncedSearchTerm.trim(),
+                    p_position_filter: filters.position === 'all' ? null : filters.position,
+                    p_min_height: filters.minHeight === '' ? null : parseInt(filters.minHeight, 10),
+                    p_max_height: filters.maxHeight === '' ? null : parseInt(filters.maxHeight, 10),
+                    p_foot_filter: filters.foot === 'all' ? null : filters.foot,
+                    p_contract_start: null, // Placeholder for date filter
+                    p_contract_end: null,   // Placeholder for date filter
+                    p_league_filter: filters.league === 'all' ? null : filters.league, // Pass league filter
+                    p_sort_column: sortColumn,
+                    p_sort_direction: sortDirection,
+                    p_limit: itemsPerPage,
+                    p_offset: offset
+                }
             );
             if (response.error) throw response.error;
             const fetchedPlayers = response.data;
@@ -93,10 +139,10 @@ export default function LeaguePlayerBrowser({ initialUserClubId }: { initialUser
             } else { setTotalCount(0); }
         } catch (err: any) { console.error("Error fetching scouting players:", err); setError(`Could not load player data: ${err.message || 'Unknown RPC error'}`); setPlayers([]); setTotalCount(0);
         } finally { setLoading(false); }
-    }, [initialUserClubId, supabase, currentPage, itemsPerPage, sortColumn, sortDirection, debouncedSearchTerm, filters.position, filters.foot, filters.minHeight, filters.maxHeight]);
+    }, [initialUserClubId, supabase, currentPage, itemsPerPage, sortColumn, sortDirection, debouncedSearchTerm, filters]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
-    useEffect(() => { if (currentPage !== 1) setCurrentPage(1); }, [debouncedSearchTerm, filters.position, filters.foot, filters.minHeight, filters.maxHeight]);
+    useEffect(() => { if (currentPage !== 1) setCurrentPage(1); }, [debouncedSearchTerm, filters.position, filters.foot, filters.minHeight, filters.maxHeight, filters.league]);
 
     const handleFilterChange = (filterName: keyof typeof filters, value: any) => { setFilters(prev => ({ ...prev, [filterName]: value })); };
     const handleSort = (column: string) => {
@@ -105,32 +151,29 @@ export default function LeaguePlayerBrowser({ initialUserClubId }: { initialUser
         if (sortColumn === column) { setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc')); }
         else { setSortColumn(column); setSortDirection('asc'); }
     };
-
-    const handlePlayerRowClick = (player: ScoutingPlayer) => {
-        console.log("Scouting: Clicked player for modal:", player);
-        setSelectedPlayer(player);
-    };
-    const handleCloseModal = () => {
-        setSelectedPlayer(null);
-    };
+    const handlePlayerRowClick = (player: ScoutingPlayer) => { setSelectedPlayer(player); };
+    const handleCloseModal = () => { setSelectedPlayer(null); };
 
     const totalPages = Math.ceil(totalCount / itemsPerPage);
-    const paginationItems = useMemo(() => { /* ... existing pagination logic copied from before ... */ const items = []; const maxPagesToShow = 5; const halfMaxPages = Math.floor(maxPagesToShow / 2); if (totalPages <= maxPagesToShow) { for (let i = 1; i <= totalPages; i++) { items.push( <PaginationItem key={i}> <PaginationLink href="#" isActive={i === currentPage} onClick={(e) => { e.preventDefault(); setCurrentPage(i); }}> {i} </PaginationLink> </PaginationItem> ); } } else { items.push( <PaginationItem key={1}> <PaginationLink href="#" isActive={1 === currentPage} onClick={(e) => { e.preventDefault(); setCurrentPage(1); }}> 1 </PaginationLink> </PaginationItem> ); if (currentPage > halfMaxPages + 1) { items.push(<PaginationEllipsis key="start-ellipsis" />); } let startPage = Math.max(2, currentPage - halfMaxPages + (currentPage > totalPages - halfMaxPages ? 1 : 0)); let endPage = Math.min(totalPages - 1, currentPage + halfMaxPages - (currentPage <= halfMaxPages ? 1 : 0)); if (currentPage <= halfMaxPages +1) { endPage = Math.min(totalPages - 1, maxPagesToShow-1); } if (currentPage > totalPages - halfMaxPages) { startPage = Math.max(2, totalPages - maxPagesToShow + 2); } for (let i = startPage; i <= endPage; i++) { items.push( <PaginationItem key={i}> <PaginationLink href="#" isActive={i === currentPage} onClick={(e) => { e.preventDefault(); setCurrentPage(i); }}> {i} </PaginationLink> </PaginationItem> ); } if (currentPage < totalPages - halfMaxPages) { items.push(<PaginationEllipsis key="end-ellipsis" />); } items.push( <PaginationItem key={totalPages}> <PaginationLink href="#" isActive={totalPages === currentPage} onClick={(e) => { e.preventDefault(); setCurrentPage(totalPages); }}> {totalPages} </PaginationLink> </PaginationItem> ); } return items; }, [currentPage, totalPages]);
-
+    const paginationItems = useMemo(() => {
+        const items = []; const maxPagesToShow = 5; const halfMaxPages = Math.floor(maxPagesToShow / 2); if (totalPages <= maxPagesToShow) { for (let i = 1; i <= totalPages; i++) { items.push( <PaginationItem key={i}> <PaginationLink href="#" isActive={i === currentPage} onClick={(e) => { e.preventDefault(); setCurrentPage(i); }}> {i} </PaginationLink> </PaginationItem> ); } } else { items.push( <PaginationItem key={1}> <PaginationLink href="#" isActive={1 === currentPage} onClick={(e) => { e.preventDefault(); setCurrentPage(1); }}> 1 </PaginationLink> </PaginationItem> ); if (currentPage > halfMaxPages + 1) { items.push(<PaginationEllipsis key="start-ellipsis" />); } let startPage = Math.max(2, currentPage - halfMaxPages + (currentPage > totalPages - halfMaxPages ? 1 : 0)); let endPage = Math.min(totalPages - 1, currentPage + halfMaxPages - (currentPage <= halfMaxPages ? 1 : 0)); if (currentPage <= halfMaxPages +1) { endPage = Math.min(totalPages - 1, maxPagesToShow-1); } if (currentPage > totalPages - halfMaxPages) { startPage = Math.max(2, totalPages - maxPagesToShow + 2); } for (let i = startPage; i <= endPage; i++) { items.push( <PaginationItem key={i}> <PaginationLink href="#" isActive={i === currentPage} onClick={(e) => { e.preventDefault(); setCurrentPage(i); }}> {i} </PaginationLink> </PaginationItem> ); } if (currentPage < totalPages - halfMaxPages) { items.push(<PaginationEllipsis key="end-ellipsis" />); } items.push( <PaginationItem key={totalPages}> <PaginationLink href="#" isActive={totalPages === currentPage} onClick={(e) => { e.preventDefault(); setCurrentPage(totalPages); }}> {totalPages} </PaginationLink> </PaginationItem> ); } return items;
+    }, [currentPage, totalPages]);
 
     return (
         <div className="space-y-6">
             <Card>
                 <CardHeader><CardTitle className="text-lg flex items-center"><Filter className="mr-2 h-5 w-5"/> Filters</CardTitle></CardHeader>
-                <CardContent className="flex flex-wrap gap-4 items-end">
-                    <div className="flex-grow min-w-[200px] space-y-1"><Label htmlFor="playerNameSearch">Player Name</Label><Input id="playerNameSearch" placeholder="Search..." value={filters.name} onChange={(e) => handleFilterChange('name', e.target.value)} /></div>
-                    <div className="min-w-[180px] space-y-1"><Label htmlFor="positionFilter">Position</Label><Select value={filters.position} onValueChange={(value) => handleFilterChange('position', value)}><SelectTrigger id="positionFilter"><SelectValue placeholder="Any Position" /></SelectTrigger><SelectContent><SelectItem value="all">All Positions</SelectItem><SelectItem value="Goalkeeper">Goalkeeper</SelectItem><SelectItem value="Centre Back">Centre Back</SelectItem><SelectItem value="Full Back">Full Back</SelectItem><SelectItem value="Defensive Midfielder">Defensive Midfielder</SelectItem><SelectItem value="Central Midfielder">Central Midfielder</SelectItem><SelectItem value="Attacking Midfielder">Attacking Midfielder</SelectItem><SelectItem value="Winger">Winger</SelectItem><SelectItem value="Centre Forward">Centre Forward</SelectItem><SelectItem value="Other">Other</SelectItem></SelectContent></Select></div>
-                    <div className="min-w-[120px] space-y-1"><Label htmlFor="footFilter">Preferred Foot</Label><Select value={filters.foot} onValueChange={(value) => handleFilterChange('foot', value)}><SelectTrigger id="footFilter"><SelectValue placeholder="Any Foot" /></SelectTrigger><SelectContent><SelectItem value="all">Any Foot</SelectItem><SelectItem value="Left">Left</SelectItem><SelectItem value="Right">Right</SelectItem><SelectItem value="Both">Both</SelectItem></SelectContent></Select></div>
-                    <div className="flex gap-2 items-end min-w-[200px] space-y-1"><div className="flex-1"><Label htmlFor="minHeight">Min Height (cm)</Label><Input id="minHeight" type="number" placeholder="e.g., 170" value={filters.minHeight} onChange={(e) => handleFilterChange('minHeight', e.target.value)} /></div><div className="flex-1"><Label htmlFor="maxHeight">Max Height (cm)</Label><Input id="maxHeight" type="number" placeholder="e.g., 190" value={filters.maxHeight} onChange={(e) => handleFilterChange('maxHeight', e.target.value)} /></div></div>
+                <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 items-end">
+                    <div className="space-y-1"><Label htmlFor="playerNameSearch">Player Name</Label><Input id="playerNameSearch" placeholder="Search..." value={filters.name} onChange={(e) => handleFilterChange('name', e.target.value)} /></div>
+                    <div className="space-y-1"><Label htmlFor="leagueFilter">League</Label><Select value={filters.league} onValueChange={(value) => handleFilterChange('league', value)}><SelectTrigger id="leagueFilter"><SelectValue placeholder="Any League" /></SelectTrigger><SelectContent><SelectItem value="all">All Leagues</SelectItem>{leagues.map(league => (<SelectItem key={league} value={league}>{league}</SelectItem>))}</SelectContent></Select></div>
+                    <div className="space-y-1"><Label htmlFor="positionFilter">Position</Label><Select value={filters.position} onValueChange={(value) => handleFilterChange('position', value)}><SelectTrigger id="positionFilter"><SelectValue placeholder="Any Position" /></SelectTrigger><SelectContent>{/* Position Options */}<SelectItem value="all">All Positions</SelectItem><SelectItem value="Goalkeeper">Goalkeeper</SelectItem><SelectItem value="Centre Back">Centre Back</SelectItem><SelectItem value="Full Back">Full Back</SelectItem><SelectItem value="Defensive Midfielder">Defensive Midfielder</SelectItem><SelectItem value="Central Midfielder">Central Midfielder</SelectItem><SelectItem value="Attacking Midfielder">Attacking Midfielder</SelectItem><SelectItem value="Winger">Winger</SelectItem><SelectItem value="Centre Forward">Centre Forward</SelectItem><SelectItem value="Other">Other</SelectItem></SelectContent></Select></div>
+                    <div className="space-y-1"><Label htmlFor="footFilter">Preferred Foot</Label><Select value={filters.foot} onValueChange={(value) => handleFilterChange('foot', value)}><SelectTrigger id="footFilter"><SelectValue placeholder="Any Foot" /></SelectTrigger><SelectContent><SelectItem value="all">Any Foot</SelectItem><SelectItem value="Left">Left</SelectItem><SelectItem value="Right">Right</SelectItem><SelectItem value="Both">Both</SelectItem></SelectContent></Select></div>
+                    <div className="flex gap-2 items-end space-y-1"><div className="flex-1"><Label htmlFor="minHeight">Min Height (cm)</Label><Input id="minHeight" type="number" placeholder="170" value={filters.minHeight} onChange={(e) => handleFilterChange('minHeight', e.target.value)} /></div><div className="flex-1"><Label htmlFor="maxHeight">Max Height (cm)</Label><Input id="maxHeight" type="number" placeholder="190" value={filters.maxHeight} onChange={(e) => handleFilterChange('maxHeight', e.target.value)} /></div></div>
                 </CardContent>
             </Card>
 
             <Card>
+                {/* ... CardHeader and Table (ensure TableHead for "Listing Status" and "On Loan?" uses `listing_status` for sorting) ... */}
                 <CardHeader><CardTitle>League Players ({loading ? '...' : totalCount})</CardTitle><CardDescription>Browse players matching your criteria.</CardDescription></CardHeader>
                 <CardContent>
                     {loading && <div className="flex justify-center items-center py-20"><Loader2 className="h-10 w-10 animate-spin text-[#31348D]" /></div>}
@@ -184,7 +227,7 @@ export default function LeaguePlayerBrowser({ initialUserClubId }: { initialUser
                                     </TableBody>
                                 </Table>
                             </div>
-                            {totalPages > 1 && ( <Pagination className="mt-6"> <PaginationContent> <PaginationItem><PaginationPrevious href="#" onClick={(e) => { e.preventDefault(); setCurrentPage(prev => Math.max(1, prev - 1)); }} aria-disabled={currentPage === 1} tabIndex={currentPage === 1 ? -1 : undefined} className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined}/></PaginationItem> {paginationItems} <PaginationItem><PaginationNext href="#" onClick={(e) => { e.preventDefault(); setCurrentPage(prev => Math.min(totalPages, prev + 1)); }} aria-disabled={currentPage === totalPages} tabIndex={currentPage === totalPages ? -1 : undefined} className={currentPage === totalPages ? "pointer-events-none opacity-50" : undefined}/></PaginationItem> </PaginationContent> </Pagination> )}
+                            {totalPages > 1 && ( <Pagination className="mt-6">  <PaginationContent> <PaginationItem><PaginationPrevious href="#" onClick={(e) => { e.preventDefault(); setCurrentPage(prev => Math.max(1, prev - 1)); }} aria-disabled={currentPage === 1} tabIndex={currentPage === 1 ? -1 : undefined} className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined}/></PaginationItem> {paginationItems} <PaginationItem><PaginationNext href="#" onClick={(e) => { e.preventDefault(); setCurrentPage(prev => Math.min(totalPages, prev + 1)); }} aria-disabled={currentPage === totalPages} tabIndex={currentPage === totalPages ? -1 : undefined} className={currentPage === totalPages ? "pointer-events-none opacity-50" : undefined}/></PaginationItem> </PaginationContent> </Pagination> )}
                         </>
                     )}
                 </CardContent>
@@ -194,7 +237,8 @@ export default function LeaguePlayerBrowser({ initialUserClubId }: { initialUser
             <PlayerDetailModal
                 isOpen={!!selectedPlayer}
                 onClose={handleCloseModal}
-                player={selectedPlayer} // selectedPlayer is of type ScoutingPlayer which should match PlayerDataForModal
+                // Pass the correct player data structure, ensuring player_league_name is available
+                player={selectedPlayer ? { ...selectedPlayer, player_league_name: selectedPlayer.player_league_name } : null}
             />
         </div>
     );

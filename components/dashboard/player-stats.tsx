@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Loader2, AlertCircle, ArrowUpDown, X, Info } from "lucide-react"; // Removed Edit, Trash2
+import { Search, Loader2, AlertCircle, ArrowUpDown, X, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useRouter } from 'next/navigation';
@@ -20,15 +20,15 @@ import type { PlayerDataForModal, PlayerStatsJSON as ModalPlayerStatsJSON } from
 // --- Type Definitions ---
 
 // Type for data returned by `get_latest_players_for_club` RPC call
-// This should directly use or match the generated type
+// This should directly use or match the generated type from database.types.ts
 type LatestPlayerFromRPC = Database['public']['Functions']['get_latest_players_for_club']['Returns'][number];
 
 // Display type for the table in this component
 // It needs to be compatible with PlayerDataForModal for the modal prop
 export type PlayerDisplayData = {
-  id: number; // players.id (PK of the specific row from get_latest_players_for_club)
+  id: number;
   name: string;
-  position: string; // This component will use the 'player_pos' alias as 'position'
+  position: string; // Derived from player_pos from RPC
   age: string | null;
   goals: string;
   xG: string;
@@ -39,11 +39,11 @@ export type PlayerDisplayData = {
   listingStatus: string | null;
   stats?: ModalPlayerStatsJSON | null; // Raw stats blob for the modal
   wyscout_player_id?: number | string | null;
-  club_id?: number | null; // Add if needed by modal's suggest recruitment
+  club_id?: number | null; // For "Suggest Recruitment"
+  player_league_name?: string | null; // <<< ADDED for passing to modal
 };
 
-
-// Helper functions (formatFootylabsScore, getScoreColor - can also be moved to utils)
+// Helper functions (formatFootylabsScore, getScoreColor - same as before)
 const formatFootylabsScore = (score: number | string | null | undefined): string => {
   if (score === null || score === undefined || score === "N.A") return "N/A";
   const numScore = typeof score === "string" ? Number.parseFloat(score) : score;
@@ -52,20 +52,14 @@ const formatFootylabsScore = (score: number | string | null | undefined): string
 };
 
 const getScoreColor = (score: number | string | null | undefined): string => {
-  if (score === null || score === undefined || score === "N/A") return "text-muted-foreground";
-
-  // Ensure the score is parsed correctly regardless of its format
+  if (score === null || score === undefined || score === "N.A") return "text-muted-foreground";
   const numScore = typeof score === "string" ? parseFloat(score) : score;
   if (isNaN(numScore)) return "text-muted-foreground";
-
-  // Scale the score to a percentage
-  const scaledScore = numScore;
-  if (scaledScore <= 3.33) return "text-red-600 font-medium";
-  if (scaledScore <= 6.66) return "text-amber-500 font-medium";
+  const scaledScore = numScore * 10; // Score is 0-1 percentile
+  if (scaledScore <= 33.3) return "text-red-600 font-medium";
+  if (scaledScore <= 66.6) return "text-amber-500 font-medium";
   return "text-green-600 font-medium";
 };
-
-
 
 
 export default function PlayerStats({ clubId }: { clubId?: number }) {
@@ -77,7 +71,7 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
   const [sortColumn, setSortColumn] = useState<string>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerDisplayData | null>(null);
-  // Removed playerComparisonData, clubData, userEmail, suggestLoading as they are handled by/passed to modal if needed
+  // Removed clubData, userEmail, suggestLoading - handled by modal if needed there
   const supabase = createClient();
   const router = useRouter();
 
@@ -96,26 +90,28 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
       if (rpcError) throw rpcError;
       console.log("PlayerStats: Fetched data via RPC:", rpcData);
 
+      // Use the generated type directly
       const latestPlayersFromDB = rpcData as LatestPlayerFromRPC[] | null;
 
       if (latestPlayersFromDB) {
         const displayData: PlayerDisplayData[] = latestPlayersFromDB.map((lp) => {
-          const s = lp.stats as ModalPlayerStatsJSON | null; // Use ModalPlayerStatsJSON
+          const s = lp.stats as ModalPlayerStatsJSON | null;
           return {
             id: lp.id,
             name: lp.name ?? "Unknown Player",
-            position: lp.player_pos ?? "Unknown", // Use player_pos from RPC for 'position'
+            position: lp.player_pos ?? "Unknown", // Use player_pos from RPC
             age: s?.["Age"] != null ? String(s["Age"]) : null,
             goals: s?.["Goals"] != null ? String(s["Goals"]) : "0",
             xG: s?.["xG"] != null ? String(s["xG"]) : "0",
             assists: s?.["Assists"] != null ? String(s["Assists"]) : null,
             minutes: s?.["Minutes played"] != null ? String(s["Minutes played"]) : "0",
             contractEnds: s?.["Contract expires"] != null ? String(s["Contract expires"]) : "Unknown",
-            footylabsScore: s?.["avg_percentile"] != null ? formatFootylabsScore(Number(s["avg_percentile"])) : "N/A", // Format here
+            footylabsScore: s?.["avg_percentile"] != null ? formatFootylabsScore(Number(s["avg_percentile"])) : "N/A",
             listingStatus: lp.listing_status,
-            stats: s, // Pass the raw stats blob to the modal
+            stats: s,
             wyscout_player_id: lp.wyscout_player_id,
-            club_id: lp.club_id, // Pass club_id for "Suggest Recruitment" if needed
+            club_id: lp.club_id, // Pass club_id from RPC result
+            player_league_name: lp.player_league_name // <<< ADDED: Pass league name
           };
         });
         setPlayers(displayData);
@@ -140,14 +136,8 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
     if (sortColumn === column) setSortDirection(prev => prev === "asc" ? "desc" : "asc");
     else { setSortColumn(column); setSortDirection("asc"); }
   };
-
-  const handlePlayerClick = (player: PlayerDisplayData) => {
-    setSelectedPlayer(player); // This will open the modal
-  };
-
-  const handleCloseDialog = () => {
-    setSelectedPlayer(null);
-  };
+  const handlePlayerClick = (player: PlayerDisplayData) => { setSelectedPlayer(player); };
+  const handleCloseDialog = () => { setSelectedPlayer(null); };
 
   const filteredPlayers = players
       .filter((player) => {
@@ -162,8 +152,7 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
           const statusA = a.listingStatus || ""; const statusB = b.listingStatus || "";
           return sortDirection === "asc" ? statusA.localeCompare(statusB) : statusB.localeCompare(statusA);
         }
-
-        // Special case for Footylabs Score
+// Special case for Footylabs Score
         if (sortColumn === "footylabsScore") {
           const aScore = a.footylabsScore === "N/A" ? -1 : parseFloat(String(a.footylabsScore));
           const bScore = b.footylabsScore === "N/A" ? -1 : parseFloat(String(b.footylabsScore));
@@ -191,6 +180,7 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
   return (
       <>
         <Card className="border-0 shadow-md">
+          {/* ... CardHeader & Filters (No changes needed here) ... */}
           <CardHeader className="border-b bg-gray-100">
             <CardTitle className="text-[#31348D]">Player Statistics</CardTitle>
             <CardDescription className="text-black/70">
@@ -199,7 +189,6 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
           </CardHeader>
           <CardContent className="pt-6">
             <div className="flex flex-col space-y-4">
-              {/* Filters */}
               <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
                 <div className="relative flex-1">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -213,9 +202,7 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
                   </SelectContent>
                 </Select>
               </div>
-
               {error && <Alert variant="destructive"><AlertCircle className="h-5 w-5" /><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
-
               <div className="rounded-md border">
                 <Table>
                   <TableHeader className="bg-gray-100">
@@ -247,7 +234,7 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
                           <TableCell className={`text-center font-medium ${getScoreColor(player.footylabsScore)}`}>{player.footylabsScore}</TableCell>
                           <TableCell className="text-center">
                             {player.listingStatus === "Not Listed" ? (
-                                <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/marketplace?tab=my-postings&action=create&wyscout_id=${player.wyscout_player_id}`); }}> List Player </Button>
+                                <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/marketplace?tab=my-postings&action=create&wyscout_id=${player.wyscout_player_id}&player_name=${encodeURIComponent(player.name)}`); }}> List Player </Button>
                             ) : (
                                 <Badge variant={ player.listingStatus === "Transfer" ? "default" : player.listingStatus === "Loan" ? "secondary" : "outline" } className={ player.listingStatus === "Transfer" ? "bg-[#31348D] text-white" : player.listingStatus === "Loan" ? "bg-orange-500 text-white" : "" }>
                                   {player.listingStatus}
@@ -270,13 +257,15 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
             isOpen={!!selectedPlayer}
             onClose={handleCloseDialog}
             // Pass the selectedPlayer data, ensuring its structure matches PlayerDataForModal
-            player={selectedPlayer ? {
+            player={selectedPlayer ? { // Map PlayerDisplayData to PlayerDataForModal structure
               id: selectedPlayer.id,
               name: selectedPlayer.name,
-              position: selectedPlayer.position, // This component uses 'position'
+              position: selectedPlayer.position, // Modal uses this for display title
+              player_pos: selectedPlayer.position, // Modal uses this for radar data logic
               stats: selectedPlayer.stats ?? null,
-              club_id: clubId, // Pass clubId for context if needed by modal's suggest button
-              wyscout_player_id: selectedPlayer.wyscout_player_id
+              club_id: clubId, // Pass the clubId from props
+              wyscout_player_id: selectedPlayer.wyscout_player_id,
+              player_league_name: selectedPlayer.player_league_name // Pass the league name
             } : null}
         />
       </>
