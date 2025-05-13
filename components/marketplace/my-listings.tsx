@@ -251,7 +251,7 @@ function ListingFormModal({
                                 <FormItem>
                                     <FormLabel>Asking Price (€)*</FormLabel>
                                     {/* Handle null correctly */}
-                                    <FormControl><Input type="number" placeholder="e.g., 10000" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} /></FormControl>
+                                    <FormControl><Input type="number" placeholder="e.g., 500000" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )} />
