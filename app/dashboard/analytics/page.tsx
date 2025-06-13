@@ -18,6 +18,7 @@ export default function AnalyticsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        console.log("Fetching user profile and club ID...")
         setLoading(true)
 
         // Get user profile to get the club ID
@@ -31,10 +32,27 @@ export default function AnalyticsPage() {
           return
         }
 
-        const { data: profile } = await supabase.from("profiles").select("club_id").eq("id", user.id).single()
+        console.log("User ID:", user.id)
+
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("club_id")
+          .eq("id", user.id)
+          .single()
+
+        if (profileError) {
+          console.error("Error fetching profile:", profileError)
+          setLoading(false)
+          return
+        }
+
+        console.log("Profile data:", profile)
 
         if (profile?.club_id) {
+          console.log("Setting club ID:", profile.club_id)
           setClubId(profile.club_id)
+        } else {
+          console.warn("No club_id found in profile")
         }
 
         // Fetch position average data
@@ -82,7 +100,7 @@ export default function AnalyticsPage() {
               final league position over the last 4 seasons. This data can help identify performance benchmarks needed
               to achieve specific league positions.
             </p>
-            <PositionAnalytics positionData={positionData} />
+            <PositionAnalytics positionData={positionData} clubId={clubId} />
           </div>
         )
       default:
@@ -93,6 +111,8 @@ export default function AnalyticsPage() {
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-3xl font-bold mb-6">Team Performance Insights</h1>
+
+ 
 
       {/* Tab Navigation */}
       <div className="flex space-x-2 mb-6 border-b pb-2">

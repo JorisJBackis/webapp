@@ -14,7 +14,7 @@ import {
   YAxis,
   Tooltip,
   Line,
-  LabelList
+  LabelList,
 } from "recharts"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
@@ -27,6 +27,7 @@ type TeamMetrics = {
   "Duels Success %": number
   "Pass Accuracy": number
   "Points Earned": number
+  League?: string
   [key: string]: any
 }
 
@@ -36,8 +37,41 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
   const [metrics, setMetrics] = useState<TeamMetrics | null>(null)
   const [allTeams, setAllTeams] = useState<TeamMetrics[]>([])
   const [selectedMetric, setSelectedMetric] = useState("xG")
+  const [teamLeague, setTeamLeague] = useState<string | null>(null)
   const supabase = createClient()
 
+  // First, get the league of the logged-in team
+  useEffect(() => {
+    const getTeamLeague = async () => {
+      if (!clubId) return
+
+      try {
+        const { data, error } = await supabase
+          .from("team_metrics_aggregated")
+          .select("League")
+          .eq("team_id", clubId)
+          .single()
+
+        if (error) {
+          console.error("Error fetching team league:", error)
+          return
+        }
+
+        if (data && data.League) {
+          console.log("Team league:", data.League)
+          setTeamLeague(data.League)
+        } else {
+          console.warn("No league found for team ID:", clubId)
+        }
+      } catch (err) {
+        console.error("Error in getTeamLeague:", err)
+      }
+    }
+
+    getTeamLeague()
+  }, [clubId, supabase])
+
+  // Fetch metrics for the logged-in team
   useEffect(() => {
     const fetchData = async () => {
       if (!clubId) return
@@ -72,16 +106,24 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
     fetchData()
   }, [clubId, supabase])
 
+  // Fetch all teams from the same league
   useEffect(() => {
     const fetchAllTeams = async () => {
+      if (!teamLeague) {
+        console.log("Waiting for team league...")
+        return
+      }
+
       try {
-        const { data, error } = await supabase
-          .from("team_metrics_aggregated")
-          .select("*")
+        console.log("Fetching teams from league:", teamLeague)
+
+        const { data, error } = await supabase.from("team_metrics_aggregated").select("*").eq("League", teamLeague)
 
         if (error) throw new Error(error.message)
 
         if (data) {
+          console.log(`Found ${data.length} teams in league ${teamLeague}`)
+
           const cleaned = data
             .filter(
               (team) =>
@@ -90,7 +132,7 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
                 team["xG"] != null &&
                 team["PPDA"] != null &&
                 team["Pass Accuracy"] != null &&
-                team["Duels Success %"] != null
+                team["Duels Success %"] != null,
             )
             .map((team) => ({
               team_id: team["team_id"],
@@ -99,20 +141,23 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
               xG: team["xG"],
               PPDA: team["PPDA"],
               "Pass Accuracy": team["Pass Accuracy"],
-              "Duels Success %": team["Duels Success %"]
+              "Duels Success %": team["Duels Success %"],
+              League: team["League"],
             }))
 
           setAllTeams(cleaned)
         }
       } catch (err) {
-        console.error("Error fetching all teams:", err)
+        console.error("Error fetching teams from league:", err)
       }
     }
 
     fetchAllTeams()
-  }, [supabase])
+  }, [teamLeague, supabase])
 
   function computeRegression(data: any[], xKey: string, yKey: string) {
+    if (data.length < 2) return []
+
     const n = data.length
     const sumX = data.reduce((acc, cur) => acc + cur[xKey], 0)
     const sumY = data.reduce((acc, cur) => acc + cur[yKey], 0)
@@ -125,7 +170,7 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
     const line = data
       .map((point) => ({
         [xKey]: point[xKey],
-        [yKey]: slope * point[xKey] + intercept
+        [yKey]: slope * point[xKey] + intercept,
       }))
       .sort((a, b) => a[xKey] - b[xKey])
 
@@ -182,7 +227,7 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
           { label: "Average xG", value: xG.toFixed(2), subtitle: "Expected Goals" },
           { label: "Average PPDA", value: ppda.toFixed(2), subtitle: "Passes Per Defensive Action" },
           { label: "Average Duel Success", value: `${duelSuccess.toFixed(1)}%`, subtitle: "Success Rate" },
-          { label: "Average Pass Accuracy", value: `${passAccuracy.toFixed(1)}%`, subtitle: "Completion Rate" }
+          { label: "Average Pass Accuracy", value: `${passAccuracy.toFixed(1)}%`, subtitle: "Completion Rate" },
         ].map((metric, i) => (
           <Card key={i} className="border-0 shadow-sm">
             <CardHeader className="pb-2">
@@ -200,7 +245,9 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
 
       {/* Scatterplot */}
       <div className="mt-10">
-        <h3 className="text-lg font-semibold mb-4">League Scatterplot</h3>
+        <h3 className="text-lg font-semibold mb-4">
+          {teamLeague ? `${teamLeague} League Scatterplot` : "League Scatterplot"}
+        </h3>
 
         <div className="mb-4 w-60">
           <Label>Select Y-Axis Metric</Label>
@@ -217,42 +264,52 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
           </Select>
         </div>
 
-        <ResponsiveContainer width="100%" height={450}>
-          <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 10 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="Points Earned" name="Points Earned" type="number" />
-            <YAxis dataKey={selectedMetric} name={selectedMetric} type="number" />
-            <Tooltip
-              content={({ payload }) =>
-                payload?.length ? (
-                  <div className="bg-white p-2 rounded shadow text-sm">
-                    <div><strong>{payload[0].payload.Team}</strong></div>
-                    <div>Points: {payload[0].payload["Points Earned"]}</div>
-                    <div>{selectedMetric}: {payload[0].payload[selectedMetric]?.toFixed(2)}</div>
-                  </div>
-                ) : null
-              }
-            />
-            <Scatter name="Other Teams" data={otherTeams} fill="#31348D">
-              <LabelList dataKey="Team" position="top" fontSize={10} />
-            </Scatter>
-            {highlightedTeam && (
-              <Scatter name="Your Team" data={[highlightedTeam]} fill="#DC2626">
+        {allTeams.length === 0 ? (
+          <div className="flex h-[200px] items-center justify-center text-gray-500">
+            No team data available for your league
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={450}>
+            <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="Points Earned" name="Points Earned" type="number" />
+              <YAxis dataKey={selectedMetric} name={selectedMetric} type="number" />
+              <Tooltip
+                content={({ payload }) =>
+                  payload?.length ? (
+                    <div className="bg-white p-2 rounded shadow text-sm">
+                      <div>
+                        <strong>{payload[0].payload.Team}</strong>
+                      </div>
+                      <div>Points: {payload[0].payload["Points Earned"]}</div>
+                      <div>
+                        {selectedMetric}: {payload[0].payload[selectedMetric]?.toFixed(2)}
+                      </div>
+                    </div>
+                  ) : null
+                }
+              />
+              <Scatter name="Other Teams" data={otherTeams} fill="#31348D">
                 <LabelList dataKey="Team" position="top" fontSize={10} />
               </Scatter>
-            )}
-            {allTeams.length > 1 && (
-              <Line
-                type="monotone"
-                dataKey={selectedMetric}
-                data={computeRegression(allTeams, "Points Earned", selectedMetric)}
-                stroke="#31348D"
-                strokeWidth={2}
-                dot={false}
-              />
-            )}
-          </ScatterChart>
-        </ResponsiveContainer>
+              {highlightedTeam && (
+                <Scatter name="Your Team" data={[highlightedTeam]} fill="#DC2626">
+                  <LabelList dataKey="Team" position="top" fontSize={10} />
+                </Scatter>
+              )}
+              {allTeams.length > 1 && (
+                <Line
+                  type="monotone"
+                  dataKey={selectedMetric}
+                  data={computeRegression(allTeams, "Points Earned", selectedMetric)}
+                  stroke="#31348D"
+                  strokeWidth={2}
+                  dot={false}
+                />
+              )}
+            </ScatterChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   )
