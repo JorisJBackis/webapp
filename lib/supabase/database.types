@@ -332,6 +332,7 @@ export type Database = {
           Interceptions: number | null
           "Lateral Pass Accuracy": number | null
           "Lateral Passes": number | null
+          League: string | null
           "Long Pass %": number | null
           "Long Pass Accuracy": number | null
           "Long Passes": number | null
@@ -453,6 +454,7 @@ export type Database = {
           Interceptions?: number | null
           "Lateral Pass Accuracy"?: number | null
           "Lateral Passes"?: number | null
+          League?: string | null
           "Long Pass %"?: number | null
           "Long Pass Accuracy"?: number | null
           "Long Passes"?: number | null
@@ -574,6 +576,7 @@ export type Database = {
           Interceptions?: number | null
           "Lateral Pass Accuracy"?: number | null
           "Lateral Passes"?: number | null
+          League?: string | null
           "Long Pass %"?: number | null
           "Long Pass Accuracy"?: number | null
           "Long Passes"?: number | null
@@ -700,6 +703,44 @@ export type Database = {
           listed_by_club_name: string
         }[]
       }
+      get_scouting_players: {
+        Args: {
+          p_requesting_club_id: number
+          p_name_filter?: string
+          p_position_filter?: string
+          p_min_height?: number
+          p_max_height?: number
+          p_foot_filter?: string
+          p_sort_column?: string
+          p_sort_direction?: string
+          p_contract_start?: string
+          p_contract_end?: string
+          p_limit?: number
+          p_offset?: number
+        }
+        Returns: {
+          player_id: number
+          wyscout_player_id: number
+          name: string
+          club_id: number
+          player_pos: string
+          stats: Json
+          updated_at: string
+          on_loan: boolean
+          loan_visibility: string
+          age: number
+          height: number
+          foot: string
+          contract_expiry: string
+          avg_percentile: number
+          club_name: string
+          total_count: number
+        }[]
+      }
+      try_cast_to_date: {
+        Args: { p_text: string }
+        Returns: string
+      }
     }
     Enums: {
       listing_status_enum: "active" | "inactive" | "completed"
@@ -711,3 +752,121 @@ export type Database = {
     }
   }
 }
+
+type DefaultSchema = Database[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof Database },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof Database },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof Database },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
+  public: {
+    Enums: {
+      listing_status_enum: ["active", "inactive", "completed"],
+      listing_type_enum: ["loan", "transfer"],
+      loan_visibility_enum: ["clubs", "agents", "both"],
+    },
+  },
+} as const
