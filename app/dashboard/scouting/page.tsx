@@ -16,7 +16,7 @@ export default async function ScoutingPage() {
   return (
     <div className="container mx-auto py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-[#3144C3]">Player Scouting</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-footylabs-newblue">Player Scouting</h1>
         <p className="text-muted-foreground">Discover and track players across leagues.</p>
       </div>
 
