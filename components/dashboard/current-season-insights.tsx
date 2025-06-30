@@ -178,6 +178,45 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
     return line
   }
 
+  const getAxisDomain = (data: number[], paddingFactor = 0.15) => {
+    if (data.length === 0) return [0, 10]; // Default domain if no data
+    const minVal = Math.min(...data);
+    const maxVal = Math.max(...data);
+    const padding = (maxVal - minVal) * paddingFactor;
+    return [Math.max(0, minVal - padding), maxVal + padding]; // Ensure min is not negative
+  };
+
+  const xDomain = getAxisDomain(allTeams.map(team => team[selectedMetric]));
+  const yDomain = getAxisDomain(allTeams.map(team => team["Points Earned"]));
+
+  const formatTick = (tick: number) => {
+    // If the number is very small (like for xG), show one decimal. Otherwise, show as integer.
+    if (Math.abs(tick) < 10) {
+      return tick.toFixed(1);
+    }
+    return Math.round(tick).toString();
+  };
+
+  const getEvenTicks = (domain: [number, number], numTicks: number = 5) => {
+    const [min, max] = domain;
+    // If the domain is invalid or too small, return empty to let Recharts decide
+    if (min === undefined || max === undefined || min >= max) {
+      return [];
+    }
+
+    const ticks = [];
+    const step = (max - min) / (numTicks - 1);
+
+    for (let i = 0; i < numTicks; i++) {
+      ticks.push(min + i * step);
+    }
+    return ticks;
+  };
+
+  const xTicks = getEvenTicks(xDomain as [number, number]);
+  const yTicks = getEvenTicks(yDomain as [number, number]);
+
+
   if (loading) {
     return (
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
@@ -273,10 +312,10 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
               <ResponsiveContainer width="100%" height={450}>
                 <ScatterChart margin={{ top: 20, right: 30, bottom: 40, left: 30 }}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey={selectedMetric} name={selectedMetric} type="number" >
+                  <XAxis dataKey={selectedMetric} name={selectedMetric} type="number" domain={xDomain} ticks={xTicks} tickFormatter={formatTick}>
                     <RechartsLabel value={selectedMetric} offset={-25} position="insideBottom" />
                   </XAxis>
-                  <YAxis dataKey="Points Earned" name="Points Earned" type="number" >
+                  <YAxis dataKey="Points Earned" name="Points Earned" type="number" domain={yDomain} ticks={yTicks} tickFormatter={formatTick}>
                     <RechartsLabel value="Points Earned" angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
                   </YAxis>
                   <Tooltip
