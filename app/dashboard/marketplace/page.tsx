@@ -13,10 +13,10 @@ export default async function MarketplacePage() {
                 <p className="text-muted-foreground">Discover talent: Browse club listings, our curated prospects, or define your recruitment needs.</p>
             </div>
 
-            <Tabs defaultValue="agency-rb-prospects" className="space-y-6"> {/* Default to new tab */}
+            <Tabs defaultValue="agency-rb-prospects" className="space-y-6">
                 <TabsList className="bg-gray-100 text-black">
                     <TabsTrigger value="agency-rb-prospects" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
-                       Curated Players {/* Renamed for brevity */}
+                       Available Players
                     </TabsTrigger>
                     <TabsTrigger value="browse-players" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
                         Club Listings
