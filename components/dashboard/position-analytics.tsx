@@ -206,7 +206,45 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
           return
         }
 
-        // Step 7: Process team metrics and calculate expected points
+        // Step 7: Fetch previous years positions data for average points calculation
+        console.log("Fetching previous years positions data...")
+        const { data: previousYearsData, error: previousYearsError } = await supabase
+          .from("previous_years_positions")
+          .select("team_id, Points")
+          .in("team_id", metricTeamIds)
+
+        if (previousYearsError) {
+          console.error("Error fetching previous years data:", previousYearsError)
+          throw previousYearsError
+        }
+
+        console.log(`Found ${previousYearsData?.length || 0} previous years records`)
+
+        // Calculate average points per team from previous years
+        const avgPointsByTeam: Record<number, number> = {}
+        previousYearsData?.forEach((record) => {
+          if (record.team_id === null) return
+
+          const teamId = record.team_id as number
+          const points = Number.parseFloat(record.Points?.toString() || "0")
+
+          if (!avgPointsByTeam[teamId]) {
+            avgPointsByTeam[teamId] = 0
+          }
+          avgPointsByTeam[teamId] += points
+        })
+
+        // Calculate averages
+        Object.keys(avgPointsByTeam).forEach((teamId) => {
+          const teamIdNum = Number(teamId)
+          const totalPoints = avgPointsByTeam[teamIdNum]
+          const recordCount = previousYearsData?.filter(record => record.team_id === teamIdNum).length || 1
+          avgPointsByTeam[teamIdNum] = totalPoints / recordCount
+        })
+
+        console.log(`Calculated average points for ${Object.keys(avgPointsByTeam).length} teams`)
+
+        // Step 8: Process team metrics and calculate expected points
         console.log("Processing team metrics and calculating expected points...")
 
         const validTeams = filteredTeamMetrics.filter((team) => {
@@ -252,7 +290,16 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
             }
 
             // Calculate expected points
-            const expectedPoints = (pointsEarned / matchCount) * 36 // Assuming 36 matches in a season
+            const currentFormPoints = (pointsEarned / matchCount) * 36 // Assuming 36 matches in a season
+            const avgPoints = avgPointsByTeam[teamId] || 0
+            
+            let expectedPoints: number
+            if (avgPoints === null || avgPoints === 0) {
+              expectedPoints = currentFormPoints
+            } else {
+              expectedPoints = (0.25 * currentFormPoints) + (0.75 * avgPoints)
+            }
+            
             const roundedPoints = Math.round(expectedPoints * 10) / 10 // Round to 1 decimal place
 
             return {
