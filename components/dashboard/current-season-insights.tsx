@@ -319,17 +319,28 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
                     <RechartsLabel value="Points Earned" angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
                   </YAxis>
                   <Tooltip
-                      content={({ payload }) =>
-                          payload?.length ? (
-                              <div className="bg-white p-2 rounded shadow text-sm">
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          // Find the data for the point the user is actually hovering on.
+                          // If multiple points are close, prioritize the 'Your Team' (red/highlighted) point.
+                          const dataPoint =
+                              payload.find(p => p.dataKey === 'Your Team')?.[payload.findIndex(p => p.dataKey === 'Your Team')]?.payload ||
+                              payload[0]?.payload;
+
+                          if (!dataPoint) return null;
+
+                          return (
+                              <div className="bg-white p-2 rounded shadow text-sm border border-gray-200">
                                 <div>
-                                  <strong>{payload[0].payload.Team}</strong>
+                                  <strong>{dataPoint.Team}</strong>
                                 </div>
-                                <div>{selectedMetric}: {payload[0].payload[selectedMetric]?.toFixed(2)}</div>
-                                <div>Points: {payload[0].payload["Points Earned"]}</div>
+                                <div>{selectedMetric}: {dataPoint[selectedMetric]?.toFixed(2)}</div>
+                                <div>Points: {dataPoint["Points Earned"]}</div>
                               </div>
-                          ) : null
-                      }
+                          );
+                        }
+                        return null;
+                      }}
                   />
                   <Scatter name="Other Teams" data={otherTeams} fill="#31348D">
                     <LabelList dataKey="Team" position="top" fontSize={10} />
