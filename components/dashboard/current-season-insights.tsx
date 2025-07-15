@@ -319,21 +319,18 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
                     <RechartsLabel value="Points Earned" angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
                   </YAxis>
                   <Tooltip
+                      cursor={{ strokeDasharray: '3 3' }}
                       content={({ active, payload }) => {
                         if (active && payload && payload.length) {
-                          // Find the data for the point the user is actually hovering on.
-                          // If multiple points are close, prioritize the 'Your Team' (red/highlighted) point.
-                          const dataPoint =
-                              payload.find(p => p.dataKey === 'Your Team')?.[payload.findIndex(p => p.dataKey === 'Your Team')]?.payload ||
-                              payload[0]?.payload;
-
-                          if (!dataPoint) return null;
+                          // This logic is much simpler and more robust.
+                          // It finds the data point in the payload that matches the highlighted team by its name.
+                          // If you hover a gray dot, it will default to that one.
+                          const highlightedData = payload.find(p => p.name === "Your Team");
+                          const dataPoint = highlightedData ? highlightedData.payload : payload[0].payload;
 
                           return (
                               <div className="bg-white p-2 rounded shadow text-sm border border-gray-200">
-                                <div>
-                                  <strong>{dataPoint.Team}</strong>
-                                </div>
+                                <div><strong>{dataPoint.Team}</strong></div>
                                 <div>{selectedMetric}: {dataPoint[selectedMetric]?.toFixed(2)}</div>
                                 <div>Points: {dataPoint["Points Earned"]}</div>
                               </div>
