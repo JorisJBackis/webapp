@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2, AlertCircle } from "lucide-react"
@@ -31,6 +31,15 @@ type TeamMetrics = {
   League?: string
   [key: string]: any
 }
+
+const CustomizedDot = (props: any) => {
+  const { cx, cy, payload, clubId } = props;
+
+  // Determine color based on whether this is the user's club
+  const fill = payload.team_id === clubId ? "#DC2626" : "#31348D";
+
+  return <circle cx={cx} cy={cy} r={6} fill={fill} />;
+};
 
 export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
   const [loading, setLoading] = useState(true)
@@ -146,15 +155,10 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
                 League: team["League"],
               }))
 
-          setAllTeams(cleaned)
-        }
-      } catch (err) {
-        console.error("Error fetching teams from league:", err)
-      }
-    }
-
-    fetchAllTeams()
-  }, [teamLeague, supabase])
+          console.log(`[DEBUG] Found ${cleaned.length} valid teams for league '${teamLeague}'. Regression line requires at least 2.`);
+          setAllTeams(cleaned);
+        } } catch (err) { console.error("Error fetching teams from league:", err); } }; fetchAllTeams()
+  }, [teamLeague, supabase]);
 
   function computeRegression(data: any[], xKey: string, yKey: string) {
     if (data.length < 2) return []
@@ -177,6 +181,10 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
 
     return line
   }
+
+  const regressionData = useMemo(() => {
+    return computeRegression(allTeams, selectedMetric, "Points Earned");
+  }, [allTeams, selectedMetric]);
 
   const getAxisDomain = (data: number[], paddingFactor = 0.15) => {
     if (data.length === 0) return [0, 10]; // Default domain if no data
@@ -319,15 +327,9 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
                     <RechartsLabel value="Points Earned" angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
                   </YAxis>
                   <Tooltip
-                      cursor={{ strokeDasharray: '3 3' }}
                       content={({ active, payload }) => {
                         if (active && payload && payload.length) {
-                          // This logic is much simpler and more robust.
-                          // It finds the data point in the payload that matches the highlighted team by its name.
-                          // If you hover a gray dot, it will default to that one.
-                          const highlightedData = payload.find(p => p.name === "Your Team");
-                          const dataPoint = highlightedData ? highlightedData.payload : payload[0].payload;
-
+                          const dataPoint = payload[0].payload;
                           return (
                               <div className="bg-white p-2 rounded shadow text-sm border border-gray-200">
                                 <div><strong>{dataPoint.Team}</strong></div>
@@ -339,23 +341,11 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
                         return null;
                       }}
                   />
-                  <Scatter name="Other Teams" data={otherTeams} fill="#31348D">
+                  <Scatter data={allTeams} shape={<CustomizedDot clubId={clubId} />}>
                     <LabelList dataKey="Team" position="top" fontSize={10} />
                   </Scatter>
-                  {highlightedTeam && (
-                      <Scatter name="Your Team" data={[highlightedTeam]} fill="#DC2626">
-                        <LabelList dataKey="Team" position="top" fontSize={10} />
-                      </Scatter>
-                  )}
-                  {allTeams.length > 1 && (
-                      <Line
-                          type="monotone"
-                          dataKey="Points Earned" // The y-axis value
-                          data={computeRegression(allTeams, selectedMetric, "Points Earned")}
-                          stroke="#31348D"
-                          strokeWidth={2}
-                          dot={false}
-                      />
+                  {regressionData.length > 0 && (
+                      <Line type="monotone" dataKey="Points Earned" data={regressionData} stroke="#31348D" strokeWidth={2} dot={false}/>
                   )}
                 </ScatterChart>
               </ResponsiveContainer>
