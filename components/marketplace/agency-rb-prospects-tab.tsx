@@ -96,10 +96,20 @@ export default function AgencyRBProspectsTab() {
         }
     };
 
-    const formatDecimal = (value: number | null, precision = 2) => {
+    const formatFootyLabsScore = (value: number | null) => {
         if (value === null || value === undefined || isNaN(value)) return 'N/A';
-        return value.toFixed(precision);
+        // Multiply by 10 and fix to one decimal place
+        return (value * 10).toFixed(1);
     }
+
+    const getScoreColor = (score: number | null | undefined): string => {
+        if (score === null || score === undefined || isNaN(score)) return "text-muted-foreground";
+        // The score is 0-1, so we multiply by 100 for percentile-based color
+        const scaledScore = score * 100;
+        if (scaledScore <= 33.3) return "text-red-600 font-medium";
+        if (scaledScore <= 66.6) return "text-amber-500 font-medium";
+        return "text-green-600 font-medium";
+    };
 
     const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
@@ -166,10 +176,10 @@ export default function AgencyRBProspectsTab() {
                                             <TableHead className="w-[80px] font-semibold text-slate-700">Foot</TableHead>
                                             <TableHead className="w-[120px] font-semibold text-slate-700">Market Val.</TableHead>
                                             <TableHead className="w-[100px] font-semibold text-slate-700">Contract End</TableHead>
+                                            <TableHead className="w-[100px] text-center font-semibold text-slate-700">FootyLabs Score</TableHead>
                                             <TableHead className="w-[60px] text-center font-semibold text-slate-700">G</TableHead>
                                             <TableHead className="w-[60px] text-center font-semibold text-slate-700">A</TableHead>
                                             <TableHead className="w-[60px] text-center font-semibold text-slate-700">MP</TableHead>
-                                            <TableHead className="w-[100px] text-center font-semibold text-slate-700">FootyLabs Score</TableHead>
                                             {/* Response Column Removed from Headers */}
                                             <TableHead className="w-[100px] text-center font-semibold text-slate-700">Links</TableHead>
                                         </TableRow>
@@ -188,10 +198,12 @@ export default function AgencyRBProspectsTab() {
                                                 <TableCell>{p.foot || 'N/A'}</TableCell>
                                                 <TableCell>{formatCurrency(p.market_value)}</TableCell>
                                                 <TableCell>{formatDate(p.contract_expires)}</TableCell>
+                                                <TableCell className={`text-center font-semibold ${getScoreColor(p.footy_labs_score)}`}>
+                                                    {formatFootyLabsScore(p.footy_labs_score)}
+                                                </TableCell>
                                                 <TableCell className="text-center">{p.goals ?? 'N/A'}</TableCell>
                                                 <TableCell className="text-center">{p.assists ?? 'N/A'}</TableCell>
                                                 <TableCell className="text-center">{p.matches_played ?? 'N/A'}</TableCell>
-                                                <TableCell className="text-center font-semibold text-footylabs-newblue">{formatDecimal(p.footy_labs_score, 2)}</TableCell>
                                                 {/* Response Cell Removed */}
                                                 <TableCell className="text-center space-x-1">
                                                     {p.transfermarkt_url && (
