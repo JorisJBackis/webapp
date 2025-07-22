@@ -297,7 +297,7 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
             if (avgPoints === null || avgPoints === 0) {
               expectedPoints = currentFormPoints
             } else {
-              expectedPoints = (0.25 * currentFormPoints) + (0.75 * avgPoints)
+              expectedPoints = (0.9 * currentFormPoints) + (0.1 * avgPoints)
             }
             
             const roundedPoints = Math.round(expectedPoints * 10) / 10 // Round to 1 decimal place
