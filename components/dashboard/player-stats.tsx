@@ -146,35 +146,38 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
         return nameMatch && positionMatch;
       })
       .sort((a, b) => {
-        if (sortColumn === "name") return sortDirection === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
-        if (sortColumn === "position") return sortDirection === "asc" ? a.position.localeCompare(b.position) : b.position.localeCompare(a.position);
-        if (sortColumn === "listingStatus") {
-          const statusA = a.listingStatus || ""; const statusB = b.listingStatus || "";
-          return sortDirection === "asc" ? statusA.localeCompare(statusB) : statusB.localeCompare(statusA);
-        }
-// Special case for Footylabs Score
-        if (sortColumn === "footylabsScore") {
-          const aScore = a.footylabsScore === "N/A" ? -1 : parseFloat(String(a.footylabsScore));
-          const bScore = b.footylabsScore === "N/A" ? -1 : parseFloat(String(b.footylabsScore));
+        // <<< NEW: Define which columns are numeric >>>
+        const numericColumns = ['age', 'goals', 'xG', 'assists', 'minutes', 'footylabsScore'];
 
-          if (isNaN(aScore)) return 1;
-          if (isNaN(bScore)) return -1;
-
-          return sortDirection === "asc" ? aScore - bScore : bScore - aScore;
+        // Handle string-based columns first
+        if (sortColumn === "name" || sortColumn === "position" || sortColumn === "listingStatus" || sortColumn === "contractEnds") {
+          const valA = a[sortColumn as keyof PlayerDisplayData] || "";
+          const valB = b[sortColumn as keyof PlayerDisplayData] || "";
+          if (sortDirection === 'asc') {
+            return valA.localeCompare(valB);
+          } else {
+            return valB.localeCompare(valA);
+          }
         }
 
-        // Generic sort for potentially numeric or string values
-        const aVal = a[sortColumn as keyof PlayerDisplayData];
-        const bVal = b[sortColumn as keyof PlayerDisplayData];
+        // Handle numeric columns
+        if (numericColumns.includes(sortColumn)) {
+          // Convert to number for comparison, treating nulls/N/A as lowest value
+          const aVal = a[sortColumn as keyof PlayerDisplayData];
+          const bVal = b[sortColumn as keyof PlayerDisplayData];
 
-        // Handle numbers specifically for numeric sort
-        if (typeof aVal === 'number' && typeof bVal === 'number') {
-          return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+          const numA = (aVal === null || aVal === "N/A") ? -Infinity : parseFloat(String(aVal));
+          const numB = (bVal === null || bVal === "N/A") ? -Infinity : parseFloat(String(bVal));
+
+          if (sortDirection === 'asc') {
+            return numA - numB;
+          } else {
+            return numB - numA;
+          }
         }
-        // Fallback to string compare, handling nulls
-        const valA = String(aVal ?? '').toLowerCase();
-        const valB = String(bVal ?? '').toLowerCase();
-        return sortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+
+        // Default fallback (should not be needed if all columns are handled)
+        return 0;
       });
 
   return (

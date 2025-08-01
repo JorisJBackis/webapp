@@ -176,6 +176,8 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
         console.log("Processed matches:", processedMatches)
         setDebugInfo(debugMatches)
 
+        processedMatches.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
         // Calculate statistics
         const totalMatches = processedMatches.length
         const wins = processedMatches.filter((match) => match.result === "win").length
@@ -190,31 +192,42 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
         const cleanSheets = processedMatches.filter((match) => match.goals_conceded === 0).length
 
         // Group by month for the chart data
-        const monthlyData: { [key: string]: MonthlyPerformanceData } = {}
+        // <<< REPLACE THE OLD GROUPING/SORTING LOGIC WITH THIS >>>
+
+        // Group by month while preserving chronological order
+        const monthlyDataOrdered: MonthlyPerformanceData[] = [];
+        const monthMap = new Map<string, MonthlyPerformanceData>();
 
         processedMatches.forEach((match) => {
-          if (!monthlyData[match.month]) {
-            monthlyData[match.month] = {
-              month: match.month,
+          // Create a unique key for month and year to handle multi-year seasons
+          const matchDate = new Date(match.date);
+          const monthYearKey = `${matchDate.getFullYear()}-${matchDate.getMonth()}`;
+
+          if (!monthMap.has(monthYearKey)) {
+            const newMonthData = {
+              month: match.month, // Keep the short name e.g., "Sep"
               wins: 0,
               draws: 0,
               losses: 0,
               goalsScored: 0,
               goalsConceded: 0,
-            }
+            };
+            monthMap.set(monthYearKey, newMonthData);
+            monthlyDataOrdered.push(newMonthData);
           }
 
-          if (match.result === "win") monthlyData[match.month].wins++
-          else if (match.result === "draw") monthlyData[match.month].draws++
-          else if (match.result === "loss") monthlyData[match.month].losses++
+          const currentMonthData = monthMap.get(monthYearKey)!;
 
-          monthlyData[match.month].goalsScored += match.goals_scored
-          monthlyData[match.month].goalsConceded += match.goals_conceded
-        })
+          if (match.result === "win") currentMonthData.wins++;
+          else if (match.result === "draw") currentMonthData.draws++;
+          else if (match.result === "loss") currentMonthData.losses++;
 
-        // Convert to array and sort by month
-        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-        const chartData = Object.values(monthlyData).sort((a, b) => months.indexOf(a.month) - months.indexOf(b.month))
+          currentMonthData.goalsScored += match.goals_scored;
+          currentMonthData.goalsConceded += match.goals_conceded;
+        });
+
+        // The chartData is now already in the correct chronological order
+        const chartData = monthlyDataOrdered;
 
         console.log("Chart data:", chartData)
 
