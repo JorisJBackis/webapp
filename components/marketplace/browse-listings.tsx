@@ -109,7 +109,6 @@ export default function BrowseListings() {
                 <CardDescription>Players listed for transfer or loan by other clubs.</CardDescription>
             </CardHeader>
             <CardContent>
-                {/* Filters... (same as before) */}
                 <div className="mb-4 flex flex-wrap gap-2">
                     <div className="relative flex-1 min-w-[200px]">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -140,13 +139,11 @@ export default function BrowseListings() {
                     </Select>
                 </div>
 
-                {/* Loading / Error / Empty States... (same as before) */}
                 {loading && <div className="flex justify-center items-center py-10"><Loader2 className="h-8 w-8 animate-spin text-[#31348D]" /></div>}
                 {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
                 {!loading && !error && listings.length === 0 && <p className="text-center text-muted-foreground py-10">No active player listings found from other clubs.</p>}
                 {!loading && !error && listings.length > 0 && filteredListings.length === 0 && <p className="text-center text-muted-foreground py-10">No listings match your current filters.</p>}
 
-                {/* Table Display - Use fields from BrowsePlayerListing type */}
                 {!loading && !error && filteredListings.length > 0 && (
                     <Table>
                         <TableHeader>
@@ -183,6 +180,7 @@ export default function BrowseListings() {
                                     <TableCell>{listing.listing_created_at ? new Date(listing.listing_created_at).toLocaleDateString() : 'N/A'}</TableCell>
                                     <TableCell className="text-right">
                                         <Button variant="outline" size="sm">View Details</Button> {/* TODO: Implement action */}
+                                        <Button size="sm" variant="default" className="ml-2">Contact</Button>
                                     </TableCell>
                                 </TableRow>
                             ))}

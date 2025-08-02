@@ -41,7 +41,9 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
   const [teamStandings, setTeamStandings] = useState<TeamStanding[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [leagueName, setLeagueName] = useState<string | null>(null)
+  const [leagueData, setLeagueData] = useState<Map<string, { total_games: number }>>(new Map())
   const supabase = createClientComponentClient<Database>()
+
 
   useEffect(() => {
     if (positionData && positionData.length > 0) {
@@ -75,8 +77,30 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
     }
   }, [positionData])
 
+  // Place this useEffect with the others
+  useEffect(() => {
+    const fetchLeagueData = async () => {
+      if (!supabase) return;
+      const { data, error } = await supabase
+          .from('leagues')
+          .select('name, total_games_per_season');
+
+      if (error) {
+        console.error("Could not fetch league data:", error);
+        return;
+      }
+
+      const leagueMap = new Map(
+          data.map(league => [league.name, { total_games: league.total_games_per_season }])
+      );
+      setLeagueData(leagueMap);
+    };
+    fetchLeagueData();
+  }, [supabase]);
+
   useEffect(() => {
     async function fetchTeamStandings() {
+
       console.log("=== STARTING TEAM STANDINGS FETCH ===")
       console.log(`Club ID: ${clubId}`)
 
@@ -136,13 +160,16 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
           console.log(`Filtered to ${filteredTeamMetrics.length} teams in league: ${userLeague}`)
         }
 
+        // <<< ADD DEBUG LOG 1 >>>
+        console.log("[DEBUG 1] Team IDs after league filter:", filteredTeamMetrics.map(t => t.team_id));
+
         if (filteredTeamMetrics.length === 0) {
           console.log("No teams found in the user's league, showing all teams instead")
           filteredTeamMetrics = teamMetrics
         }
 
         // Step 4: Get team IDs from filtered metrics data
-        const metricTeamIds = filteredTeamMetrics.filter((team) => team.team_id !== null).map((team) => team.team_id)
+        const metricTeamIds = filteredTeamMetrics.filter((team) => team.team_id !== null).map((team) => Number(team.team_id))
 
         console.log(`Working with ${metricTeamIds.length} team IDs`)
 
@@ -181,21 +208,29 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
         }
 
         console.log(`Found ${matchData?.length || 0} matches for filtered teams`)
+        // <<< ADD DEBUG LOG 2 >>>
+        const receivedTeamIds = [...new Set(matchData?.map(m => m.team_id))];
+        console.log("[DEBUG 2] Unique team IDs found in 'team_match_stats':", receivedTeamIds);
 
         // Count matches per team
         const matchCountByTeam: Record<number, number> = {}
         matchData?.forEach((match) => {
           if (match.team_id === null) return
 
-          const teamId = match.team_id as number
-          if (!matchCountByTeam[teamId]) {
-            matchCountByTeam[teamId] = 0
+          //Force to number using Number() for safety
+          const teamId = Number(match.team_id);
+
+          if (!isNaN(teamId)) { // Only count if it's a valid number
+            if (!matchCountByTeam[teamId]) {
+              matchCountByTeam[teamId] = 0
+            }
+            matchCountByTeam[teamId]++
           }
-          matchCountByTeam[teamId]++
         })
 
         console.log(`Created match counts for ${Object.keys(matchCountByTeam).length} teams`)
-
+        // <<< ADD DEBUG LOG 3 >>>
+        console.log("[DEBUG 3] Match counts per team ID:", matchCountByTeam);
         // Check if we have any teams with matches
         const teamsWithMatches = Object.keys(matchCountByTeam).length
 
@@ -249,10 +284,11 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
 
         const validTeams = filteredTeamMetrics.filter((team) => {
           if (!team.team_id) {
+            console.log(`[DEBUG] Skipping team with no team_id:`, team);
             return false
           }
 
-          const teamId = team.team_id as number
+          const teamId = Number(team.team_id);
           const matchCount = matchCountByTeam[teamId] || 0
 
           if (matchCount === 0) {
@@ -270,7 +306,8 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
         })
 
         console.log(`Found ${validTeams.length} valid teams with matches and points data`)
-
+        // <<< ADD DEBUG LOG 4 >>>
+        console.log("[DEBUG 4] 'validTeams' IDs remaining:", validTeams.map(t => t.team_id));
         const standings = validTeams
           .map((team) => {
             const teamId = team.team_id as number
@@ -290,16 +327,20 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
             }
 
             // Calculate expected points
-            const currentFormPoints = (pointsEarned / matchCount) * 36 // Assuming 36 matches in a season
+            const leagueForThisTeam = team.League as string;
+
+            // Use the fetched leagueData map, with a sensible fallback of 38 games
+            const totalGamesInSeason = leagueData.get(leagueForThisTeam)?.total_games || 38;
+            const currentFormPoints = (pointsEarned / matchCount) * totalGamesInSeason;
             const avgPoints = avgPointsByTeam[teamId] || 0
-            
+
             let expectedPoints: number
             if (avgPoints === null || avgPoints === 0) {
               expectedPoints = currentFormPoints
             } else {
               expectedPoints = (0.9 * currentFormPoints) + (0.1 * avgPoints)
             }
-            
+
             const roundedPoints = Math.round(expectedPoints * 10) / 10 // Round to 1 decimal place
 
             return {
@@ -340,7 +381,9 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
     }
 
     fetchTeamStandings()
-  }, [supabase, clubId])
+  }, [supabase, clubId, leagueData])
+
+  const totalGamesInSeason = leagueData.get(leagueName || "")?.total_games || 38;
 
   if (chartData.length === 0 || isLoading) {
     return <div className="text-center py-8">Loading data...</div>
@@ -449,7 +492,7 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
           </div>
         )}
         <p className="text-xs text-gray-500 mt-2">
-          Expected points calculated based on current performance projected over a 36-match season.
+          Expected points calculated based on current performance projected over a {totalGamesInSeason}-match season.
         </p>
       </div>
     </div>

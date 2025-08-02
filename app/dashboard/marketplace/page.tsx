@@ -1,8 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BrowseListings from "@/components/marketplace/browse-listings";
-import MyListings from "@/components/marketplace/my-listings";
 import BrowseNeeds from "@/components/marketplace/browse-needs";
-import MyNeeds from "@/components/marketplace/my-needs";
 import AgencyRBProspectsTab from "@/components/marketplace/agency-rb-prospects-tab"; // <<< IMPORT
 
 export default async function MarketplacePage() {
@@ -16,16 +14,13 @@ export default async function MarketplacePage() {
             <Tabs defaultValue="agency-rb-prospects" className="space-y-6">
                 <TabsList className="bg-gray-100 text-black">
                     <TabsTrigger value="agency-rb-prospects" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
-                       Available Players
+                       Recommended Players
                     </TabsTrigger>
                     <TabsTrigger value="browse-players" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
-                        Club Listings
+                        On Transfer List
                     </TabsTrigger>
                     <TabsTrigger value="club-needs" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
-                        Club Needs
-                    </TabsTrigger>
-                    <TabsTrigger value="my-postings" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
-                        My Club's Activity
+                        Club Requests
                     </TabsTrigger>
                 </TabsList>
 
@@ -39,11 +34,6 @@ export default async function MarketplacePage() {
 
                 <TabsContent value="club-needs">
                     <BrowseNeeds />
-                </TabsContent>
-
-                <TabsContent value="my-postings" className="space-y-6">
-                    <MyListings />
-                    <MyNeeds />
                 </TabsContent>
             </Tabs>
         </div>

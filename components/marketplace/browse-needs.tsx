@@ -82,7 +82,7 @@ export default function BrowseNeeds() {
     }
 
     return (
-        <Card> {/* Keep the Card structure */}
+        <Card> {/* Card structure */}
             <CardHeader>
                 <CardTitle>Club Needs</CardTitle>
                 <CardDescription>Recruitment needs posted by other clubs.</CardDescription>

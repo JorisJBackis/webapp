@@ -4,6 +4,8 @@ import PerformanceOverview from "@/components/dashboard/performance-overview"
 import PlayerStats from "@/components/dashboard/player-stats"
 import TeamComparison from "@/components/dashboard/team-comparison"
 import Image from "next/image"
+import MyListings from "@/components/marketplace/my-listings";
+import MyNeeds from "@/components/marketplace/my-needs";
 
 export default async function DashboardPage() {
   const supabase = createClient()
@@ -48,6 +50,9 @@ export default async function DashboardPage() {
           <TabsTrigger value="comparison" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
             Team Comparison
           </TabsTrigger>
+          <TabsTrigger value="my-activity" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
+            My Club's Activity
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="space-y-6">
           <PerformanceOverview clubId={profile?.club_id} />
@@ -57,6 +62,10 @@ export default async function DashboardPage() {
         </TabsContent>
         <TabsContent value="comparison" className="space-y-6">
           <TeamComparison clubId={profile?.club_id} />
+        </TabsContent>
+        <TabsContent value="my-activity" className="space-y-6">
+          <MyListings />
+          <MyNeeds />
         </TabsContent>
       </Tabs>
     </div>

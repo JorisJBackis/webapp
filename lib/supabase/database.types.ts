@@ -1,38 +1,112 @@
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          operationName?: string
-          query?: string
-          variables?: Json
-          extensions?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+  // Allows to automatically instanciate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)"
   }
   public: {
     Tables: {
+      agency_rb_prospects: {
+        Row: {
+          accurate_crosses_pct: number | null
+          accurate_passes_pct: number | null
+          age: number | null
+          assists: number | null
+          contract_expires: string | null
+          defensive_duels_won_pct: number | null
+          foot: string | null
+          footy_labs_score: number | null
+          goals: number | null
+          height: number | null
+          instagram_url: string | null
+          key_passes_p90: number | null
+          market_value: number | null
+          matches_played: number | null
+          on_loan: string | null
+          original_league_name: string | null
+          original_team_name: string | null
+          passport_country: string | null
+          player_name: string | null
+          position_excel: string | null
+          reached_out_on: string | null
+          successful_defensive_actions_p90: number | null
+          their_response: string | null
+          transfermarkt_url: string | null
+          weight: number | null
+          xa_p90: number | null
+        }
+        Insert: {
+          accurate_crosses_pct?: number | null
+          accurate_passes_pct?: number | null
+          age?: number | null
+          assists?: number | null
+          contract_expires?: string | null
+          defensive_duels_won_pct?: number | null
+          foot?: string | null
+          footy_labs_score?: number | null
+          goals?: number | null
+          height?: number | null
+          instagram_url?: string | null
+          key_passes_p90?: number | null
+          market_value?: number | null
+          matches_played?: number | null
+          on_loan?: string | null
+          original_league_name?: string | null
+          original_team_name?: string | null
+          passport_country?: string | null
+          player_name?: string | null
+          position_excel?: string | null
+          reached_out_on?: string | null
+          successful_defensive_actions_p90?: number | null
+          their_response?: string | null
+          transfermarkt_url?: string | null
+          weight?: number | null
+          xa_p90?: number | null
+        }
+        Update: {
+          accurate_crosses_pct?: number | null
+          accurate_passes_pct?: number | null
+          age?: number | null
+          assists?: number | null
+          contract_expires?: string | null
+          defensive_duels_won_pct?: number | null
+          foot?: string | null
+          footy_labs_score?: number | null
+          goals?: number | null
+          height?: number | null
+          instagram_url?: string | null
+          key_passes_p90?: number | null
+          market_value?: number | null
+          matches_played?: number | null
+          on_loan?: string | null
+          original_league_name?: string | null
+          original_team_name?: string | null
+          passport_country?: string | null
+          player_name?: string | null
+          position_excel?: string | null
+          reached_out_on?: string | null
+          successful_defensive_actions_p90?: number | null
+          their_response?: string | null
+          transfermarkt_url?: string | null
+          weight?: number | null
+          xa_p90?: number | null
+        }
+        Relationships: []
+      }
       clubs: {
         Row: {
           created_at: string
           id: number
           league: string | null
+          league_id: number | null
           logo_url: string | null
           name: string
         }
@@ -40,6 +114,7 @@ export type Database = {
           created_at?: string
           id?: number
           league?: string | null
+          league_id?: number | null
           logo_url?: string | null
           name: string
         }
@@ -47,10 +122,19 @@ export type Database = {
           created_at?: string
           id?: number
           league?: string | null
+          league_id?: number | null
           logo_url?: string | null
           name?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clubs_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       final_position_averages: {
         Row: {
@@ -64,6 +148,66 @@ export type Database = {
         Update: {
           position?: number | null
           stats?: Json | null
+        }
+        Relationships: []
+      }
+      league_position_metric_averages: {
+        Row: {
+          average_value: number | null
+          last_calculated: string | null
+          league_name: string
+          metric_name: string
+          position: string
+        }
+        Insert: {
+          average_value?: number | null
+          last_calculated?: string | null
+          league_name: string
+          metric_name: string
+          position: string
+        }
+        Update: {
+          average_value?: number | null
+          last_calculated?: string | null
+          league_name?: string
+          metric_name?: string
+          position?: string
+        }
+        Relationships: []
+      }
+      leagues: {
+        Row: {
+          country: string | null
+          created_at: string | null
+          division_name: string | null
+          id: number
+          logo_url: string | null
+          name: string
+          number_of_teams: number | null
+          tier: number | null
+          total_games_per_season: number | null
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string | null
+          division_name?: string | null
+          id?: number
+          logo_url?: string | null
+          name: string
+          number_of_teams?: number | null
+          tier?: number | null
+          total_games_per_season?: number | null
+        }
+        Update: {
+          country?: string | null
+          created_at?: string | null
+          division_name?: string | null
+          id?: number
+          logo_url?: string | null
+          name?: string
+          number_of_teams?: number | null
+          tier?: number | null
+          total_games_per_season?: number | null
         }
         Relationships: []
       }
@@ -122,9 +266,7 @@ export type Database = {
           club_id: number | null
           created_at: string
           id: number
-          loan_visibility: Database["public"]["Enums"]["loan_visibility_enum"] | null
           name: string
-          on_loan: boolean | null
           position: string
           stats: Json
           updated_at: string
@@ -134,9 +276,7 @@ export type Database = {
           club_id?: number | null
           created_at?: string
           id?: number
-          loan_visibility?: Database["public"]["Enums"]["loan_visibility_enum"] | null
           name: string
-          on_loan?: boolean | null
           position: string
           stats?: Json
           updated_at?: string
@@ -146,9 +286,7 @@ export type Database = {
           club_id?: number | null
           created_at?: string
           id?: number
-          loan_visibility?: Database["public"]["Enums"]["loan_visibility_enum"] | null
           name?: string
-          on_loan?: boolean | null
           position?: string
           stats?: Json
           updated_at?: string
@@ -158,6 +296,50 @@ export type Database = {
           {
             foreignKeyName: "players_club_id_fkey"
             columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      previous_years_positions: {
+        Row: {
+          "Goals Conceded (Įv -)": number | null
+          "Goals Scored (Įv +)": number | null
+          name: string | null
+          Points: number | null
+          Position: number | null
+          Team: string | null
+          team_id: number | null
+          uid: string
+          Year: number | null
+        }
+        Insert: {
+          "Goals Conceded (Įv -)"?: number | null
+          "Goals Scored (Įv +)"?: number | null
+          name?: string | null
+          Points?: number | null
+          Position?: number | null
+          Team?: string | null
+          team_id?: number | null
+          uid: string
+          Year?: number | null
+        }
+        Update: {
+          "Goals Conceded (Įv -)"?: number | null
+          "Goals Scored (Įv +)"?: number | null
+          name?: string | null
+          Points?: number | null
+          Position?: number | null
+          Team?: string | null
+          team_id?: number | null
+          uid?: string
+          Year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "previous_years_positions_team_id_fkey"
+            columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "clubs"
             referencedColumns: ["id"]
@@ -187,6 +369,68 @@ export type Database = {
           {
             foreignKeyName: "profiles_club_id_fkey"
             columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recruitment_needs: {
+        Row: {
+          budget_loan_fee_max: number | null
+          budget_transfer_max: number | null
+          created_at: string
+          created_by_club_id: number
+          max_age: number | null
+          max_height: number | null
+          min_age: number | null
+          min_height: number | null
+          need_id: number
+          notes: string | null
+          position_needed: string
+          preferred_foot: string | null
+          salary_range: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          budget_loan_fee_max?: number | null
+          budget_transfer_max?: number | null
+          created_at?: string
+          created_by_club_id: number
+          max_age?: number | null
+          max_height?: number | null
+          min_age?: number | null
+          min_height?: number | null
+          need_id?: number
+          notes?: string | null
+          position_needed: string
+          preferred_foot?: string | null
+          salary_range?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          budget_loan_fee_max?: number | null
+          budget_transfer_max?: number | null
+          created_at?: string
+          created_by_club_id?: number
+          max_age?: number | null
+          max_height?: number | null
+          min_age?: number | null
+          min_height?: number | null
+          need_id?: number
+          notes?: string | null
+          position_needed?: string
+          preferred_foot?: string | null
+          salary_range?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruitment_needs_created_by_club_id_fkey"
+            columns: ["created_by_club_id"]
             isOneToOne: false
             referencedRelation: "clubs"
             referencedColumns: ["id"]
@@ -320,6 +564,7 @@ export type Database = {
           Interceptions: number | null
           "Lateral Pass Accuracy": number | null
           "Lateral Passes": number | null
+          League: string | null
           "Long Pass %": number | null
           "Long Pass Accuracy": number | null
           "Long Passes": number | null
@@ -441,6 +686,7 @@ export type Database = {
           Interceptions?: number | null
           "Lateral Pass Accuracy"?: number | null
           "Lateral Passes"?: number | null
+          League?: string | null
           "Long Pass %"?: number | null
           "Long Pass Accuracy"?: number | null
           "Long Passes"?: number | null
@@ -562,6 +808,7 @@ export type Database = {
           Interceptions?: number | null
           "Lateral Pass Accuracy"?: number | null
           "Lateral Passes"?: number | null
+          League?: string | null
           "Long Pass %"?: number | null
           "Long Pass Accuracy"?: number | null
           "Long Passes"?: number | null
@@ -627,22 +874,22 @@ export type Database = {
       }
       watchlist: {
         Row: {
-          id: number
           club_id: number
+          created_at: string | null
+          id: number
           player_id: number
-          created_at: string
         }
         Insert: {
-          id?: number
           club_id: number
+          created_at?: string | null
+          id?: number
           player_id: number
-          created_at?: string
         }
         Update: {
-          id?: number
           club_id?: number
+          created_at?: string | null
+          id?: number
           player_id?: number
-          created_at?: string
         }
         Relationships: [
           {
@@ -666,16 +913,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_latest_players_by_club: {
-        Args: { p_club_id: number }
-        Returns: {
-          id: number
-          name: string
-          position: string
-          stats: Json
-          updated_at: string
-        }[]
-      }
       get_latest_players_for_club: {
         Args: { p_club_id: number }
         Returns: {
@@ -686,9 +923,19 @@ export type Database = {
           stats: Json
           created_at: string
           updated_at: string
-          on_loan: boolean
-          loan_visibility: string
           wyscout_player_id: number
+          listing_status: string
+          player_league_name: string
+        }[]
+      }
+      get_metric_averages_for_position_league: {
+        Args: { p_position_name: string; p_league_name: string }
+        Returns: {
+          average_value: number | null
+          last_calculated: string | null
+          league_name: string
+          metric_name: string
+          position: string
         }[]
       }
       get_my_player_listings: {
@@ -705,6 +952,25 @@ export type Database = {
           listing_created_at: string
           player_name: string
           player_pos: string
+        }[]
+      }
+      get_my_recruitment_needs: {
+        Args: { p_requesting_club_id: number }
+        Returns: {
+          need_id: number
+          created_by_club_id: number
+          position_needed: string
+          min_age: number
+          max_age: number
+          min_height: number
+          max_height: number
+          preferred_foot: string
+          status: string
+          budget_transfer_max: number
+          budget_loan_fee_max: number
+          salary_range: string
+          notes: string
+          need_created_at: string
         }[]
       }
       get_player_listings: {
@@ -724,6 +990,25 @@ export type Database = {
           listed_by_club_name: string
         }[]
       }
+      get_recruitment_needs: {
+        Args: { p_requesting_club_id: number }
+        Returns: {
+          need_id: number
+          created_by_club_id: number
+          position_needed: string
+          min_age: number
+          max_age: number
+          min_height: number
+          max_height: number
+          preferred_foot: string
+          budget_transfer_max: number
+          budget_loan_fee_max: number
+          salary_range: string
+          notes: string
+          need_created_at: string
+          posting_club_name: string
+        }[]
+      }
       get_scouting_players: {
         Args: {
           p_requesting_club_id: number
@@ -738,6 +1023,7 @@ export type Database = {
           p_contract_end?: string
           p_limit?: number
           p_offset?: number
+          p_league_filter?: string
         }
         Returns: {
           player_id: number
@@ -747,20 +1033,24 @@ export type Database = {
           player_pos: string
           stats: Json
           updated_at: string
-          on_loan: boolean
-          loan_visibility: string
           age: number
           height: number
           foot: string
           contract_expiry: string
           avg_percentile: number
           club_name: string
+          listing_status: string
+          player_league_name: string
           total_count: number
         }[]
       }
       try_cast_to_date: {
         Args: { p_text: string }
         Returns: string
+      }
+      update_league_position_averages: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {
@@ -774,27 +1064,33 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -802,14 +1098,18 @@ export type Tables<
     : never
 
 export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"] | { schema: keyof Database },
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -823,14 +1123,18 @@ export type TablesInsert<
     : never
 
 export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"] | { schema: keyof Database },
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -844,35 +1148,40 @@ export type TablesUpdate<
     : never
 
 export type Enums<
-  DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"] | { schema: keyof Database },
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"] | { schema: keyof Database },
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       listing_status_enum: ["active", "inactive", "completed"],
