@@ -101,6 +101,41 @@ export type Database = {
         }
         Relationships: []
       }
+      club_reviews: {
+        Row: {
+          category_ratings: Json | null
+          club_id: number
+          comment: string | null
+          created_at: string | null
+          id: number
+          overall_rating: number
+        }
+        Insert: {
+          category_ratings?: Json | null
+          club_id: number
+          comment?: string | null
+          created_at?: string | null
+          id?: number
+          overall_rating: number
+        }
+        Update: {
+          category_ratings?: Json | null
+          club_id?: number
+          comment?: string | null
+          created_at?: string | null
+          id?: number
+          overall_rating?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_reviews_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clubs: {
         Row: {
           created_at: string
@@ -1057,6 +1092,11 @@ export type Database = {
       listing_status_enum: "active" | "inactive" | "completed"
       listing_type_enum: "loan" | "transfer"
       loan_visibility_enum: "clubs" | "agents" | "both"
+      review_category:
+        | "Salary Punctuality"
+        | "Training Conditions"
+        | "Club Management"
+        | "Fair Salary"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1187,6 +1227,12 @@ export const Constants = {
       listing_status_enum: ["active", "inactive", "completed"],
       listing_type_enum: ["loan", "transfer"],
       loan_visibility_enum: ["clubs", "agents", "both"],
+      review_category: [
+        "Salary Punctuality",
+        "Training Conditions",
+        "Club Management",
+        "Fair Salary",
+      ],
     },
   },
 } as const

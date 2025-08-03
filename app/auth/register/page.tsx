@@ -17,6 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils"
 import { Logo } from "@/components/logo"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 
 type Club = {
   id: number
@@ -33,6 +34,9 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [existingUser, setExistingUser] = useState(false)
+  const [role, setRole] = useState<string>("");
+  const [isClubSelectionDisabled, setIsClubSelectionDisabled] = useState<boolean>(true);
+  const [messageType, setMessageType] = useState<'error' | 'info'>('error');
   const supabase = createClient()
 
   // Club selection state
@@ -63,6 +67,15 @@ export default function RegisterPage() {
 
     fetchClubs()
   }, [supabase])
+
+  useEffect(() => {
+    if (role === "club") {
+      setIsClubSelectionDisabled(false); // Enable club selection
+    } else {
+      setIsClubSelectionDisabled(true);  // Disable for 'agent' or 'player'
+      setSelectedClub(null);           // Clear any previously selected club
+    }
+  }, [role]); //
 
   // Check if email exists before attempting registration
   const checkEmailExists = async (email: string) => {
@@ -95,6 +108,13 @@ export default function RegisterPage() {
     setLoading(true)
     setError(null)
     setExistingUser(false)
+
+    if (role === 'agent' || role === 'player') {
+      setError(`Registration for ${role}s is coming soon! Please check back later.`);
+      setMessageType('info'); // Set the message type to 'info'
+      setLoading(false);
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError("Passwords do not match")
@@ -279,10 +299,10 @@ export default function RegisterPage() {
         <CardContent>
           <form onSubmit={handleRegister} className="space-y-4">
             {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+                <Alert variant={messageType === 'error' ? 'destructive' : 'default'} className={messageType === 'info' ? 'bg-blue-50 border-blue-200 text-blue-800' : ''}>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
             )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -316,34 +336,52 @@ export default function RegisterPage() {
               />
             </div>
 
-            {/* Club Selection */}
+            {/* Step 1: Select Your Role */}
             <div className="space-y-2">
-              <Label htmlFor="club">Your Club</Label>
+              <Label htmlFor="role">Account Type</Label>
+              <Select onValueChange={setRole} value={role}>
+                <SelectTrigger id="role" className="w-full">
+                  <SelectValue placeholder="Select your role..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="club">Club</SelectItem>
+                  <SelectItem value="agent">Agent</SelectItem>
+                  <SelectItem value="player">Player</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Step 2: Club Selection (Conditional) */}
+            <div className="space-y-2">
+              <Label htmlFor="club" className={isClubSelectionDisabled ? 'text-muted-foreground' : ''}>
+                Your Club
+              </Label>
               <Popover open={open} onOpenChange={setOpen}>
                 <PopoverTrigger asChild>
                   <Button
-                    id="club"
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={open}
-                    className="w-full justify-between"
-                    disabled={loadingClubs}
+                      id="club"
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={open}
+                      className="w-full justify-between"
+                      // <<< APPLY THE DISABLED STATE HERE >>>
+                      disabled={isClubSelectionDisabled || loadingClubs}
                   >
-                    {loadingClubs ? (
-                      "Loading clubs..."
-                    ) : selectedClub ? (
-                      <div className="flex items-center">
-                        <Avatar className="h-6 w-6 mr-2">
-                          <AvatarImage src={selectedClub.logo_url || ""} alt={selectedClub.name} />
-                          <AvatarFallback className="bg-[#3144C3] text-white text-xs">
-                            {selectedClub.name.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-                        {selectedClub.name}
-                      </div>
-                    ) : (
-                      "Select your club..."
-                    )}
+                    {loadingClubs
+                        ? "Loading clubs..."
+                        : selectedClub
+                            ? (
+                                <div className="flex items-center">
+                                  <Avatar className="h-6 w-6 mr-2">
+                                    <AvatarImage src={selectedClub.logo_url || ""} alt={selectedClub.name} />
+                                    <AvatarFallback className="bg-[#3144C3] text-white text-xs">
+                                      {selectedClub.name.charAt(0)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  {selectedClub.name}
+                                </div>
+                            )
+                            : "Select your club..."}
                     <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
@@ -354,29 +392,29 @@ export default function RegisterPage() {
                       <CommandEmpty>No clubs found.</CommandEmpty>
                       <CommandGroup>
                         {filteredClubs.map((club) => (
-                          <CommandItem
-                            key={club.id}
-                            value={club.name}
-                            onSelect={() => {
-                              setSelectedClub(club)
-                              setOpen(false)
-                            }}
-                            className="flex items-center"
-                          >
-                            <Avatar className="h-6 w-6 mr-2">
-                              <AvatarImage src={club.logo_url || ""} alt={club.name} />
-                              <AvatarFallback className="bg-[#3144C3] text-white text-xs">
-                                {club.name.charAt(0)}
-                              </AvatarFallback>
-                            </Avatar>
-                            {club.name}
-                            <Check
-                              className={cn(
-                                "ml-auto h-4 w-4",
-                                selectedClub?.id === club.id ? "opacity-100" : "opacity-0",
-                              )}
-                            />
-                          </CommandItem>
+                            <CommandItem
+                                key={club.id}
+                                value={club.name}
+                                onSelect={() => {
+                                  setSelectedClub(club)
+                                  setOpen(false)
+                                }}
+                                className="flex items-center"
+                            >
+                              <Avatar className="h-6 w-6 mr-2">
+                                <AvatarImage src={club.logo_url || ""} alt={club.name} />
+                                <AvatarFallback className="bg-[#3144C3] text-white text-xs">
+                                  {club.name.charAt(0)}
+                                </AvatarFallback>
+                              </Avatar>
+                              {club.name}
+                              <Check
+                                  className={cn(
+                                      "ml-auto h-4 w-4",
+                                      selectedClub?.id === club.id ? "opacity-100" : "opacity-0",
+                                  )}
+                              />
+                            </CommandItem>
                         ))}
                       </CommandGroup>
                     </CommandList>
