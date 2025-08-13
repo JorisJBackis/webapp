@@ -36,7 +36,7 @@ const StatCard = ({ title, valueLeft, valueRight, teamLeft, teamRight }: { title
 const METRIC_CATEGORIES = {
   "Overall Performance": [
     { name: "Pass Accuracy", key: "Pass Accuracy", isPercentage: true },
-    { name: "Duels Success %", key: "Duels Success %", isPercentage: true },
+    { name: "Duels Success", key: "Duels Success %", isPercentage: true },
     { name: "Shot Accuracy", key: "Shot Accuracy", isPercentage: true },
     { name: "Cross Accuracy", key: "Cross Accuracy", isPercentage: true },
   ],
@@ -48,7 +48,7 @@ const METRIC_CATEGORIES = {
   ],
   "Defensive Solidity": [
     { name: "PPDA", key: "PPDA", isPercentage: false },
-    { name: "Defensive Duels Success %", key: "Defensive Duels Success %", isPercentage: true },
+    { name: "Defensive Duels Success", key: "Defensive Duels Success %", isPercentage: true },
     { name: "Interceptions", key: "Interceptions", isPercentage: false },
     { name: "Shots Against", key: "Shots Against", isPercentage: false },
   ],
