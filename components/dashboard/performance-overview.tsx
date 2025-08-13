@@ -49,6 +49,7 @@ type MonthlyPerformanceData = {
   losses: number
   goalsScored: number
   goalsConceded: number
+  matchesInMonth: number
 }
 
 export default function PerformanceOverview({ clubId }: { clubId?: number }) {
@@ -192,25 +193,23 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
         const cleanSheets = processedMatches.filter((match) => match.goals_conceded === 0).length
 
         // Group by month for the chart data
-        // <<< REPLACE THE OLD GROUPING/SORTING LOGIC WITH THIS >>>
-
         // Group by month while preserving chronological order
         const monthlyDataOrdered: MonthlyPerformanceData[] = [];
         const monthMap = new Map<string, MonthlyPerformanceData>();
 
         processedMatches.forEach((match) => {
-          // Create a unique key for month and year to handle multi-year seasons
           const matchDate = new Date(match.date);
           const monthYearKey = `${matchDate.getFullYear()}-${matchDate.getMonth()}`;
 
           if (!monthMap.has(monthYearKey)) {
             const newMonthData = {
-              month: match.month, // Keep the short name e.g., "Sep"
+              month: match.month,
               wins: 0,
               draws: 0,
               losses: 0,
               goalsScored: 0,
               goalsConceded: 0,
+              matchesInMonth: 0, // <<< Initialize matchesInMonth
             };
             monthMap.set(monthYearKey, newMonthData);
             monthlyDataOrdered.push(newMonthData);
@@ -218,16 +217,23 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
 
           const currentMonthData = monthMap.get(monthYearKey)!;
 
+          // Increment totals
           if (match.result === "win") currentMonthData.wins++;
           else if (match.result === "draw") currentMonthData.draws++;
           else if (match.result === "loss") currentMonthData.losses++;
 
           currentMonthData.goalsScored += match.goals_scored;
           currentMonthData.goalsConceded += match.goals_conceded;
+          currentMonthData.matchesInMonth++; // <<< Count matches in this month
         });
 
-        // The chartData is now already in the correct chronological order
-        const chartData = monthlyDataOrdered;
+        // Now, calculate the 'per 90' metrics
+        const chartData = monthlyDataOrdered.map(monthData => ({
+          ...monthData,
+          // Calculate goals per 90 (average per match)
+          goalsScoredPer90: monthData.matchesInMonth > 0 ? (monthData.goalsScored / monthData.matchesInMonth) : 0,
+          goalsConcededPer90: monthData.matchesInMonth > 0 ? (monthData.goalsConceded / monthData.matchesInMonth) : 0,
+        }));
 
         console.log("Chart data:", chartData)
 
@@ -257,14 +263,17 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 border rounded shadow-sm">
-          <p className="font-medium">{`${label}`}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={`item-${index}`} style={{ color: entry.color }}>
-              {`${entry.name}: ${entry.value}`}
-            </p>
-          ))}
-        </div>
+          <div className="bg-white p-3 border rounded shadow-sm">
+            <p className="font-medium">{`${label}`}</p>
+            {payload.map((entry: any, index: number) => {
+              const formattedValue = typeof entry.value === 'number' ? entry.value.toFixed(2) : entry.value;
+              return (
+                  <p key={`item-${index}`} style={{ color: entry.color }}>
+                    {`${entry.name}: ${formattedValue}`}
+                  </p>
+              );
+            })}
+          </div>
       )
     }
     return null
@@ -336,8 +345,8 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
                       <Legend />
                       <Line
                         type="monotone"
-                        dataKey="goalsScored"
-                        name="Goals Scored"
+                        dataKey="goalsScoredPer90"
+                        name="Goals Scored per 90"
                         stroke="#3949AB"
                         strokeWidth={2}
                         dot={{ r: 4 }}
@@ -345,8 +354,8 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
                       />
                       <Line
                         type="monotone"
-                        dataKey="goalsConceded"
-                        name="Goals Conceded"
+                        dataKey="goalsConcededPer90"
+                        name="Goals Conceded per 90"
                         stroke="#ef4444"
                         strokeWidth={2}
                         dot={{ r: 4 }}
