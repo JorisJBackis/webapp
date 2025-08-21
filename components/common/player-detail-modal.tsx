@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose} from "@/components/ui/dialog";
 import { Loader2, X } from 'lucide-react';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, Tooltip as RechartsTooltip } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
@@ -157,17 +157,22 @@ export default function PlayerDetailModal({ isOpen, onClose, player }: {
     const [loadingAverages, setLoadingAverages] = useState(false);
     const [suggestLoading, setSuggestLoading] = useState(false);
     const [userEmail, setUserEmail] = useState<string | null>(null);
+    const [isEstimating, setIsEstimating] = useState(false);
+    const [hasRequested, setHasRequested] = useState(false);
     const supabase = createClient();
+
 
     useEffect(() => {
         const fetchUser = async () => {
-            const { data: { user } } = await supabase?.auth.getUser() ?? { data: { user: null } };
-            setUserEmail(user?.email ?? null);
-        }
-        if (isOpen && supabase) {
-            fetchUser();
-        }
-}, [isOpen, supabase]);
+            if (isOpen) {
+                const { data: { user } } = await supabase.auth.getUser();
+                setUserEmail(user?.email ?? null);
+                // Reset request status when a new player modal is opened
+                setHasRequested(false);
+            }
+        };
+        fetchUser();
+    }, [isOpen, supabase]);
 
     // Fetch position averages when modal opens or player changes
     useEffect(() => {
@@ -220,9 +225,48 @@ export default function PlayerDetailModal({ isOpen, onClose, player }: {
         }
     }, [isOpen, player, positionAverages, loadingAverages]);
 
-    // ... (handleSuggestRecruitment, JSX for summary cards) ...
-    // The rest of the modal JSX remains largely the same.
-    // The CustomRadarTooltip will now use the real (or N/A) leagueAverage from radarData.
+    // Inside PlayerDetailModal, before the return statement
+
+    // <<< ADD THIS ENTIRE FUNCTION >>>
+    const handleRequestSalary = async () => {
+        if (!player || !userEmail || !player.club_id) {
+            toast({
+                title: "Error",
+                description: "Missing player or user info to make a request.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        setIsEstimating(true);
+
+        try {
+            const { error } = await supabase.from("recruitment_suggestions").insert({
+                user_email: userEmail,
+                club_id: player.club_id,
+                player_id: player.id, // This is the players.id PK
+                player_name: player.name,
+            });
+
+            if (error) throw error;
+
+            toast({
+                title: "Request Sent!",
+                description: "Our analysts will prepare a salary estimation and reach out to you shortly.",
+            });
+            setHasRequested(true); // Disable the button after a successful request
+
+        } catch (err: any) {
+            console.error("Error logging salary request:", err);
+            toast({
+                title: "Request Failed",
+                description: "Could not submit your request. Please try again.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsEstimating(false);
+        }
+    };
 
     if (!isOpen || !player) return null;
     const stats = player.stats as PlayerStatsJSON | null;
@@ -238,13 +282,27 @@ export default function PlayerDetailModal({ isOpen, onClose, player }: {
             <DialogContent className="max-w-3xl">
                 <DialogHeader>
                     <DialogTitle className="flex items-center justify-between">
-                        <div className="flex items-center">
+                        <div className="flex items-center gap-4">
                             <span className="text-[#31348D]">{player.name}</span>
-                            {/* Suggest Recruitment Button is optional here */}
+                            <Button
+                                onClick={handleRequestSalary}
+                                disabled={isEstimating || hasRequested}
+                                size="sm"
+                            >
+                                {isEstimating ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : hasRequested ? (
+                                    'Request Sent'
+                                ) : (
+                                    'Request Salary Estimation'
+                                )}
+                            </Button>
                         </div>
-                        <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8"> <X className="h-4 w-4" /> </Button>
+                        {/* The custom close button is now GONE. */}
                     </DialogTitle>
-                    <DialogDescription>Performance Analysis - Position: {positionDisplay} - League: {player.player_league_name || 'N/A'}</DialogDescription>
+                    <DialogDescription>
+                        Performance Analysis - Position: {positionDisplay} - League: {player.player_league_name || 'N/A'}
+                    </DialogDescription>
                 </DialogHeader>
                 <div className="mt-4">
                     {/* Summary Cards ... */}
