@@ -23,8 +23,6 @@ max_client_conn = 100
 
 [realtime]
 enabled = true
-port = 54434
-max_events_per_second = 100
 
 [studio]
 enabled = true
@@ -33,7 +31,6 @@ api_url = "http://127.0.0.1"
 
 [storage]
 enabled = true
-port = 5005
 file_size_limit = "50MiB"
 
 [auth]
@@ -80,9 +77,3 @@ sms_sent = 30
 enabled = false
 port = 54327
 vector_port = 54328
-
-# Local development overrides
-[local]
-# Use these settings when running locally with `supabase start`
-inbucket_port = 54324  # Email testing
-edge_runtime_port = 54330  # Edge functions
