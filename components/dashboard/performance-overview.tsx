@@ -266,7 +266,11 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
           <div className="bg-white p-3 border rounded shadow-sm">
             <p className="font-medium">{`${label}`}</p>
             {payload.map((entry: any, index: number) => {
-              const formattedValue = typeof entry.value === 'number' ? entry.value.toFixed(2) : entry.value;
+              // Wins, Draws, Losses should be whole numbers
+              const isMatchResult = ['Wins', 'Draws', 'Losses'].includes(entry.name);
+              const formattedValue = typeof entry.value === 'number' 
+                ? isMatchResult ? Math.round(entry.value).toString() : entry.value.toFixed(2) 
+                : entry.value;
               return (
                   <p key={`item-${index}`} style={{ color: entry.color }}>
                     {`${entry.name}: ${formattedValue}`}

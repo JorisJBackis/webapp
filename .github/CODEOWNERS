@@ -1,0 +1,12 @@
+# CODEOWNERS file
+# These owners will be requested for review when someone opens a pull request
+# Note: This only adds them as "suggested reviewers", doesn't spam them
+
+# Only Joris gets notified for everything (he wants to know)
+* @JorisJBackis
+
+# Critical files that need extra attention
+/supabase/migrations/ @JorisJBackis
+/.github/workflows/production.yml @JorisJBackis
+/.env* @JorisJBackis
+/supabase/config.toml @JorisJBackis
