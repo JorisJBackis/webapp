@@ -4,7 +4,40 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-FootyLabs is a football intelligence platform providing data-driven insights for clubs, agents, and players. It's essentially "Moneyball for football" with advanced scouting, player analytics, and AI-powered predictions.
+### Core Mission
+To be an indispensable football intelligence platform that empowers clubs, agents, and players to make smarter, data-driven decisions. We're building a modern analytics and networking ecosystem that moves beyond simple data presentation to offer predictive insights and actionable recommendations.
+
+### The Problem We Solve
+The football world, particularly outside of the top-tier leagues, is inefficient and often relies on subjective scouting.
+- Clubs struggle to find players that fit specific tactical and financial needs.
+- Agents have limited visibility into market demands and club requirements.
+- Players lack objective ways to demonstrate their true value and find clubs that are a good cultural and professional fit.
+
+### Our Goal (The Vision)
+To become the definitive "Moneyball" platform for football. We start by being the best data-driven recruitment tool ("LinkedIn on steroids") and will evolve into a predictive analytics powerhouse. Our goal is to provide clubs with a clear competitive advantage by helping them identify undervalued assets, predict player performance, and manage recruitment strategy with advanced AI.
+
+### Key Features & Platform Pillars
+
+#### 1. Data-Driven Analysis
+- **Club Dashboard**: For deep analysis of a club's own squad strengths and weaknesses.
+- **Advanced Player Scouting**: A powerful engine to discover players across leagues using nuanced data filters (performance metrics, contract status, physical attributes, etc.).
+- **Player DNA Analysis (Modal)**: An in-depth player profile featuring a proprietary FootyLabs Score and a positional radar chart, benchmarking a player's percentile performance against their direct peers.
+
+#### 2. Recruitment & Information Marketplace
+- **Dynamic Marketplace**: A hub where clubs can list players for transfer/loan and post detailed recruitment needs, creating a transparent market.
+- **Club Reputation & Transparency (Glassdoor for Football)**:
+  - A revolutionary review system where players can anonymously rate their current and former clubs.
+  - Reviews include an overall 1-5 star rating plus detailed ratings on crucial criteria like: Salary Punctuality, Fair Salary, Training Conditions, and Club Management.
+  - Players can leave written comments, providing invaluable qualitative insights for others.
+- **Holistic Player Profiles for Better Matchmaking**:
+  - We simplify life for everyone by being a central information exchange. When players sign up, we capture the essential "human factor" data that is critical for transfers.
+  - This includes information like: current salary & expectations, desired leagues/countries, family relocation needs, languages spoken, and YouTube highlight links.
+
+#### 3. Future AI & Predictive Analytics (Roadmap)
+- **Predictive Salary Estimations**: On-demand, AI-driven salary projections for any player to aid in contract negotiations and budgeting.
+- **Player Similarity Engine**: An AI-powered feature to answer the question: "Find me more players like this one."
+- **Performance Forecasting**: Models to predict a player's future development and potential success in a new league, reducing transfer risk.
+
 
 ## Tech Stack
 
@@ -17,10 +50,10 @@ FootyLabs is a football intelligence platform providing data-driven insights for
 
 ```bash
 # Development
-npm run dev          # Start development server (Next.js)
-npm run build        # Build for production
-npm run start        # Start production server
-npm run lint         # Run Next.js linter
+pnpm run dev          # Start development server (Next.js)
+pnpm run build        # Build for production
+pnpm run start        # Start production server
+pnpm run lint         # Run Next.js linter
 
 # Python ETL (from ../webapp-backend directory)
 python populate_players_table.py         # Populate players data
@@ -177,6 +210,13 @@ Key Python modules:
 3. Follow TypeScript strict mode requirements
 4. Ensure Supabase RLS policies are considered for data access
 5. Add proper loading and error states
+6. Add comprehensive logging for debugging and monitoring:
+   - Log key function entry/exit points
+   - Log API requests and responses
+   - Log state changes and user interactions
+   - Log error conditions with context
+   - Use console.log() for development, can be removed later once feature is stable
+   - Example: `console.log('[FeatureName] Action performed:', { data, timestamp: new Date().toISOString() })`
 
 ### Working with Data
 1. Always check if data exists in Supabase before creating new tables
