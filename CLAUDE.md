@@ -238,16 +238,37 @@ Currently no automated tests configured. Manual testing recommended for:
 - Form submissions
 - Responsive design across devices
 
-## Automated Git Workflow
+## Development Workflow & Git Strategy
+
+### Branch Structure
+```
+main       → Production (protected, auto-deploys to Vercel + Supabase prod)
+develop    → Staging (auto-deploys to Supabase staging branch)  
+feature/*  → Feature development (local Supabase Docker)
+```
+
+### Development Process
+1. **Always work on feature branches** off `develop`
+2. **Test locally first** using `supabase start` (Docker containers)
+3. **Create migrations** with `supabase db diff -f descriptive_name`
+4. **PR to develop** for staging testing
+5. **PR to main** only after staging verification
+
+### Database Development
+- **Local**: Use Supabase Docker for rapid iteration (FREE)
+- **Staging**: One persistent Supabase branch for integration testing
+- **Production**: Protected, only updated via approved PRs
+
+See `DEVELOPMENT_WORKFLOW.md` for detailed instructions.
 
 ### Commit Strategy
 When making code changes, I will proactively commit work at logical breakpoints:
 
 1. **When to Commit**:
    - After completing a feature or fixing a bug
+   - After creating database migrations
    - After significant refactoring
    - After adding/updating components
-   - After modifying database schemas or API routes
    - After updating configuration files
    - When switching between different areas of work
 
@@ -255,10 +276,10 @@ When making code changes, I will proactively commit work at logical breakpoints:
    - Clear, concise description of what changed
    - Focus on the "why" not just the "what"
    - Examples:
-     - "feat: add player comparison view to analytics dashboard"
+     - "feat: add player profiles table and migration"
      - "fix: resolve auth token refresh issue on session timeout"
-     - "refactor: optimize team metrics query performance"
-     - "style: update dashboard responsive breakpoints"
+     - "migration: add player_applications table"
+     - "chore: update database types"
 
 3. **What NOT to Commit**:
    - Partial/broken implementations
@@ -266,10 +287,11 @@ When making code changes, I will proactively commit work at logical breakpoints:
    - Commented-out code blocks
    - Files with merge conflicts
    - .env files or secrets
+   - Direct changes to `database.types.ts` (auto-generated)
 
 4. **Commit Frequency**:
-   - Aim for logical units of work (not too granular, not too large)
-   - Typically 1-3 commits per feature/fix
+   - Aim for logical units of work
+   - One migration per commit when possible
    - Group related changes together
 
 ## Important Notes
