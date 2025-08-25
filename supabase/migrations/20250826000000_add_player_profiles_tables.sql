@@ -1,7 +1,24 @@
--- Add user_type to profiles table
-ALTER TABLE profiles 
-ADD COLUMN IF NOT EXISTS user_type TEXT DEFAULT 'club_staff' 
-CHECK (user_type IN ('club_staff', 'player', 'agent'));
+-- Create profiles table if it doesn't exist
+CREATE TABLE IF NOT EXISTS profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  club_id INTEGER REFERENCES clubs(id),
+  user_type TEXT DEFAULT 'club_staff' CHECK (user_type IN ('club_staff', 'player', 'agent')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Add user_type column if table exists but column doesn't
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'profiles' AND column_name = 'user_type'
+  ) THEN
+    ALTER TABLE profiles 
+    ADD COLUMN user_type TEXT DEFAULT 'club_staff' 
+    CHECK (user_type IN ('club_staff', 'player', 'agent'));
+  END IF;
+END $$;
 
 -- Create player profiles table
 CREATE TABLE IF NOT EXISTS player_profiles (
