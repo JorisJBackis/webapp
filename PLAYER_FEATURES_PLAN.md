@@ -3,6 +3,28 @@
 ## Overview
 This document outlines the complete plan for adding Player functionality to FootyLabs, transforming it from a club-only platform to a true marketplace connecting clubs, players, and (eventually) agents.
 
+## ⚠️ Development Safety Workflow
+
+### Before Starting Implementation
+1. **Create feature branch**: `git checkout -b feature/player-profiles`
+2. **Start local Supabase**: `npx supabase start`
+3. **Create migrations locally first**: `npx supabase migration new player_features`
+4. **Test thoroughly**: `npx supabase db reset` to test migrations
+
+### During Development
+- **Commit frequently** with descriptive messages
+- **Test locally** before pushing
+- **Never test on production data**
+- **Keep migrations separate** from code changes
+
+### Before Deploying
+1. PR to `develop` first
+2. Test on Vercel preview
+3. Only then PR to `main`
+4. Migrations run automatically on merge to main
+
+See `WORKFLOW.md` for complete safety procedures.
+
 ## Key Decisions (Answered by Founder)
 1. **Salary Visibility**: Clubs see estimated salary ranges, not exact amounts
 2. **Verification**: No verification system for MVP - build trust through usage
