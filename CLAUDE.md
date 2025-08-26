@@ -55,6 +55,11 @@ pnpm run build        # Build for production
 pnpm run start        # Start production server
 pnpm run lint         # Run Next.js linter
 
+# Local Supabase
+npx supabase start    # Start local database
+npx supabase stop     # Stop local database
+npx supabase db reset # Test migrations
+
 # Python ETL (from ../webapp-backend directory)
 python populate_players_table.py         # Populate players data
 python populate_team_matches_table.py    # Populate team matches
@@ -238,28 +243,29 @@ Currently no automated tests configured. Manual testing recommended for:
 - Form submissions
 - Responsive design across devices
 
-## Development Workflow & Git Strategy
+## Development Workflow
 
 ### Branch Structure
 ```
-main       → Production (protected, auto-deploys to Vercel + Supabase prod)
-develop    → Staging (auto-deploys to Supabase staging branch)  
-feature/*  → Feature development (local Supabase Docker)
+feature/* → develop → main
 ```
+- **feature branches**: All new development
+- **develop**: Integration testing
+- **main**: Production (protected, requires PR)
 
-### Development Process
-1. **Always work on feature branches** off `develop`
-2. **Test locally first** using `supabase start` (Docker containers)
-3. **Create migrations** with `supabase db diff -f descriptive_name`
-4. **PR to develop** for staging testing
-5. **PR to main** only after staging verification
+### Workflow
+1. Create feature branch from develop
+2. Test locally with `npx supabase start`  
+3. Push and create PR to develop
+4. After testing, PR from develop to main
+5. Production auto-deploys on merge
 
-### Database Development
-- **Local**: Use Supabase Docker for rapid iteration (FREE)
-- **Staging**: One persistent Supabase branch for integration testing
-- **Production**: Protected, only updated via approved PRs
+### Safety Rules
+- **No direct pushes to main** (enforced by branch protection)
+- **Test migrations locally** before committing
+- **All changes through PRs** for audit trail
 
-See `DEVELOPMENT_WORKFLOW.md` for detailed instructions.
+See `WORKFLOW.md` for complete development process.
 
 ### Commit Strategy
 When making code changes, I will proactively commit work at logical breakpoints:
