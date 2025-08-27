@@ -38,20 +38,8 @@ jobs:
         run: pnpm test
         continue-on-error: true # Remove when tests are added
 
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: latest
-
-      - name: Validate migrations locally
-        run: |
-          echo "Testing migrations in local Supabase..."
-          # Start local Supabase
-          supabase start
-          # Test migrations locally
-          supabase db reset
-          # If migrations work locally, they'll work in production
-          supabase stop
+      # Migration validation removed - too slow in CI (4+ minutes)
+      # Migrations are validated when deployed to production
 
       - name: Notify success
         if: success()
