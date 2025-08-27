@@ -52,14 +52,11 @@ jobs:
         with:
           version: latest
 
-      - name: Link Supabase project
-        run: |
-          supabase link --project-ref $SUPABASE_PROJECT_ID
-
       - name: Run migrations  
         run: |
           echo "🚀 Deploying migrations to production..."
-          supabase db push
+          # Skip link step and push directly with db-url
+          supabase db push --db-url "postgresql://postgres.${{ secrets.PRODUCTION_PROJECT_ID }}:${{ secrets.PRODUCTION_DB_PASSWORD }}@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
 
       - name: Create release tag
         if: success()
