@@ -53,7 +53,8 @@ jobs:
           version: latest
 
       - name: Link Supabase project
-        run: supabase link --project-ref ${{ secrets.PRODUCTION_PROJECT_ID }}
+        run: |
+          supabase link --project-ref ${{ secrets.PRODUCTION_PROJECT_ID }} --password "${{ secrets.PRODUCTION_DB_PASSWORD }}"
 
       - name: Run migrations
         run: |
