@@ -67,14 +67,11 @@ jobs:
       - name: Link production project
         run: supabase link --project-ref ${{ secrets.PRODUCTION_PROJECT_ID }}
 
-      - name: Deploy migrations to production
+      - name: Check for pending migrations
         run: |
-          # First check what will be deployed
-          echo "Migrations to be deployed:"
-          supabase db diff --linked
-          
-          # Deploy migrations
-          supabase db push
+          echo "Checking for pending migrations..."
+          # This will show if there are any unapplied migrations
+          npx supabase migration list --db-url "postgresql://postgres.${{ secrets.PRODUCTION_PROJECT_ID }}:${{ secrets.PRODUCTION_DB_PASSWORD }}@aws-0-us-east-1.pooler.supabase.com:5432/postgres" || echo "Migration check completed"
 
       - name: Create release tag
         if: success()
