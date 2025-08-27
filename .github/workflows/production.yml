@@ -55,8 +55,9 @@ jobs:
       - name: Run migrations
         run: |
           echo "🚀 Deploying migrations to production..."
-          # Simple connection string that we KNOW works
-          supabase db push --db-url "postgresql://postgres.${{ secrets.PRODUCTION_PROJECT_ID }}:${{ secrets.PRODUCTION_DB_PASSWORD }}@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
+          # TEMPORARY: Hardcoding to test if GitHub secrets are the problem
+          # Will remove after testing
+          supabase db push --db-url "postgresql://postgres.jbqljjyctbsyawijlxfa:ufYzZ28n3rfgZHAb@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
 
       - name: Create release tag
         if: success()
