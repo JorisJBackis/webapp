@@ -38,3 +38,13 @@ next-env.d.ts
 supabase/.temp/
 supabase/.branches/
 supabase/functions/
+
+# Sensitive files and backups (NEVER COMMIT THESE!)
+*.sql
+*backup*
+*secret*
+*SECRET*
+migration-safety-check.md
+player-features-architecture.md
+ADD_*.md
+FULL_BACKUP_*
