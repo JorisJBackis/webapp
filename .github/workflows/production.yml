@@ -52,11 +52,13 @@ jobs:
         with:
           version: latest
 
-      - name: Run migrations  
+      - name: Run migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
           echo "🚀 Deploying migrations to production..."
-          # Skip link step and push directly with db-url
-          supabase db push --db-url "postgresql://postgres.${{ secrets.PRODUCTION_PROJECT_ID }}:${{ secrets.PRODUCTION_DB_PASSWORD }}@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
+          # Using db-url directly to avoid SASL auth issues with special characters in password
+          supabase db push --db-url "postgresql://postgres.${{ secrets.PRODUCTION_PROJECT_ID }}:${{ secrets.PRODUCTION_DB_PASSWORD_ENCODED }}@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
 
       - name: Create release tag
         if: success()
