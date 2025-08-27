@@ -53,13 +53,10 @@ jobs:
           version: latest
 
       - name: Run migrations
-        env:
-          SUPABASE_PROJECT_ID: ${{ secrets.PRODUCTION_PROJECT_ID }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
         run: |
           echo "🚀 Deploying migrations to production..."
-          # Use transaction pooler (port 6543) with full username and URL-encoded password
-          supabase db push --db-url "postgresql://postgres.${{ secrets.PRODUCTION_PROJECT_ID }}:${{ secrets.PRODUCTION_DB_PASSWORD_ENCODED }}@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require"
+          # Simple connection string that we KNOW works
+          supabase db push --db-url "postgresql://postgres.${{ secrets.PRODUCTION_PROJECT_ID }}:${{ secrets.PRODUCTION_DB_PASSWORD }}@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
 
       - name: Create release tag
         if: success()
