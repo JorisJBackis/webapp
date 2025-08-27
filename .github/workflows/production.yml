@@ -58,8 +58,8 @@ jobs:
           SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
         run: |
           echo "🚀 Deploying migrations to production..."
-          # Use transaction pooler (port 6543) as suggested by Gemini
-          supabase db push --db-url "postgresql://postgres:${{ secrets.PRODUCTION_DB_PASSWORD }}@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require"
+          # Use transaction pooler (port 6543) with URL-encoded password
+          supabase db push --db-url "postgresql://postgres:${{ secrets.PRODUCTION_DB_PASSWORD_ENCODED }}@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require"
 
       - name: Create release tag
         if: success()
