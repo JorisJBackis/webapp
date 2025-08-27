@@ -53,15 +53,19 @@ jobs:
           version: latest
 
       - name: Run migrations
+        env:
+          DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
+          PROJECT_ID: ${{ secrets.PRODUCTION_PROJECT_ID }}
         run: |
           echo "🚀 Deploying migrations to production..."
-          # TEMPORARY: Hardcoding to test if GitHub secrets are the problem
-          # Will remove after testing
-          supabase db push --db-url "postgresql://postgres.jbqljjyctbsyawijlxfa:ufYzZ28n3rfgZHAb@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
+          # Use environment variables to avoid shell interpretation issues
+          supabase db push --db-url "postgresql://postgres.${PROJECT_ID}:${DB_PASSWORD}@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
 
       - name: Create release tag
         if: success()
         run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
           VERSION=$(date +%Y.%m.%d-%H%M%S)
           git tag -a "v$VERSION" -m "Production release v$VERSION"
           git push origin "v$VERSION"
