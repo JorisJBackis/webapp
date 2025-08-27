@@ -57,9 +57,9 @@ jobs:
           SUPABASE_PROJECT_ID: ${{ secrets.PRODUCTION_PROJECT_ID }}
           SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
         run: |
-          echo "🚀 Deploying migrations to production (using direct DB host)..."
-          # Use direct database host (not pooler) with key=value connection string to avoid URL encoding issues
-          supabase db push --db-url "host=db.${SUPABASE_PROJECT_ID}.supabase.co port=5432 dbname=postgres user=postgres password=${SUPABASE_DB_PASSWORD} sslmode=require"
+          echo "🚀 Deploying migrations to production..."
+          # Use transaction pooler (port 6543) as suggested by Gemini
+          supabase db push --db-url "postgresql://postgres:${{ secrets.PRODUCTION_DB_PASSWORD }}@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require"
 
       - name: Create release tag
         if: success()
