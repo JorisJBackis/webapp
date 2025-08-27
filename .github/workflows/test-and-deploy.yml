@@ -4,9 +4,11 @@ on:
   pull_request:
     branches:
       - main
+      - develop
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   test:
@@ -56,6 +58,8 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
       SUPABASE_PROJECT_ID: ${{ secrets.PRODUCTION_PROJECT_ID }}
+      NEXT_PUBLIC_SUPABASE_URL: https://jbqljjyctbsyawijlxfa.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
     steps:
       - name: Checkout code
@@ -77,6 +81,15 @@ jobs:
           
           # Deploy migrations
           supabase db push
+
+      - name: Create release tag
+        if: success()
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          VERSION=$(date +%Y.%m.%d-%H%M%S)
+          git tag -a "v$VERSION" -m "Production release v$VERSION"
+          git push origin "v$VERSION" || echo "Tag already exists or push failed"
 
       - name: Notify deployment
         run: echo "✅ Production deployment successful!"
