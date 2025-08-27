@@ -241,7 +241,7 @@ export default function PlayerDetailModal({ isOpen, onClose, player }: {
         setIsEstimating(true);
 
         try {
-            const { error } = await supabase.from("recruitment_suggestions").insert({
+            const { error } = await supabase.from("salary_estimation_requests").insert({
                 user_email: userEmail,
                 club_id: player.club_id,
                 player_id: player.id, // This is the players.id PK
