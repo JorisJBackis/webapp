@@ -67,11 +67,20 @@ jobs:
       - name: Link production project
         run: supabase link --project-ref ${{ secrets.PRODUCTION_PROJECT_ID }}
 
-      - name: Check for pending migrations
+      - name: Apply new migrations
         run: |
-          echo "Checking for pending migrations..."
-          # This will show if there are any unapplied migrations
-          npx supabase migration list --db-url "postgresql://postgres.${{ secrets.PRODUCTION_PROJECT_ID }}:${{ secrets.PRODUCTION_DB_PASSWORD }}@aws-0-us-east-1.pooler.supabase.com:5432/postgres" || echo "Migration check completed"
+          echo "Checking for new migrations to apply..."
+          # Get list of migration files
+          if [ -d "supabase/migrations" ] && [ "$(ls -A supabase/migrations/*.sql 2>/dev/null)" ]; then
+            echo "Found migration files, applying to production..."
+            for file in supabase/migrations/*.sql; do
+              echo "Applying migration: $file"
+            done
+            # Use the linked project to apply migrations properly
+            npx supabase migration up --db-url "postgresql://postgres.${{ secrets.PRODUCTION_PROJECT_ID }}:${{ secrets.PRODUCTION_DB_PASSWORD }}@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
+          else
+            echo "No new migrations to apply"
+          fi
 
       - name: Create release tag
         if: success()
