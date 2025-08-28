@@ -54,14 +54,14 @@ export default function DashboardNav() {
                 Insights
               </Button>
             </Link>
-            <Link href="/dashboard/marketplace">
+            <Link href="/dashboard/insights-v2">
               <Button
-                variant={pathname.startsWith("/dashboard/marketplace") ? "default" : "ghost"} // Use startsWith for potential sub-routes
+                variant={pathname.startsWith("/dashboard/insights-v2") ? "default" : "ghost"}
                 size="sm"
-                className={pathname.startsWith("/dashboard/marketplace") ? "bg-[#31348D] text-white" : "text-[#31348D]"}
+                className={pathname.startsWith("/dashboard/insights-v2") ? "bg-[#31348D] text-white" : "text-[#31348D]"}
               >
-                <ShoppingCart className="mr-2 h-4 w-4" /> {/* Use new icon */}
-                Marketplace
+                <BarChart className="mr-2 h-4 w-4" />
+                Insights v2
               </Button>
             </Link>
             <Link href="/dashboard/scouting">

@@ -82,6 +82,7 @@ export default function SelectClubPage() {
         const { error: insertError } = await supabase.from("profiles").insert({
           id: userId,
           club_id: selectedClub.id,
+          user_type: 'club_staff', // Default to club_staff for users going through club selection
           updated_at: new Date().toISOString(),
         })
 

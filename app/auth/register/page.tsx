@@ -19,6 +19,14 @@ import { Logo } from "@/components/logo"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 
+type Player = {
+  id: number
+  name: string
+  club_id: number | null
+  position: string
+  wyscout_player_id?: number
+}
+
 type Club = {
   id: number
   name: string
@@ -46,6 +54,13 @@ export default function RegisterPage() {
   const [clubs, setClubs] = useState<Club[]>([])
   const [loadingClubs, setLoadingClubs] = useState(true)
 
+  // Player selection state
+  const [playerOpen, setPlayerOpen] = useState(false)
+  const [playerSearch, setPlayerSearch] = useState("")
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
+  const [players, setPlayers] = useState<Player[]>([])
+  const [loadingPlayers, setLoadingPlayers] = useState(true)
+
   useEffect(() => {
     const fetchClubs = async () => {
       try {
@@ -69,11 +84,53 @@ export default function RegisterPage() {
   }, [supabase])
 
   useEffect(() => {
+    const fetchPlayers = async () => {
+      if (role !== "player") return
+      
+      try {
+        setLoadingPlayers(true)
+        // Use the same RPC function as scouting to get unique/latest players
+        const { data, error } = await supabase.rpc('get_scouting_players', {
+          p_requesting_club_id: 1, // Dummy club ID for registration
+          p_limit: 1000 // Higher limit for registration search
+        })
+
+        if (error) {
+          throw error
+        }
+
+        // Transform the data to match our Player type
+        const transformedPlayers = data?.map(player => ({
+          id: player.player_id,
+          name: player.name,
+          position: player.player_pos,
+          club_id: player.club_id,
+          wyscout_player_id: player.wyscout_player_id
+        })) || []
+
+        setPlayers(transformedPlayers)
+      } catch (error: any) {
+        console.error("Error fetching players:", error)
+        setError("Failed to load players. Please try again.")
+      } finally {
+        setLoadingPlayers(false)
+      }
+    }
+
+    fetchPlayers()
+  }, [supabase, role])
+
+  useEffect(() => {
     if (role === "club") {
       setIsClubSelectionDisabled(false); // Enable club selection
+      setSelectedPlayer(null); // Clear player selection
+    } else if (role === "player") {
+      setIsClubSelectionDisabled(true);  // Disable club selection for players
+      setSelectedClub(null);           // Clear club selection
     } else {
-      setIsClubSelectionDisabled(true);  // Disable for 'agent' or 'player'
+      setIsClubSelectionDisabled(true);  // Disable for 'agent'
       setSelectedClub(null);           // Clear any previously selected club
+      setSelectedPlayer(null);         // Clear player selection
     }
   }, [role]); //
 
@@ -109,7 +166,7 @@ export default function RegisterPage() {
     setError(null)
     setExistingUser(false)
 
-    if (role === 'agent' || role === 'player') {
+    if (role === 'agent') {
       setError(`Registration for ${role}s is coming soon! Please check back later.`);
       setMessageType('info'); // Set the message type to 'info'
       setLoading(false);
@@ -122,8 +179,14 @@ export default function RegisterPage() {
       return
     }
 
-    if (!selectedClub) {
+    if (role === 'club' && !selectedClub) {
       setError("Please select your club")
+      setLoading(false)
+      return
+    }
+
+    if (role === 'player' && !selectedPlayer) {
+      setError("Please find and select your player profile")
       setLoading(false)
       return
     }
@@ -145,9 +208,14 @@ export default function RegisterPage() {
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: {
-            club_id: selectedClub.id,
-          },
+          data: role === 'club' 
+            ? { club_id: selectedClub?.id, user_type: 'club_staff' }
+            : { 
+                wyscout_player_id: selectedPlayer?.wyscout_player_id || selectedPlayer?.id, 
+                user_type: 'player',
+                player_name: selectedPlayer?.name,
+                player_position: selectedPlayer?.position
+              },
         },
       })
 
@@ -169,16 +237,50 @@ export default function RegisterPage() {
       }
 
       if (authData.user) {
-        // Create or update the profile with the selected club
-        const { error: profileError } = await supabase.from("profiles").upsert({
-          id: authData.user.id,
-          club_id: selectedClub.id,
-          updated_at: new Date().toISOString(),
-        })
+        if (role === 'club' && selectedClub) {
+          // Create club staff profile
+          const { error: profileError } = await supabase.from("profiles").upsert({
+            id: authData.user.id,
+            club_id: selectedClub.id,
+            user_type: 'club_staff',
+            updated_at: new Date().toISOString(),
+          })
 
-        if (profileError) {
-          console.error("Error updating profile:", profileError)
-          // Continue anyway as the auth was successful
+          if (profileError) {
+            console.error("Error updating club profile:", profileError)
+          }
+        } else if (role === 'player' && selectedPlayer) {
+          console.log("Creating player profile for:", selectedPlayer.name)
+          console.log("Selected player wyscout_player_id:", selectedPlayer.wyscout_player_id)
+          
+          // Create player profile (though trigger should handle this)
+          const { error: profileError } = await supabase.from("profiles").upsert({
+            id: authData.user.id,
+            club_id: null, // Players don't belong to a specific club in profiles
+            user_type: 'player',
+            updated_at: new Date().toISOString(),
+          })
+
+          if (profileError) {
+            console.error("Error creating player profile:", profileError)
+          } else {
+            console.log("Player profile created/updated successfully")
+          }
+
+          // Create player_profiles entry  
+          console.log("About to create player_profiles entry...")
+          const { error: playerProfileError } = await supabase.from("player_profiles").insert({
+            id: authData.user.id,
+            wyscout_player_id: selectedPlayer.wyscout_player_id, // Link to stable Wyscout ID
+            looking_status: 'open_to_offers',
+          })
+
+          if (playerProfileError) {
+            console.error("ERROR creating player_profiles entry:", playerProfileError)
+            console.error("Selected player data:", selectedPlayer)
+          } else {
+            console.log("SUCCESS: Created player_profiles entry for:", selectedPlayer.name)
+          }
         }
       }
 
@@ -198,6 +300,12 @@ export default function RegisterPage() {
 
   const filteredClubs =
     search === "" ? clubs : clubs.filter((club) => club.name.toLowerCase().includes(search.toLowerCase()))
+
+  const filteredPlayers =
+    playerSearch === "" ? players : players.filter((player) => 
+      player.name.toLowerCase().includes(playerSearch.toLowerCase()) ||
+      player.position.toLowerCase().includes(playerSearch.toLowerCase())
+    )
 
   // If user already exists, show the existing user message
   if (existingUser) {
@@ -422,6 +530,82 @@ export default function RegisterPage() {
                 </PopoverContent>
               </Popover>
             </div>
+
+            {/* Player Selection (Conditional) */}
+            {role === "player" && (
+              <div className="space-y-2">
+                <Label htmlFor="player">
+                  Find Your Player Profile
+                </Label>
+                <Popover open={playerOpen} onOpenChange={setPlayerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                        id="player"
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={playerOpen}
+                        className="w-full justify-between"
+                        disabled={loadingPlayers}
+                    >
+                      {loadingPlayers
+                          ? "Loading players..."
+                          : selectedPlayer
+                              ? (
+                                  <div className="flex items-center">
+                                    <div className="h-6 w-6 mr-2 bg-[#3144C3] rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                      {selectedPlayer.name.charAt(0)}
+                                    </div>
+                                    <div className="flex flex-col items-start">
+                                      <span className="text-sm font-medium">{selectedPlayer.name}</span>
+                                      <span className="text-xs text-muted-foreground">{selectedPlayer.position}</span>
+                                    </div>
+                                  </div>
+                              )
+                              : "Search for your player profile..."}
+                      <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[400px] p-0">
+                    <Command>
+                      <CommandInput placeholder="Search by name or position..." value={playerSearch} onValueChange={setPlayerSearch} />
+                      <CommandList>
+                        <CommandEmpty>No players found. Try a different search term.</CommandEmpty>
+                        <CommandGroup>
+                          {filteredPlayers.slice(0, 50).map((player) => (
+                              <CommandItem
+                                  key={player.id}
+                                  value={`${player.name} ${player.position}`}
+                                  onSelect={() => {
+                                    setSelectedPlayer(player)
+                                    setPlayerOpen(false)
+                                  }}
+                                  className="flex items-center"
+                              >
+                                <div className="h-6 w-6 mr-2 bg-[#3144C3] rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                  {player.name.charAt(0)}
+                                </div>
+                                <div className="flex flex-col items-start">
+                                  <span className="text-sm font-medium">{player.name}</span>
+                                  <span className="text-xs text-muted-foreground">{player.position}</span>
+                                </div>
+                                <Check
+                                    className={cn(
+                                        "ml-auto h-4 w-4",
+                                        selectedPlayer?.id === player.id ? "opacity-100" : "opacity-0",
+                                    )}
+                                />
+                              </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <p className="text-xs text-muted-foreground">
+                  Can't find yourself? Your profile may not be in our database yet.
+                </p>
+              </div>
+            )}
 
             <Button type="submit" className="w-full bg-[#3144C3] hover:bg-[#3144C3]/90" disabled={loading}>
               {loading ? "Creating account..." : "Create account"}

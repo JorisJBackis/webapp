@@ -2,17 +2,16 @@
 
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
+import PlayerInsightsV2 from "@/components/dashboard/player-insights-v2"
 import PositionAnalytics from "@/components/dashboard/position-analytics"
 import LastGameInsights from "@/components/dashboard/last-game-insights"
 import CurrentSeasonInsights from "@/components/dashboard/current-season-insights"
 import ClubReputation from "@/components/dashboard/club-reputation"
-import PlayerAnalytics from "@/components/dashboard/player-analytics"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 
-export default function AnalyticsPage() {
-  // <<< 2. (CHANGE) Update activeTab state to include 'reputation' >>>
-  const [activeTab, setActiveTab] = useState<"lastGame" | "currentSeason" | "league" | "reputation">("lastGame")
+export default function InsightsV2Page() {
+  const [activeTab, setActiveTab] = useState<"performance" | "market" | "development" | "comparison">("performance")
   const [positionData, setPositionData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [clubId, setClubId] = useState<number | undefined>(undefined)
@@ -106,76 +105,118 @@ export default function AnalyticsPage() {
     }
 
     switch (activeTab) {
-      case "lastGame":
-        return <LastGameInsights clubId={clubId} />
-      case "currentSeason":
-        return <CurrentSeasonInsights clubId={clubId} />
-      case "league":
-        return (
-            <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-              <h2 className="text-xl font-semibold mb-4">League Position Analysis</h2>
-              <p className="text-gray-600 mb-6">
-                These charts show the average goals scored, goals conceded, and points accumulated by teams based on their
-                final league position over the last 4 seasons. This data can help identify performance benchmarks needed
-                to achieve specific league positions.
-              </p>
-              <PositionAnalytics positionData={positionData} clubId={clubId} />
-            </div>
-        )
-        // <<< 6. (ADD) Add a case to render the new component >>>
-      case "reputation":
-        return <ClubReputation leagueName={leagueName} />
+      case "performance":
+        return <PlayerInsightsV2 playerProfile={playerProfile} category="performance" />
+      case "market":
+        return <PlayerInsightsV2 playerProfile={playerProfile} category="market" />
+      case "development":
+        return <PlayerInsightsV2 playerProfile={playerProfile} category="development" />
+      case "comparison":
+        return <PlayerInsightsV2 playerProfile={playerProfile} category="comparison" />
       default:
         return null
     }
   }
 
-  // If player, show completely different analytics
+  // If player, show player-specific analytics with tabs
   if (userType === 'player') {
     return (
       <div className="container mx-auto py-8">
         <h1 className="text-3xl font-bold mb-6">Player Performance Analytics</h1>
-        <PlayerAnalytics playerProfile={playerProfile} />
+
+        <div className="flex flex-wrap gap-2 mb-6 border-b pb-2">
+          <Button
+              variant={activeTab === "performance" ? "default" : "outline"}
+              onClick={() => setActiveTab("performance")}
+              className={activeTab === "performance" ? "bg-[#31348D]" : ""}
+          >
+            Performance Overview
+          </Button>
+          <Button
+              variant={activeTab === "market" ? "default" : "outline"}
+              onClick={() => setActiveTab("market")}
+              className={activeTab === "market" ? "bg-[#31348D]" : ""}
+          >
+            Market Analytics
+          </Button>
+          <Button
+              variant={activeTab === "development" ? "default" : "outline"}
+              onClick={() => setActiveTab("development")}
+              className={activeTab === "development" ? "bg-[#31348D]" : ""}
+          >
+            Development Tracking
+          </Button>
+          <Button
+              variant={activeTab === "comparison" ? "default" : "outline"}
+              onClick={() => setActiveTab("comparison")}
+              className={activeTab === "comparison" ? "bg-[#31348D]" : ""}
+          >
+            League Comparison
+          </Button>
+        </div>
+
+        {renderTabContent()}
       </div>
     )
   }
 
+  // If club user, show original club analytics
   return (
       <div className="container mx-auto py-8">
         <h1 className="text-3xl font-bold mb-6">Team Performance Insights</h1>
 
         <div className="flex flex-wrap gap-2 mb-6 border-b pb-2">
           <Button
-              variant={activeTab === "lastGame" ? "default" : "outline"}
-              onClick={() => setActiveTab("lastGame")}
-              className={activeTab === "lastGame" ? "bg-[#31348D]" : ""}
+              variant={activeTab === "performance" ? "default" : "outline"}
+              onClick={() => setActiveTab("performance")}
+              className={activeTab === "performance" ? "bg-[#31348D]" : ""}
           >
             Last Game Insights
           </Button>
           <Button
-              variant={activeTab === "currentSeason" ? "default" : "outline"}
-              onClick={() => setActiveTab("currentSeason")}
-              className={activeTab === "currentSeason" ? "bg-[#31348D]" : ""}
+              variant={activeTab === "market" ? "default" : "outline"}
+              onClick={() => setActiveTab("market")}
+              className={activeTab === "market" ? "bg-[#31348D]" : ""}
           >
             Current Season Insights
           </Button>
           <Button
-              variant={activeTab === "league" ? "default" : "outline"}
-              onClick={() => setActiveTab("league")}
-              className={activeTab === "league" ? "bg-[#31348D]" : ""}
+              variant={activeTab === "development" ? "default" : "outline"}
+              onClick={() => setActiveTab("development")}
+              className={activeTab === "development" ? "bg-[#31348D]" : ""}
           >
             League Insights
           </Button>
           <Button
-              variant={activeTab === "reputation" ? "default" : "outline"}
-              onClick={() => setActiveTab("reputation")}
-              className={activeTab === "reputation" ? "bg-[#31348D]" : ""}
+              variant={activeTab === "comparison" ? "default" : "outline"}
+              onClick={() => setActiveTab("comparison")}
+              className={activeTab === "comparison" ? "bg-[#31348D]" : ""}
           >
             Club Reputation
           </Button>
         </div>
 
-        {renderTabContent()}
+        {loading ? (
+          <div className="flex h-[300px] items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-[#31348D]" />
+          </div>
+        ) : activeTab === "performance" ? (
+          <LastGameInsights clubId={clubId} />
+        ) : activeTab === "market" ? (
+          <CurrentSeasonInsights clubId={clubId} />
+        ) : activeTab === "development" ? (
+          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 className="text-xl font-semibold mb-4">League Position Analysis</h2>
+            <p className="text-gray-600 mb-6">
+              These charts show the average goals scored, goals conceded, and points accumulated by teams based on their
+              final league position over the last 4 seasons. This data can help identify performance benchmarks needed
+              to achieve specific league positions.
+            </p>
+            <PositionAnalytics positionData={positionData} clubId={clubId} />
+          </div>
+        ) : (
+          <ClubReputation leagueName={leagueName} />
+        )}
       </div>
   )
 }

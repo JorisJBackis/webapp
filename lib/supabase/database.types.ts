@@ -7,10 +7,30 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -246,6 +266,63 @@ export type Database = {
         }
         Relationships: []
       }
+      player_applications: {
+        Row: {
+          applied_at: string | null
+          available_from: string | null
+          club_notes: string | null
+          cover_message: string | null
+          decided_at: string | null
+          expected_salary: string | null
+          id: number
+          need_id: number | null
+          player_id: string | null
+          status: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          applied_at?: string | null
+          available_from?: string | null
+          club_notes?: string | null
+          cover_message?: string | null
+          decided_at?: string | null
+          expected_salary?: string | null
+          id?: number
+          need_id?: number | null
+          player_id?: string | null
+          status?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          applied_at?: string | null
+          available_from?: string | null
+          club_notes?: string | null
+          cover_message?: string | null
+          decided_at?: string | null
+          expected_salary?: string | null
+          id?: number
+          need_id?: number | null
+          player_id?: string | null
+          status?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_applications_need_id_fkey"
+            columns: ["need_id"]
+            isOneToOne: false
+            referencedRelation: "recruitment_needs"
+            referencedColumns: ["need_id"]
+          },
+          {
+            foreignKeyName: "player_applications_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_listings: {
         Row: {
           asking_price: number | null
@@ -295,6 +372,90 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      player_profiles: {
+        Row: {
+          agent_email: string | null
+          agent_name: string | null
+          agent_phone: string | null
+          contract_end_date: string | null
+          created_at: string | null
+          current_salary_range: string | null
+          desired_salary_range: string | null
+          family_status: string | null
+          id: string
+          instagram_url: string | null
+          languages: string[] | null
+          last_active: string | null
+          looking_status: string | null
+          playing_positions: string[] | null
+          preferred_countries: string[] | null
+          preferred_leagues: string[] | null
+          preferred_playing_style: string | null
+          profile_completeness: number | null
+          profile_photo_url: string | null
+          profile_views: number | null
+          relocation_preference: string | null
+          updated_at: string | null
+          verified: boolean | null
+          wyscout_player_id: number | null
+          youtube_highlight_url: string | null
+        }
+        Insert: {
+          agent_email?: string | null
+          agent_name?: string | null
+          agent_phone?: string | null
+          contract_end_date?: string | null
+          created_at?: string | null
+          current_salary_range?: string | null
+          desired_salary_range?: string | null
+          family_status?: string | null
+          id: string
+          instagram_url?: string | null
+          languages?: string[] | null
+          last_active?: string | null
+          looking_status?: string | null
+          playing_positions?: string[] | null
+          preferred_countries?: string[] | null
+          preferred_leagues?: string[] | null
+          preferred_playing_style?: string | null
+          profile_completeness?: number | null
+          profile_photo_url?: string | null
+          profile_views?: number | null
+          relocation_preference?: string | null
+          updated_at?: string | null
+          verified?: boolean | null
+          wyscout_player_id?: number | null
+          youtube_highlight_url?: string | null
+        }
+        Update: {
+          agent_email?: string | null
+          agent_name?: string | null
+          agent_phone?: string | null
+          contract_end_date?: string | null
+          created_at?: string | null
+          current_salary_range?: string | null
+          desired_salary_range?: string | null
+          family_status?: string | null
+          id?: string
+          instagram_url?: string | null
+          languages?: string[] | null
+          last_active?: string | null
+          looking_status?: string | null
+          playing_positions?: string[] | null
+          preferred_countries?: string[] | null
+          preferred_leagues?: string[] | null
+          preferred_playing_style?: string | null
+          profile_completeness?: number | null
+          profile_photo_url?: string | null
+          profile_views?: number | null
+          relocation_preference?: string | null
+          updated_at?: string | null
+          verified?: boolean | null
+          wyscout_player_id?: number | null
+          youtube_highlight_url?: string | null
+        }
+        Relationships: []
       }
       players: {
         Row: {
@@ -381,24 +542,69 @@ export type Database = {
           },
         ]
       }
+      profile_views: {
+        Row: {
+          id: number
+          player_id: string | null
+          source: string | null
+          view_duration_seconds: number | null
+          viewed_at: string | null
+          viewer_club_id: number | null
+        }
+        Insert: {
+          id?: number
+          player_id?: string | null
+          source?: string | null
+          view_duration_seconds?: number | null
+          viewed_at?: string | null
+          viewer_club_id?: number | null
+        }
+        Update: {
+          id?: number
+          player_id?: string | null
+          source?: string | null
+          view_duration_seconds?: number | null
+          viewed_at?: string | null
+          viewer_club_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_views_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_views_viewer_club_id_fkey"
+            columns: ["viewer_club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           club_id: number | null
           created_at: string
           id: string
           updated_at: string
+          user_type: string | null
         }
         Insert: {
           club_id?: number | null
           created_at?: string
           id: string
           updated_at?: string
+          user_type?: string | null
         }
         Update: {
           club_id?: number | null
           created_at?: string
           id?: string
           updated_at?: string
+          user_type?: string | null
         }
         Relationships: [
           {
@@ -472,13 +678,14 @@ export type Database = {
           },
         ]
       }
-      recruitment_suggestions: {
+      salary_estimation_requests: {
         Row: {
           club_id: number | null
           created_at: string
           id: number
           player_id: number | null
           player_name: string
+          request_type: string | null
           user_email: string
         }
         Insert: {
@@ -487,6 +694,7 @@ export type Database = {
           id?: number
           player_id?: number | null
           player_name: string
+          request_type?: string | null
           user_email: string
         }
         Update: {
@@ -495,21 +703,22 @@ export type Database = {
           id?: number
           player_id?: number | null
           player_name?: string
+          request_type?: string | null
           user_email?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "recruitment_suggestions_club_id_fkey"
-            columns: ["club_id"]
-            isOneToOne: false
-            referencedRelation: "clubs"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "recruitment_suggestions_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_estimation_requests_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
             referencedColumns: ["id"]
           },
         ]
@@ -951,20 +1160,20 @@ export type Database = {
       get_latest_players_for_club: {
         Args: { p_club_id: number }
         Returns: {
-          id: number
-          name: string
           club_id: number
+          created_at: string
+          id: number
+          listing_status: string
+          name: string
+          player_league_name: string
           player_pos: string
           stats: Json
-          created_at: string
           updated_at: string
           wyscout_player_id: number
-          listing_status: string
-          player_league_name: string
         }[]
       }
       get_metric_averages_for_position_league: {
-        Args: { p_position_name: string; p_league_name: string }
+        Args: { p_league_name: string; p_position_name: string }
         Returns: {
           average_value: number | null
           last_calculated: string | null
@@ -976,107 +1185,107 @@ export type Database = {
       get_my_player_listings: {
         Args: { requesting_club_id: number }
         Returns: {
-          listing_id: number
-          listed_by_club_id: number
-          wyscout_player_id_out: number
-          listing_type: string
-          status: string
           asking_price: number
-          loan_fee: number
-          loan_duration: string
+          listed_by_club_id: number
           listing_created_at: string
+          listing_id: number
+          listing_type: string
+          loan_duration: string
+          loan_fee: number
           player_name: string
           player_pos: string
+          status: string
+          wyscout_player_id_out: number
         }[]
       }
       get_my_recruitment_needs: {
         Args: { p_requesting_club_id: number }
         Returns: {
-          need_id: number
-          created_by_club_id: number
-          position_needed: string
-          min_age: number
-          max_age: number
-          min_height: number
-          max_height: number
-          preferred_foot: string
-          status: string
-          budget_transfer_max: number
           budget_loan_fee_max: number
-          salary_range: string
-          notes: string
+          budget_transfer_max: number
+          created_by_club_id: number
+          max_age: number
+          max_height: number
+          min_age: number
+          min_height: number
           need_created_at: string
+          need_id: number
+          notes: string
+          position_needed: string
+          preferred_foot: string
+          salary_range: string
+          status: string
         }[]
       }
       get_player_listings: {
-        Args: { requesting_club_id: number; listing_status?: string }
+        Args: { listing_status?: string; requesting_club_id: number }
         Returns: {
-          listing_id: number
-          listed_by_club_id: number
-          wyscout_player_id_out: number
-          listing_type: string
-          status: string
           asking_price: number
-          loan_fee: number
-          loan_duration: string
+          listed_by_club_id: number
+          listed_by_club_name: string
           listing_created_at: string
+          listing_id: number
+          listing_type: string
+          loan_duration: string
+          loan_fee: number
           player_name: string
           player_position: string
-          listed_by_club_name: string
+          status: string
+          wyscout_player_id_out: number
         }[]
       }
       get_recruitment_needs: {
         Args: { p_requesting_club_id: number }
         Returns: {
-          need_id: number
-          created_by_club_id: number
-          position_needed: string
-          min_age: number
-          max_age: number
-          min_height: number
-          max_height: number
-          preferred_foot: string
-          budget_transfer_max: number
           budget_loan_fee_max: number
-          salary_range: string
-          notes: string
+          budget_transfer_max: number
+          created_by_club_id: number
+          max_age: number
+          max_height: number
+          min_age: number
+          min_height: number
           need_created_at: string
+          need_id: number
+          notes: string
+          position_needed: string
           posting_club_name: string
+          preferred_foot: string
+          salary_range: string
         }[]
       }
       get_scouting_players: {
         Args: {
-          p_requesting_club_id: number
-          p_name_filter?: string
-          p_position_filter?: string
-          p_min_height?: number
-          p_max_height?: number
+          p_contract_end?: string
+          p_contract_start?: string
           p_foot_filter?: string
+          p_league_filter?: string
+          p_limit?: number
+          p_max_height?: number
+          p_min_height?: number
+          p_name_filter?: string
+          p_offset?: number
+          p_position_filter?: string
+          p_requesting_club_id: number
           p_sort_column?: string
           p_sort_direction?: string
-          p_contract_start?: string
-          p_contract_end?: string
-          p_limit?: number
-          p_offset?: number
-          p_league_filter?: string
         }
         Returns: {
-          player_id: number
-          wyscout_player_id: number
-          name: string
+          age: number
+          avg_percentile: number
           club_id: number
+          club_name: string
+          contract_expiry: string
+          foot: string
+          height: number
+          listing_status: string
+          name: string
+          player_id: number
+          player_league_name: string
           player_pos: string
           stats: Json
-          updated_at: string
-          age: number
-          height: number
-          foot: string
-          contract_expiry: string
-          avg_percentile: number
-          club_name: string
-          listing_status: string
-          player_league_name: string
           total_count: number
+          updated_at: string
+          wyscout_player_id: number
         }[]
       }
       try_cast_to_date: {
@@ -1222,6 +1431,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       listing_status_enum: ["active", "inactive", "completed"],
@@ -1236,3 +1448,4 @@ export const Constants = {
     },
   },
 } as const
+
