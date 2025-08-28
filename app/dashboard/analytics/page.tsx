@@ -6,7 +6,7 @@ import PositionAnalytics from "@/components/dashboard/position-analytics"
 import LastGameInsights from "@/components/dashboard/last-game-insights"
 import CurrentSeasonInsights from "@/components/dashboard/current-season-insights"
 import ClubReputation from "@/components/dashboard/club-reputation"
-import PlayerAnalytics from "@/components/dashboard/player-analytics"
+import PlayerInsightsV2 from "@/components/dashboard/player-insights-v2"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 
@@ -130,12 +130,55 @@ export default function AnalyticsPage() {
     }
   }
 
-  // If player, show completely different analytics
+  // If player, show player-specific analytics with tabs
   if (userType === 'player') {
     return (
       <div className="container mx-auto py-8">
         <h1 className="text-3xl font-bold mb-6">Player Performance Analytics</h1>
-        <PlayerAnalytics playerProfile={playerProfile} />
+
+        <div className="flex flex-wrap gap-2 mb-6 border-b pb-2">
+          <Button
+              variant={activeTab === "lastGame" ? "default" : "outline"}
+              onClick={() => setActiveTab("lastGame")}
+              className={activeTab === "lastGame" ? "bg-[#31348D]" : ""}
+          >
+            Performance Overview
+          </Button>
+          <Button
+              variant={activeTab === "currentSeason" ? "default" : "outline"}
+              onClick={() => setActiveTab("currentSeason")}
+              className={activeTab === "currentSeason" ? "bg-[#31348D]" : ""}
+          >
+            Market Analytics
+          </Button>
+          <Button
+              variant={activeTab === "league" ? "default" : "outline"}
+              onClick={() => setActiveTab("league")}
+              className={activeTab === "league" ? "bg-[#31348D]" : ""}
+          >
+            Development Tracking
+          </Button>
+          <Button
+              variant={activeTab === "reputation" ? "default" : "outline"}
+              onClick={() => setActiveTab("reputation")}
+              className={activeTab === "reputation" ? "bg-[#31348D]" : ""}
+          >
+            League Comparison
+          </Button>
+        </div>
+
+        {loading ? (
+          <div className="flex h-[300px] items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-[#31348D]" />
+          </div>
+        ) : (
+          <>
+            {activeTab === "lastGame" && <PlayerInsightsV2 playerProfile={playerProfile} category="performance" />}
+            {activeTab === "currentSeason" && <PlayerInsightsV2 playerProfile={playerProfile} category="market" />}
+            {activeTab === "league" && <PlayerInsightsV2 playerProfile={playerProfile} category="development" />}
+            {activeTab === "reputation" && <PlayerInsightsV2 playerProfile={playerProfile} category="comparison" />}
+          </>
+        )}
       </div>
     )
   }
