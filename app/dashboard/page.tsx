@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import PerformanceOverview from "@/components/dashboard/performance-overview"
 import PlayerStats from "@/components/dashboard/player-stats"
@@ -6,6 +7,7 @@ import TeamComparison from "@/components/dashboard/team-comparison"
 import Image from "next/image"
 import MyListings from "@/components/marketplace/my-listings";
 import MyNeeds from "@/components/marketplace/my-needs";
+import PlayerDashboard from "@/components/dashboard/player-dashboard";
 
 export default async function DashboardPage() {
   const supabase = createClient()
@@ -17,6 +19,54 @@ export default async function DashboardPage() {
 
   // Get the user's profile with club information
   const { data: profile } = await supabase.from("profiles").select("*, clubs(*)").eq("id", user?.id).single()
+
+  // If user is a player, check if they need onboarding
+  if (profile?.user_type === 'player') {
+    // Check if player has completed onboarding
+    const { data: playerProfile } = await supabase
+      .from('player_profiles')
+      .select('*')
+      .eq('id', user?.id)
+      .single()
+
+    // If any required fields are missing, redirect to onboarding
+    const needsOnboarding = !playerProfile || 
+      !playerProfile.playing_positions?.length ||
+      !playerProfile.current_salary_range ||
+      !playerProfile.preferred_countries?.length ||
+      !playerProfile.languages?.length
+
+    if (needsOnboarding) {
+      redirect('/auth/player-onboarding')
+    }
+
+    // Get player's wyscout data for stats
+    let wyscoutPlayer = null
+    if (playerProfile?.wyscout_player_id) {
+      // Get the latest player data by wyscout_player_id
+      const { data: wyscoutData } = await supabase
+        .from('players')
+        .select('*')
+        .eq('wyscout_player_id', playerProfile.wyscout_player_id)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .single()
+      
+      wyscoutPlayer = wyscoutData
+    }
+    
+    return (
+      <PlayerDashboard 
+        data={{
+          user,
+          profile,
+          playerProfile,
+          playerStats: null,
+          wyscoutPlayer
+        }}
+      />
+    )
+  }
 
   const clubName = profile?.clubs?.name || "Your Club"
   const clubLogo = profile?.clubs?.logo_url || "/placeholder.svg?height=40&width=40"

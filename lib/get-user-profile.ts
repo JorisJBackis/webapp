@@ -18,6 +18,7 @@ export async function getUserProfile() {
     .select(`
       id,
       club_id,
+      user_type,
       created_at,
       updated_at,
       clubs (

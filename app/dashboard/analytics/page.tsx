@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/client"
 import PositionAnalytics from "@/components/dashboard/position-analytics"
 import LastGameInsights from "@/components/dashboard/last-game-insights"
 import CurrentSeasonInsights from "@/components/dashboard/current-season-insights"
-import ClubReputation from "@/components/dashboard/club-reputation" // <<< 1. (ADD) Import the new component
+import ClubReputation from "@/components/dashboard/club-reputation"
+import PlayerInsightsV2 from "@/components/dashboard/player-insights-v2"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 
@@ -15,9 +16,9 @@ export default function AnalyticsPage() {
   const [positionData, setPositionData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [clubId, setClubId] = useState<number | undefined>(undefined)
-
-  // <<< 3. (ADD) New state to hold the user's league name for the reputation tab >>>
   const [leagueName, setLeagueName] = useState<string | null>(null)
+  const [userType, setUserType] = useState<string | null>(null)
+  const [playerProfile, setPlayerProfile] = useState<any>(null)
 
   const supabase = createClient()
 
@@ -39,10 +40,9 @@ export default function AnalyticsPage() {
 
         console.log("User ID:", user.id)
 
-        // <<< 4. (CHANGE) Update the Supabase query to also get the league name >>>
         const { data: profile, error: profileError } = await supabase
             .from("profiles")
-            .select("club_id, clubs(league)") // Fetch the related league name from the clubs table
+            .select("club_id, user_type, clubs(league)")
             .eq("id", user.id)
             .single()
 
@@ -53,11 +53,23 @@ export default function AnalyticsPage() {
         }
 
         console.log("Profile data:", profile)
+        
+        setUserType(profile?.user_type || null)
+        
+        // If player, get player profile data
+        if (profile?.user_type === 'player') {
+          const { data: playerData } = await supabase
+            .from('player_profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single()
+          
+          setPlayerProfile(playerData)
+        }
 
         if (profile?.club_id) {
           console.log("Setting club ID:", profile.club_id)
           setClubId(profile.club_id)
-          // <<< 5. (ADD) Set the league name state >>>
           setLeagueName(profile.clubs?.league || null)
         } else {
           console.warn("No club_id found in profile")
@@ -118,6 +130,59 @@ export default function AnalyticsPage() {
     }
   }
 
+  // If player, show player-specific analytics with tabs
+  if (userType === 'player') {
+    return (
+      <div className="container mx-auto py-8">
+        <h1 className="text-3xl font-bold mb-6">Player Performance Analytics</h1>
+
+        <div className="flex flex-wrap gap-2 mb-6 border-b pb-2">
+          <Button
+              variant={activeTab === "lastGame" ? "default" : "outline"}
+              onClick={() => setActiveTab("lastGame")}
+              className={activeTab === "lastGame" ? "bg-[#31348D]" : ""}
+          >
+            Performance Overview
+          </Button>
+          <Button
+              variant={activeTab === "currentSeason" ? "default" : "outline"}
+              onClick={() => setActiveTab("currentSeason")}
+              className={activeTab === "currentSeason" ? "bg-[#31348D]" : ""}
+          >
+            Market Analytics
+          </Button>
+          <Button
+              variant={activeTab === "league" ? "default" : "outline"}
+              onClick={() => setActiveTab("league")}
+              className={activeTab === "league" ? "bg-[#31348D]" : ""}
+          >
+            Development Tracking
+          </Button>
+          <Button
+              variant={activeTab === "reputation" ? "default" : "outline"}
+              onClick={() => setActiveTab("reputation")}
+              className={activeTab === "reputation" ? "bg-[#31348D]" : ""}
+          >
+            League Comparison
+          </Button>
+        </div>
+
+        {loading ? (
+          <div className="flex h-[300px] items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-[#31348D]" />
+          </div>
+        ) : (
+          <>
+            {activeTab === "lastGame" && <PlayerInsightsV2 playerProfile={playerProfile} category="performance" />}
+            {activeTab === "currentSeason" && <PlayerInsightsV2 playerProfile={playerProfile} category="market" />}
+            {activeTab === "league" && <PlayerInsightsV2 playerProfile={playerProfile} category="development" />}
+            {activeTab === "reputation" && <PlayerInsightsV2 playerProfile={playerProfile} category="comparison" />}
+          </>
+        )}
+      </div>
+    )
+  }
+
   return (
       <div className="container mx-auto py-8">
         <h1 className="text-3xl font-bold mb-6">Team Performance Insights</h1>
@@ -144,7 +209,6 @@ export default function AnalyticsPage() {
           >
             League Insights
           </Button>
-          {/* <<< 7. (ADD) Add the new button for the tab >>> */}
           <Button
               variant={activeTab === "reputation" ? "default" : "outline"}
               onClick={() => setActiveTab("reputation")}

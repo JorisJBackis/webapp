@@ -1,0 +1,9 @@
+# Supabase
+.branches
+.temp
+
+# Ignore remote schema pulls
+*remote_schema.sql
+
+# Keep migration files
+!migrations/*.sql
