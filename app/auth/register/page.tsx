@@ -60,6 +60,12 @@ export default function RegisterPage() {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
   const [players, setPlayers] = useState<Player[]>([])
   const [loadingPlayers, setLoadingPlayers] = useState(true)
+  const [playerNotFound, setPlayerNotFound] = useState(false)
+  const [playerName, setPlayerName] = useState("")
+  const [playerPosition, setPlayerPosition] = useState("")
+  const [playerClub, setPlayerClub] = useState("")
+  const [playerDOB, setPlayerDOB] = useState("")
+  const [playerNationality, setPlayerNationality] = useState("")
 
   useEffect(() => {
     const fetchClubs = async () => {
@@ -185,8 +191,14 @@ export default function RegisterPage() {
       return
     }
 
-    if (role === 'player' && !selectedPlayer) {
-      setError("Please find and select your player profile")
+    if (role === 'player' && !selectedPlayer && !playerNotFound) {
+      setError("Please find and select your player profile or indicate if you're not in the player list yet")
+      setLoading(false)
+      return
+    }
+
+    if (role === 'player' && playerNotFound && (!playerName || !playerPosition)) {
+      setError("Please provide your name and position")
       setLoading(false)
       return
     }
@@ -203,19 +215,31 @@ export default function RegisterPage() {
       }
 
       // If email doesn't exist, proceed with sign up
+      const signUpData = role === 'club'
+        ? { club_id: selectedClub?.id, user_type: 'club_staff' }
+        : playerNotFound
+          ? {
+              user_type: 'player',
+              player_not_in_database: true,
+              player_name: playerName,
+              player_position: playerPosition,
+              player_club: playerClub,
+              player_dob: playerDOB,
+              player_nationality: playerNationality
+            }
+          : {
+              wyscout_player_id: selectedPlayer?.wyscout_player_id || selectedPlayer?.id,
+              user_type: 'player',
+              player_name: selectedPlayer?.name,
+              player_position: selectedPlayer?.position
+            };
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: role === 'club' 
-            ? { club_id: selectedClub?.id, user_type: 'club_staff' }
-            : { 
-                wyscout_player_id: selectedPlayer?.wyscout_player_id || selectedPlayer?.id, 
-                user_type: 'player',
-                player_name: selectedPlayer?.name,
-                player_position: selectedPlayer?.position
-              },
+          data: signUpData,
         },
       })
 
@@ -249,37 +273,84 @@ export default function RegisterPage() {
           if (profileError) {
             console.error("Error updating club profile:", profileError)
           }
-        } else if (role === 'player' && selectedPlayer) {
-          console.log("Creating player profile for:", selectedPlayer.name)
-          console.log("Selected player wyscout_player_id:", selectedPlayer.wyscout_player_id)
-          
-          // Create player profile (though trigger should handle this)
-          const { error: profileError } = await supabase.from("profiles").upsert({
-            id: authData.user.id,
-            club_id: null, // Players don't belong to a specific club in profiles
-            user_type: 'player',
-            updated_at: new Date().toISOString(),
-          })
+        } else if (role === 'player') {
+          if (playerNotFound) {
+            // Player not in database - create data request
+            console.log("Creating data request for player:", playerName)
 
-          if (profileError) {
-            console.error("Error creating player profile:", profileError)
-          } else {
-            console.log("Player profile created/updated successfully")
-          }
+            // Create player profile
+            const { error: profileError } = await supabase.from("profiles").upsert({
+              id: authData.user.id,
+              club_id: null,
+              user_type: 'player',
+              updated_at: new Date().toISOString(),
+            })
 
-          // Create player_profiles entry  
-          console.log("About to create player_profiles entry...")
-          const { error: playerProfileError } = await supabase.from("player_profiles").insert({
-            id: authData.user.id,
-            wyscout_player_id: selectedPlayer.wyscout_player_id, // Link to stable Wyscout ID
-            looking_status: 'open_to_offers',
-          })
+            if (profileError) {
+              console.error("Error creating player profile:", profileError)
+            }
 
-          if (playerProfileError) {
-            console.error("ERROR creating player_profiles entry:", playerProfileError)
-            console.error("Selected player data:", selectedPlayer)
-          } else {
-            console.log("SUCCESS: Created player_profiles entry for:", selectedPlayer.name)
+            // Create data request
+            const { error: dataRequestError } = await supabase.from("player_data_requests").insert({
+              user_id: authData.user.id,
+              player_name: playerName,
+              email: email,
+              current_club: playerClub || null,
+              position: playerPosition,
+              nationality: playerNationality || null,
+              date_of_birth: playerDOB || null,
+              additional_info: `Registration request from player not in database`,
+              status: 'pending'
+            })
+
+            if (dataRequestError) {
+              console.error("Error creating data request:", dataRequestError)
+            } else {
+              console.log("Data request created successfully for:", playerName)
+            }
+
+            // Create player_profiles entry with null wyscout_player_id
+            const { error: playerProfileError } = await supabase.from("player_profiles").insert({
+              id: authData.user.id,
+              wyscout_player_id: null, // No Wyscout ID yet
+              looking_status: 'open_to_offers',
+            })
+
+            if (playerProfileError) {
+              console.error("ERROR creating player_profiles entry:", playerProfileError)
+            }
+          } else if (selectedPlayer) {
+            console.log("Creating player profile for:", selectedPlayer.name)
+            console.log("Selected player wyscout_player_id:", selectedPlayer.wyscout_player_id)
+
+            // Create player profile (though trigger should handle this)
+            const { error: profileError } = await supabase.from("profiles").upsert({
+              id: authData.user.id,
+              club_id: null, // Players don't belong to a specific club in profiles
+              user_type: 'player',
+              updated_at: new Date().toISOString(),
+            })
+
+            if (profileError) {
+              console.error("Error creating player profile:", profileError)
+            } else {
+              console.log("Player profile created/updated successfully")
+            }
+
+            // Create player_profiles entry
+            console.log("About to create player_profiles entry...")
+            const { error: playerProfileError } = await supabase.from("player_profiles").insert({
+              id: authData.user.id,
+              wyscout_player_id: selectedPlayer.wyscout_player_id, // Link to stable Wyscout ID
+              looking_status: 'open_to_offers',
+            })
+
+            if (playerProfileError) {
+              console.error("ERROR creating player_profiles entry:", playerProfileError)
+              console.error("Selected player data:", selectedPlayer)
+            } else {
+              console.log("SUCCESS: Created player_profiles entry for:", selectedPlayer.name)
+            }
           }
         }
       }
@@ -545,7 +616,7 @@ export default function RegisterPage() {
                         role="combobox"
                         aria-expanded={playerOpen}
                         className="w-full justify-between"
-                        disabled={loadingPlayers}
+                        disabled={loadingPlayers || playerNotFound}
                     >
                       {loadingPlayers
                           ? "Loading players..."
@@ -601,9 +672,89 @@ export default function RegisterPage() {
                     </Command>
                   </PopoverContent>
                 </Popover>
-                <p className="text-xs text-muted-foreground">
-                  Can't find yourself? Your profile may not be in our database yet.
-                </p>
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    Can't find yourself? Your profile may not be in our player list yet.
+                  </p>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="player-not-found"
+                      checked={playerNotFound}
+                      onChange={(e) => {
+                        setPlayerNotFound(e.target.checked)
+                        if (e.target.checked) {
+                          setSelectedPlayer(null)
+                        }
+                      }}
+                      className="h-4 w-4 text-[#3144C3] focus:ring-[#3144C3] border-gray-300 rounded"
+                    />
+                    <Label htmlFor="player-not-found" className="text-sm font-medium">
+                      I'm not in the player list
+                    </Label>
+                  </div>
+                </div>
+
+                {playerNotFound && (
+                  <div className="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="text-sm font-medium text-blue-900">
+                      FootyLabs will be notified of your registration and will add your data within 5 working days.
+                    </div>
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="player-name" className="text-sm">Full Name *</Label>
+                        <Input
+                          id="player-name"
+                          type="text"
+                          placeholder="Your full name"
+                          value={playerName}
+                          onChange={(e) => setPlayerName(e.target.value)}
+                          required={playerNotFound}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="player-position" className="text-sm">Position *</Label>
+                        <Input
+                          id="player-position"
+                          type="text"
+                          placeholder="e.g. Center Forward, Left Winger"
+                          value={playerPosition}
+                          onChange={(e) => setPlayerPosition(e.target.value)}
+                          required={playerNotFound}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="player-club" className="text-sm">Current Club</Label>
+                        <Input
+                          id="player-club"
+                          type="text"
+                          placeholder="Your current club (optional)"
+                          value={playerClub}
+                          onChange={(e) => setPlayerClub(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="player-dob" className="text-sm">Date of Birth</Label>
+                        <Input
+                          id="player-dob"
+                          type="date"
+                          value={playerDOB}
+                          onChange={(e) => setPlayerDOB(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="player-nationality" className="text-sm">Nationality</Label>
+                        <Input
+                          id="player-nationality"
+                          type="text"
+                          placeholder="Your nationality (optional)"
+                          value={playerNationality}
+                          onChange={(e) => setPlayerNationality(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

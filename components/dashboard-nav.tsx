@@ -14,11 +14,28 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { BarChart, Home, LogOut, Settings, User, ShoppingCart, Search } from "lucide-react"
+import { useState, useEffect } from "react"
 
 export default function DashboardNav() {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+  const [userType, setUserType] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchUserType = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('user_type')
+          .eq('id', user.id)
+          .single()
+        setUserType(profile?.user_type || null)
+      }
+    }
+    fetchUserType()
+  }, [])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -54,26 +71,30 @@ export default function DashboardNav() {
                 Insights
               </Button>
             </Link>
-            <Link href="/dashboard/marketplace">
-              <Button
-                variant={pathname.startsWith("/dashboard/marketplace") ? "default" : "ghost"}
-                size="sm"
-                className={pathname.startsWith("/dashboard/marketplace") ? "bg-[#31348D] text-white" : "text-[#31348D]"}
-              >
-                <ShoppingCart className="mr-2 h-4 w-4" />
-                Marketplace
-              </Button>
-            </Link>
-            <Link href="/dashboard/scouting">
-              <Button
-                variant={pathname.startsWith("/dashboard/scouting") ? "default" : "ghost"}
-                size="sm"
-                className={pathname.startsWith("/dashboard/scouting") ? "bg-[#31348D] text-white" : "text-[#31348D]"}
-              >
-                <Search className="mr-2 h-4 w-4" />
-                Scouting
-              </Button>
-            </Link>
+            {userType !== 'player' && (
+              <>
+                <Link href="/dashboard/marketplace">
+                  <Button
+                    variant={pathname.startsWith("/dashboard/marketplace") ? "default" : "ghost"}
+                    size="sm"
+                    className={pathname.startsWith("/dashboard/marketplace") ? "bg-[#31348D] text-white" : "text-[#31348D]"}
+                  >
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    Marketplace
+                  </Button>
+                </Link>
+                <Link href="/dashboard/scouting">
+                  <Button
+                    variant={pathname.startsWith("/dashboard/scouting") ? "default" : "ghost"}
+                    size="sm"
+                    className={pathname.startsWith("/dashboard/scouting") ? "bg-[#31348D] text-white" : "text-[#31348D]"}
+                  >
+                    <Search className="mr-2 h-4 w-4" />
+                    Scouting
+                  </Button>
+                </Link>
+              </>
+            )}
           </nav>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

@@ -7,30 +7,10 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)"
   }
   public: {
     Tables: {
@@ -322,6 +302,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      player_data_requests: {
+        Row: {
+          additional_info: string | null
+          admin_notes: string | null
+          created_at: string | null
+          current_club: string | null
+          date_of_birth: string | null
+          email: string
+          id: string
+          nationality: string | null
+          player_name: string
+          position: string | null
+          processed_at: string | null
+          requested_at: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          additional_info?: string | null
+          admin_notes?: string | null
+          created_at?: string | null
+          current_club?: string | null
+          date_of_birth?: string | null
+          email: string
+          id?: string
+          nationality?: string | null
+          player_name: string
+          position?: string | null
+          processed_at?: string | null
+          requested_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          additional_info?: string | null
+          admin_notes?: string | null
+          created_at?: string | null
+          current_club?: string | null
+          date_of_birth?: string | null
+          email?: string
+          id?: string
+          nationality?: string | null
+          player_name?: string
+          position?: string | null
+          processed_at?: string | null
+          requested_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       player_listings: {
         Row: {
@@ -781,8 +815,10 @@ export type Database = {
           "Defensive Duels": number | null
           "Defensive Duels Success %": number | null
           "Defensive Duels Won": number | null
+          "Draw Probability": number | null
           "Duels Success %": number | null
           "Duels Won": number | null
+          "Expected Points": number | null
           "Forward Pass Accuracy": number | null
           "Forward Passes": number | null
           Fouls: number | null
@@ -812,6 +848,7 @@ export type Database = {
           "Long Pass %": number | null
           "Long Pass Accuracy": number | null
           "Long Passes": number | null
+          "Loss Probability": number | null
           "Low Losses": number | null
           "Low Recoveries": number | null
           "Match Tempo": number | null
@@ -867,6 +904,7 @@ export type Database = {
           "Total Recoveries": number | null
           "Total Shots": number | null
           "Touches in Penalty Area": number | null
+          "Win Probability": number | null
           xG: number | null
           "Yellow Cards": number | null
         }
@@ -903,8 +941,10 @@ export type Database = {
           "Defensive Duels"?: number | null
           "Defensive Duels Success %"?: number | null
           "Defensive Duels Won"?: number | null
+          "Draw Probability"?: number | null
           "Duels Success %"?: number | null
           "Duels Won"?: number | null
+          "Expected Points"?: number | null
           "Forward Pass Accuracy"?: number | null
           "Forward Passes"?: number | null
           Fouls?: number | null
@@ -934,6 +974,7 @@ export type Database = {
           "Long Pass %"?: number | null
           "Long Pass Accuracy"?: number | null
           "Long Passes"?: number | null
+          "Loss Probability"?: number | null
           "Low Losses"?: number | null
           "Low Recoveries"?: number | null
           "Match Tempo"?: number | null
@@ -989,6 +1030,7 @@ export type Database = {
           "Total Recoveries"?: number | null
           "Total Shots"?: number | null
           "Touches in Penalty Area"?: number | null
+          "Win Probability"?: number | null
           xG?: number | null
           "Yellow Cards"?: number | null
         }
@@ -1025,8 +1067,10 @@ export type Database = {
           "Defensive Duels"?: number | null
           "Defensive Duels Success %"?: number | null
           "Defensive Duels Won"?: number | null
+          "Draw Probability"?: number | null
           "Duels Success %"?: number | null
           "Duels Won"?: number | null
+          "Expected Points"?: number | null
           "Forward Pass Accuracy"?: number | null
           "Forward Passes"?: number | null
           Fouls?: number | null
@@ -1056,6 +1100,7 @@ export type Database = {
           "Long Pass %"?: number | null
           "Long Pass Accuracy"?: number | null
           "Long Passes"?: number | null
+          "Loss Probability"?: number | null
           "Low Losses"?: number | null
           "Low Recoveries"?: number | null
           "Match Tempo"?: number | null
@@ -1111,6 +1156,7 @@ export type Database = {
           "Total Recoveries"?: number | null
           "Total Shots"?: number | null
           "Touches in Penalty Area"?: number | null
+          "Win Probability"?: number | null
           xG?: number | null
           "Yellow Cards"?: number | null
         }
@@ -1431,9 +1477,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       listing_status_enum: ["active", "inactive", "completed"],
@@ -1448,4 +1491,3 @@ export const Constants = {
     },
   },
 } as const
-

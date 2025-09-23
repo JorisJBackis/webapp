@@ -4,6 +4,12 @@ import { useState, useEffect } from "react"
 import { Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart } from "recharts"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import type { Database } from "@/lib/supabase/database.types"
+import { Info } from "lucide-react"
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card"
 
 interface PositionData {
   position: number
@@ -27,6 +33,9 @@ interface TeamStanding {
   rank: number
   teamId: number
   teamName: string
+  matchesPlayed: number
+  actualPoints: number
+  currentExpectedPoints: number
   expectedPoints: number
   isUserTeam?: boolean
 }
@@ -135,7 +144,7 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
         console.log("Fetching team metrics data...")
         const { data: teamMetrics, error: metricsError } = await supabase
           .from("team_metrics_aggregated")
-          .select('team_id, Team, "Points Earned", League')
+          .select('*')
           .not("team_id", "is", null)
 
         if (metricsError) {
@@ -316,10 +325,11 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
 
             // Convert points earned to number
             let pointsEarned: number
-            if (typeof team["Points Earned"] === "number") {
-              pointsEarned = team["Points Earned"]
+            const pointsEarnedValue = (team as any)["Points Earned"]
+            if (typeof pointsEarnedValue === "number") {
+              pointsEarned = pointsEarnedValue
             } else {
-              pointsEarned = Number.parseFloat(team["Points Earned"]?.toString() || "0")
+              pointsEarned = Number.parseFloat(pointsEarnedValue?.toString() || "0")
             }
 
             if (isNaN(pointsEarned)) {
@@ -343,10 +353,20 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
 
             const roundedPoints = Math.round(expectedPoints)
 
+            // Get Expected Points from the database (Monte Carlo simulation)
+            const dbExpectedPoints = team["Expected Points"]
+
+            // Current Expected = Monte Carlo simulation from DB
+            // Final Expected = Our calculation based on current form
+            const currentExpectedPoints = dbExpectedPoints ? Math.round(Number(dbExpectedPoints)) : null
+
             return {
               teamId,
               teamName,
-              expectedPoints: roundedPoints,
+              matchesPlayed: matchCount,
+              actualPoints: Math.round(pointsEarned),
+              currentExpectedPoints: currentExpectedPoints || Math.round(pointsEarned), // Use actual points if no MC data
+              expectedPoints: roundedPoints, // Full season projection
               isUserTeam: clubId ? teamId === clubId : false,
             }
           })
@@ -457,14 +477,63 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
             <table className="min-w-full bg-white rounded-lg overflow-hidden shadow-sm">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Rank
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Team
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Expected Points
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="flex items-center justify-center gap-1">
+                      <span>Matches<br/>Played</span>
+                      <HoverCard>
+                        <HoverCardTrigger asChild>
+                          <Info className="h-3 w-3 text-gray-400 cursor-help opacity-60 hover:opacity-100 transition-opacity" />
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-60 text-xs">
+                          <p>Games completed so far this season</p>
+                        </HoverCardContent>
+                      </HoverCard>
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="flex items-center justify-center gap-1">
+                      <span>Actual<br/>Points</span>
+                      <HoverCard>
+                        <HoverCardTrigger asChild>
+                          <Info className="h-3 w-3 text-gray-400 cursor-help opacity-60 hover:opacity-100 transition-opacity" />
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-60 text-xs">
+                          <p>Points earned in the current season</p>
+                        </HoverCardContent>
+                      </HoverCard>
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="flex items-center justify-center gap-1">
+                      <span>Current<br/>Expected</span>
+                      <HoverCard>
+                        <HoverCardTrigger asChild>
+                          <Info className="h-3 w-3 text-gray-400 cursor-help opacity-60 hover:opacity-100 transition-opacity" />
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-60 text-xs">
+                          <p>Based on your xG and performance metrics, this is how your current points should look</p>
+                        </HoverCardContent>
+                      </HoverCard>
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="flex items-center justify-center gap-1">
+                      <span>Final<br/>Expected</span>
+                      <HoverCard>
+                        <HoverCardTrigger asChild>
+                          <Info className="h-3 w-3 text-gray-400 cursor-help opacity-60 hover:opacity-100 transition-opacity" />
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-60 text-xs">
+                          <p>Projected total points by end of season based on current form</p>
+                        </HoverCardContent>
+                      </HoverCard>
+                    </div>
                   </th>
                 </tr>
               </thead>
@@ -474,11 +543,23 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
                     key={team.teamId}
                     className={`${team.isUserTeam ? "bg-blue-50" : team.rank % 2 === 0 ? "bg-gray-50" : "bg-white"} hover:bg-gray-100`}
                   >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{team.rank}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{team.rank}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                       {team.isUserTeam ? <span className="font-semibold">{team.teamName}</span> : team.teamName}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+                      {team.matchesPlayed}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 text-center font-medium">
+                      {team.actualPoints}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+                      {team.currentExpectedPoints === team.actualPoints ?
+                        <span className="text-gray-400">N/A</span> :
+                        team.currentExpectedPoints
+                      }
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 text-center font-medium">
                       {team.expectedPoints}
                     </td>
                   </tr>
@@ -491,9 +572,20 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
             {isLoading ? "Loading standings data..." : "No standings data available. Check console for detailed logs."}
           </div>
         )}
-        <p className="text-xs text-gray-500 mt-2">
-          Expected points calculated based on current performance projected over a {totalGamesInSeason}-match season.
-        </p>
+        <div className="mt-4 space-y-1">
+          <p className="text-xs text-gray-500">
+            <strong>Matches Played:</strong> Games completed so far this season
+          </p>
+          <p className="text-xs text-gray-500">
+            <strong>Actual Points:</strong> Points earned in current season
+          </p>
+          <p className="text-xs text-gray-500">
+            <strong>Current Expected:</strong> Monte Carlo simulation based on current form
+          </p>
+          <p className="text-xs text-gray-500">
+            <strong>Final Expected:</strong> Projected points for full {totalGamesInSeason}-match season
+          </p>
+        </div>
       </div>
     </div>
   )
