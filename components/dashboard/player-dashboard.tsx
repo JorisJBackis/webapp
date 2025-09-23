@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { 
-  TrendingUp, 
-  Eye, 
-  Calendar, 
-  Target, 
+import {
+  TrendingUp,
+  Eye,
+  Calendar,
+  Target,
   Award,
   BarChart3,
   Users,
@@ -19,7 +19,11 @@ import {
   Clock,
   Sparkles,
   Brain,
-  Zap
+  Zap,
+  AlertCircle,
+  CheckCircle2,
+  Share2,
+  Link2
 } from "lucide-react"
 import PlayerDetailModal from "@/components/common/player-detail-modal"
 import OpportunitiesBrowser from "./opportunities-browser"
@@ -30,6 +34,7 @@ type PlayerDashboardData = {
   playerProfile: any
   playerStats: any
   wyscoutPlayer: any
+  dataRequest?: any
 }
 
 export default function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
@@ -78,6 +83,54 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
   
   return (
     <div className="container py-8">
+      {/* Pending Data Request Alert */}
+      {data.dataRequest && (
+        <Card className="mb-6 border-blue-200 bg-blue-50">
+          <CardContent className="pt-6">
+            <div className="flex items-start space-x-3">
+              <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-blue-900 mb-1">
+                  Your data is being processed
+                </h3>
+                <p className="text-sm text-blue-800 mb-2">
+                  FootyLabs has been notified of your registration and will add your statistics within 5 working days.
+                  You registered on {new Date(data.dataRequest.requested_at).toLocaleDateString()}.
+                </p>
+                <p className="text-sm font-medium text-blue-900">
+                  In the meantime, you can:
+                </p>
+                <ul className="text-sm text-blue-800 mt-1 space-y-1">
+                  <li>• Use the marketplace to find club offers</li>
+                  <li>• Complete your profile information</li>
+                  <li>• Browse demo data to see how your profile will look</li>
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Demo Data Alert for Players Without Stats */}
+      {!data.wyscoutPlayer && !data.dataRequest && (
+        <Card className="mb-6 border-amber-200 bg-amber-50">
+          <CardContent className="pt-6">
+            <div className="flex items-start space-x-3">
+              <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-amber-900 mb-1">
+                  Demo Mode - Sample Data Displayed
+                </h3>
+                <p className="text-sm text-amber-800">
+                  This is a demo of how your profile and stats will look once we have your data in our database.
+                  For now, you can freely use the marketplace/opportunities window to find club offers.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
@@ -89,12 +142,13 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
               {playerPosition} • {data.wyscoutPlayer?.stats?.["Team"] || "Professional Player"}
             </p>
           </div>
-          <Button 
+          <Button
             onClick={() => setShowStatsModal(true)}
             className="bg-[#3144C3] hover:bg-[#3144C3]/90"
+            disabled={!data.wyscoutPlayer && !data.dataRequest}
           >
             <BarChart3 className="h-4 w-4 mr-2" />
-            View Full Stats
+            {data.wyscoutPlayer ? "View Full Stats" : "Stats Coming Soon"}
           </Button>
         </div>
       </div>
@@ -315,21 +369,68 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                   </Button>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <Button 
+              <div className="flex gap-2 flex-wrap">
+                <Button
                   className="bg-white text-blue-600 hover:bg-gray-100"
                   onClick={() => window.open(`/player/${data.user?.id}`, '_blank')}
                 >
                   <Eye className="h-4 w-4 mr-2" />
                   View Public Profile
                 </Button>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className="text-white border-white/30 hover:bg-white/20"
                   onClick={() => alert('Profile editing coming soon!')}
                 >
                   Edit Profile
                 </Button>
+              </div>
+              <div className="pt-4 border-t border-white/20">
+                <p className="text-sm text-blue-100 mb-3">Share your profile:</p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="bg-white/10 hover:bg-white/20 text-white"
+                    onClick={() => {
+                      // Placeholder for Facebook share
+                      console.log("Share to Facebook")
+                    }}
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                    </svg>
+                    <span className="ml-2">Facebook</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="bg-white/10 hover:bg-white/20 text-white"
+                    onClick={() => {
+                      // Placeholder for X (Twitter) share
+                      console.log("Share to X")
+                    }}
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    <span className="ml-2">X</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="bg-white/10 hover:bg-white/20 text-white"
+                    onClick={() => {
+                      // Placeholder for Instagram share
+                      console.log("Share to Instagram")
+                    }}
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zM5.838 12a6.162 6.162 0 1 1 12.324 0 6.162 6.162 0 0 1-12.324 0zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm4.965-10.405a1.44 1.44 0 1 1 2.881.001 1.44 1.44 0 0 1-2.881-.001z"/>
+                    </svg>
+                    <span className="ml-2">Instagram</span>
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -29,6 +29,14 @@ export default async function DashboardPage() {
       .eq('id', user?.id)
       .single()
 
+    // Check for pending data requests
+    const { data: dataRequest } = await supabase
+      .from('player_data_requests')
+      .select('*')
+      .eq('user_id', user?.id)
+      .eq('status', 'pending')
+      .single()
+
     // If any required fields are missing, redirect to onboarding
     const needsOnboarding = !playerProfile || 
       !playerProfile.playing_positions?.length ||
@@ -56,13 +64,14 @@ export default async function DashboardPage() {
     }
     
     return (
-      <PlayerDashboard 
+      <PlayerDashboard
         data={{
           user,
           profile,
           playerProfile,
           playerStats: null,
-          wyscoutPlayer
+          wyscoutPlayer,
+          dataRequest
         }}
       />
     )

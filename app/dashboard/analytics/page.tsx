@@ -8,7 +8,8 @@ import CurrentSeasonInsights from "@/components/dashboard/current-season-insight
 import ClubReputation from "@/components/dashboard/club-reputation"
 import PlayerInsightsV2 from "@/components/dashboard/player-insights-v2"
 import { Button } from "@/components/ui/button"
-import { Loader2 } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Loader2, AlertCircle } from "lucide-react"
 
 export default function AnalyticsPage() {
   // <<< 2. (CHANGE) Update activeTab state to include 'reputation' >>>
@@ -19,6 +20,8 @@ export default function AnalyticsPage() {
   const [leagueName, setLeagueName] = useState<string | null>(null)
   const [userType, setUserType] = useState<string | null>(null)
   const [playerProfile, setPlayerProfile] = useState<any>(null)
+  const [dataRequest, setDataRequest] = useState<any>(null)
+  const [wyscoutPlayer, setWyscoutPlayer] = useState<any>(null)
 
   const supabase = createClient()
 
@@ -56,15 +59,38 @@ export default function AnalyticsPage() {
         
         setUserType(profile?.user_type || null)
         
-        // If player, get player profile data
+        // If player, get player profile data and check for data request
         if (profile?.user_type === 'player') {
           const { data: playerData } = await supabase
             .from('player_profiles')
             .select('*')
             .eq('id', user.id)
             .single()
-          
+
           setPlayerProfile(playerData)
+
+          // Check for pending data request
+          const { data: requestData } = await supabase
+            .from('player_data_requests')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('status', 'pending')
+            .single()
+
+          setDataRequest(requestData)
+
+          // Get wyscout player data if available
+          if (playerData?.wyscout_player_id) {
+            const { data: wyscoutData } = await supabase
+              .from('players')
+              .select('*')
+              .eq('wyscout_player_id', playerData.wyscout_player_id)
+              .order('updated_at', { ascending: false })
+              .limit(1)
+              .single()
+
+            setWyscoutPlayer(wyscoutData)
+          }
         }
 
         if (profile?.club_id) {
@@ -135,6 +161,47 @@ export default function AnalyticsPage() {
     return (
       <div className="container mx-auto py-8">
         <h1 className="text-3xl font-bold mb-6">Player Performance Analytics</h1>
+
+        {/* Pending Data Request Alert */}
+        {dataRequest && (
+          <Card className="mb-6 border-blue-200 bg-blue-50">
+            <CardContent className="pt-6">
+              <div className="flex items-start space-x-3">
+                <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-blue-900 mb-1">
+                    Your performance data is being processed
+                  </h3>
+                  <p className="text-sm text-blue-800">
+                    FootyLabs will add your statistics within 5 working days.
+                    You registered on {new Date(dataRequest.requested_at).toLocaleDateString()}.
+                    The analytics shown below are demo data to demonstrate how your insights will appear.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Demo Data Alert for Players Without Stats */}
+        {!wyscoutPlayer && !dataRequest && (
+          <Card className="mb-6 border-amber-200 bg-amber-50">
+            <CardContent className="pt-6">
+              <div className="flex items-start space-x-3">
+                <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-amber-900 mb-1">
+                    Demo Analytics - Sample Data
+                  </h3>
+                  <p className="text-sm text-amber-800">
+                    This is a demonstration of how your performance analytics will look once we have your data.
+                    The insights below use sample data to show the types of analysis available.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="flex flex-wrap gap-2 mb-6 border-b pb-2">
           <Button
