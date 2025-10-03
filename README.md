@@ -1,80 +1,187 @@
-Installing Docker with WSL on Windows 10/11
-This note will provide detailed steps and instructions to install Docker and signup for a DockerHub account on Windows with WSL. We will need a DockerHub account so that we can pull images and push the images we will build.
+# Docker WSL Setup Guide
 
-Windows 10 & 11 users will be able to install Docker Desktop if their computer supports the Windows Subsystem for Linux (WSL).
+This guide provides detailed instructions for installing Docker Desktop with WSL on Windows 10/11 and verifying your installation is working correctly.
 
-1. Register for a DockerHub account
+## Prerequisites
 
-Visit the link below to register for a DockerHub account (this is free)
+- Windows 10 (version 2004 or higher) or Windows 11
+- Computer that supports Windows Subsystem for Linux (WSL)
+- Administrator access to your Windows machine
 
-https://hub.docker.com/signup
+## Table of Contents
 
-2. Download and install all pending Windows OS updates
+1. [Initial Setup](#initial-setup)
+2. [Installation Steps](#installation-steps)
+3. [Verification](#verification)
+4. [Troubleshooting](#troubleshooting)
 
-3. Run the WSL install script
+---
 
-Note - If you have previously enabled WSL and installed a distribution you may skip to step #7
+## Initial Setup
 
-Open PowerShell as Administrator and run: wsl --install
-This will enable and install all required features as well as install Ubuntu.
+### 1. Register for a DockerHub Account
 
+You'll need a DockerHub account to pull and push Docker images.
 
-Official documentation:
+**Create your account here:** [https://hub.docker.com/signup](https://hub.docker.com/signup) (free)
 
-https://docs.microsoft.com/en-us/windows/wsl/install#install-wsl-command
+### 2. Update Windows
 
-4. Reboot your computer
+Before proceeding, make sure your Windows OS is fully updated:
 
-5. Set a Username and Password in Ubuntu
+1. Open Windows Settings
+2. Go to Update & Security
+3. Click "Check for updates"
+4. Install all pending updates
 
-After the reboot, Windows will auto-launch your new Ubuntu OS and prompt you to set a username and password.
+---
 
+## Installation Steps
 
-6. Manually Installing a Distribution
-If for some reason Windows did not prompt you to create a distribution or you simply would like to create a new one, you can do so by running the following command:
+### 3. Install WSL
+
+> **Note:** If you have already enabled WSL and installed a distribution, skip to step 7.
+
+1. Open **PowerShell as Administrator**
+2. Run the following command:
+
+```bash
+wsl --install
+```
+
+This command will enable and install all required features and install Ubuntu by default.
+
+**Official Documentation:** [https://docs.microsoft.com/en-us/windows/wsl/install#install-wsl-command](https://docs.microsoft.com/en-us/windows/wsl/install#install-wsl-command)
+
+### 4. Reboot Your Computer
+
+Restart your computer to complete the WSL installation.
+
+### 5. Configure Ubuntu
+
+After rebooting, Windows will automatically launch Ubuntu and prompt you to set up your credentials:
+
+- Create a username
+- Set a password
+
+**Remember these credentials** - you'll need them for sudo commands.
+
+### 6. Manual Distribution Installation (Optional)
+
+If Windows didn't prompt you to create a distribution or you want to create a new one:
+
+```bash
 wsl --install -d Ubuntu
+```
 
-7. Install Docker Desktop
+### 7. Install Docker Desktop
 
-Navigate to the Docker Desktop installation page and click the Docker Desktop for Windows button:
+1. Visit the Docker Desktop installation page: [https://docs.docker.com/desktop/install/windows-install/](https://docs.docker.com/desktop/install/windows-install/)
+2. Click the **"Docker Desktop for Windows"** button to download
 
-https://docs.docker.com/desktop/install/windows-install/
+### 8. Run the Installer
 
+1. Double-click the **Docker Desktop Installer** from your Downloads folder
+2. Click **"Install anyway"** if warned the app isn't Microsoft-verified
+3. Click **"OK"** to add a desktop shortcut
+4. Click **"Close"** when you see the "Installation succeeded" message
 
-8. Double-click the Docker Desktop Installer from your Downloads folder
+### 9. Launch Docker Desktop
 
-9. Click "Install anyway" if warned the app isn't Microsoft-verified
+1. Double-click the **Docker Desktop** icon on your desktop
+2. Accept the Docker Service Agreement
+3. Docker Desktop will launch and may present a tutorial (you can skip this)
 
-10. Click "OK" to Add a shortcut to the Desktop
+### 10. Enable WSL Integration
 
-11. Click "Close" when you see Installation succeeded message
+This is a critical step to ensure Docker works with your WSL distributions:
 
-12. Double-click the Docker Desktop icon on your Desktop
+1. In Docker Desktop, click the **Settings** gear icon
+2. Navigate to **Resources** → **WSL Integration**
+3. Ensure **"Enable integration with my default WSL distro"** is checked
+4. If using multiple distributions, toggle them on as well
 
-13. Accept the Docker Service Agreement
+### 11. Open Your Linux Distribution
 
-14. Docker Desktop will launch for the first time. Docker Desktop will launch and present you with a tutorial. You are free to skip this.
+1. Use Windows Search in the toolbar
+2. Type **"Ubuntu"** (or your distribution name)
+3. Click **"Open"**
 
+### 12. Verify Docker Installation
 
-15. Ensure that WSL Integration is Enabled. In Docker Desktop, click the Settings Gear icon. Then choose Resources, and finally WSL Integration. Make sure that the Enable Integration with my default WSL distro is checked. Also, if you are using multiple distributions, make sure that these additional distros are toggled on:
+In your Ubuntu terminal, run:
 
-16. Open your Distro
+```bash
+docker
+```
 
-Using the Windows Search feature in the toolbar, type the name of your distribution (by default it is Ubuntu) and click Open:
+You should see helpful Docker instructions and available commands. If you see this output, Docker is properly installed!
 
-17. Check that Docker is working Using the terminal for your distro, run the docker command. If all is well you should see some helpful instructions in the output similar to below:
+### 13. Log In to Docker
 
-18. Log in to Docker
+Run the following command in your Ubuntu terminal:
 
-Using the terminal for your distro, run the docker login command. You will be prompted to enter the username and password (or your Personal Access Token) you created earlier when registering for a DockerHub account. Once you see Login Succeeded, the setup is complete and you are free to continue to the next lecture.
+```bash
+docker login
+```
 
+Enter the username and password you created during DockerHub registration. Once you see **"Login Succeeded"**, your setup is complete!
 
-----------------------------------------------------------------------------
+---
 
-Afterwards, run the command
+## Verification
 
-```docker-compose up --build -d```
+### Test Your Docker Setup
 
-it will build your image, then go ahead and visit localhost:3000 and things should be working! if you encounter an error, you have to check the docker desktop terminal
+To verify everything is working correctly, run:
 
-contact Aleksis Lesieur for any further information or if you encounter any kind of error
+```bash
+docker-compose up --build -d
+```
+
+This command will:
+- Build your Docker image
+- Start your containers in detached mode
+
+### Check the Application
+
+Once the build completes:
+
+1. Open your web browser
+2. Navigate to **http://localhost:3000**
+3. Your application should be running!
+
+---
+
+## Troubleshooting
+
+### If You Encounter Errors
+
+1. **Check Docker Desktop Terminal**
+   - Open Docker Desktop
+   - Navigate to the terminal/logs section
+   - Look for error messages or warnings
+
+2. **Common Issues:**
+   - Ensure WSL integration is enabled in Docker Desktop settings
+   - Verify your distribution is running: `wsl --list --verbose`
+   - Make sure you're logged into DockerHub: `docker login`
+   - Check that Docker Desktop is running
+
+### Need Help?
+
+If you encounter any errors or need assistance, please contact:
+
+**Aleksis Lesieur**
+
+---
+
+## Additional Resources
+
+- [Docker Documentation](https://docs.docker.com/)
+- [WSL Documentation](https://docs.microsoft.com/en-us/windows/wsl/)
+- [Docker Compose Documentation](https://docs.docker.com/compose/)
+
+---
+
+*Last Updated: October 2025*
