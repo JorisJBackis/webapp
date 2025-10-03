@@ -51,6 +51,8 @@ wsl --install
 
 This command will enable and install all required features and install Ubuntu by default.
 
+![PowerShell Terminal](readme_images/powershell_terminal.webp)
+
 **Official Documentation:** [https://docs.microsoft.com/en-us/windows/wsl/install#install-wsl-command](https://docs.microsoft.com/en-us/windows/wsl/install#install-wsl-command)
 
 ### 4. Reboot Your Computer
@@ -66,6 +68,8 @@ After rebooting, Windows will automatically launch Ubuntu and prompt you to set 
 
 **Remember these credentials** - you'll need them for sudo commands.
 
+![Ubuntu Terminal Setup](readme_images/ubuntu_terminal.webp)
+
 ### 6. Manual Distribution Installation (Optional)
 
 If Windows didn't prompt you to create a distribution or you want to create a new one:
@@ -79,6 +83,8 @@ wsl --install -d Ubuntu
 1. Visit the Docker Desktop installation page: [https://docs.docker.com/desktop/install/windows-install/](https://docs.docker.com/desktop/install/windows-install/)
 2. Click the **"Docker Desktop for Windows"** button to download
 
+![Docker Desktop Download](readme_images/docker_desktop_download.webp)
+
 ### 8. Run the Installer
 
 1. Double-click the **Docker Desktop Installer** from your Downloads folder
@@ -90,6 +96,9 @@ wsl --install -d Ubuntu
 
 1. Double-click the **Docker Desktop** icon on your desktop
 2. Accept the Docker Service Agreement
+
+![Docker Service Agreement](readme_images/docker_service_agreement.webp)
+
 3. Docker Desktop will launch and may present a tutorial (you can skip this)
 
 ### 10. Enable WSL Integration
@@ -100,6 +109,8 @@ This is a critical step to ensure Docker works with your WSL distributions:
 2. Navigate to **Resources** → **WSL Integration**
 3. Ensure **"Enable integration with my default WSL distro"** is checked
 4. If using multiple distributions, toggle them on as well
+
+![WSL Integration Settings](readme_images/wsl_integration.webp)
 
 ### 11. Open Your Linux Distribution
 
@@ -116,6 +127,8 @@ docker
 ```
 
 You should see helpful Docker instructions and available commands. If you see this output, Docker is properly installed!
+
+![Docker Working Check](readme_images/check_docker_is_working.webp)
 
 ### 13. Log In to Docker
 
@@ -183,5 +196,3 @@ If you encounter any errors or need assistance, please contact:
 - [Docker Compose Documentation](https://docs.docker.com/compose/)
 
 ---
-
-*Last Updated: October 2025*
