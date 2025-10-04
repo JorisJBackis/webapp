@@ -134,6 +134,7 @@ export default function LeaguePlayerBrowser({ initialUserClubId }: { initialUser
       if (initialUserClubId === null) { setLoading(false); return; }
       setLoading(true); setError(null);
       try {
+        if (!supabase) return;
         const response: PostgrestSingleResponse<ScoutingPlayer[]> = await supabase.rpc(
             'get_scouting_players', { p_requesting_club_id: initialUserClubId, p_limit: 5000 }
         );
@@ -309,7 +310,7 @@ export default function LeaguePlayerBrowser({ initialUserClubId }: { initialUser
               name: selectedPlayer.name,
               position: selectedPlayer.player_pos,
               player_pos: selectedPlayer.player_pos,
-              stats: selectedPlayer.stats,
+              stats: selectedPlayer.stats as { [key: string]: string | number | boolean | null } | null,
               club_id: selectedPlayer.club_id,
               wyscout_player_id: selectedPlayer.wyscout_player_id,
               player_league_name: selectedPlayer.player_league_name

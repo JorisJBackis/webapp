@@ -26,16 +26,16 @@ type MyRecruitmentNeed = Database['public']['Functions']['get_my_recruitment_nee
 // --- Zod Schema for Form Validation ---
 const needFormSchema = z.object({
     position_needed: z.string().min(1, "Position is required."),
-    min_age: z.coerce.number().int().positive().optional().nullable(), // Coerce to number, ensure integer
-    max_age: z.coerce.number().int().positive().optional().nullable(),
-    min_height: z.coerce.number().int().positive().optional().nullable(),
-    max_height: z.coerce.number().int().positive().optional().nullable(),
+    min_age: z.number().int().positive().optional().nullable(), // to number, ensure integer
+    max_age: z.number().int().positive().optional().nullable(),
+    min_height: z.number().int().positive().optional().nullable(),
+    max_height: z.number().int().positive().optional().nullable(),
     preferred_foot: z.string().optional().nullable(), // Keep as string for Select
-    budget_transfer_max: z.coerce.number().positive().optional().nullable(),
-    budget_loan_fee_max: z.coerce.number().positive().optional().nullable(),
+    budget_transfer_max: z.number().positive().optional().nullable(),
+    budget_loan_fee_max: z.number().positive().optional().nullable(),
     salary_range: z.string().max(50, "Salary range text too long.").optional().nullable(),
     notes: z.string().max(1000, "Notes cannot exceed 1000 characters.").optional().nullable(),
-    status: z.enum(['active', 'closed'], {required_error: "Status is required"}), // Added Status
+    status: z.enum(['active', 'closed']), // Added Status
 }).refine(data => {
     // Optional: Add validation if min > max
     if (data.min_age && data.max_age && data.min_age > data.max_age) {

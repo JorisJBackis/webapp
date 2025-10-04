@@ -36,6 +36,7 @@ export default function SelectClubPage() {
   useEffect(() => {
     const fetchClubs = async () => {
       try {
+        if (!supabase) return;
         const { data, error } = await supabase.from("clubs").select("id, name, logo_url").order("name")
 
         if (error) {
@@ -64,6 +65,7 @@ export default function SelectClubPage() {
     setError(null)
 
     try {
+      if (!supabase) return;
       const {
         data: { session },
       } = await supabase.auth.getSession()

@@ -13,12 +13,17 @@ export default async function DashboardPage() {
   const supabase = createClient()
 
   // Get the current user
+  
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
+  if (!user) {
+    redirect('/auth/login')
+  }
+
   // Get the user's profile with club information
-  const { data: profile } = await supabase.from("profiles").select("*, clubs(*)").eq("id", user?.id).single()
+  const { data: profile } = await supabase.from("profiles").select("*, clubs(*)").eq("id", user.id).single()
 
   // If user is a player, check if they need onboarding
   if (profile?.user_type === 'player') {
@@ -114,13 +119,13 @@ export default async function DashboardPage() {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="space-y-6">
-          <PerformanceOverview clubId={profile?.club_id} />
+          <PerformanceOverview clubId={profile?.club_id ?? undefined} />
         </TabsContent>
         <TabsContent value="players" className="space-y-6">
-          <PlayerStats clubId={profile?.club_id} />
+          <PlayerStats clubId={profile?.club_id ?? undefined} />
         </TabsContent>
         <TabsContent value="comparison" className="space-y-6">
-          <TeamComparison clubId={profile?.club_id} />
+          <TeamComparison clubId={profile?.club_id ?? undefined} />
         </TabsContent>
         <TabsContent value="my-activity" className="space-y-6">
           <MyListings />

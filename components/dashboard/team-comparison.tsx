@@ -82,6 +82,7 @@ export default function TeamComparison({ clubId }: { clubId?: number }) {
             setLoading(true); setError(null);
 
             try {
+                if (!supabase) return;
                 const { data: allTeamsData, error: allTeamsError } = await supabase.from("team_metrics_aggregated").select("*");
                 if (allTeamsError) throw new Error(`Error fetching league stats: ${allTeamsError.message}`);
                 if (!allTeamsData || allTeamsData.length === 0) {
@@ -104,10 +105,10 @@ export default function TeamComparison({ clubId }: { clubId?: number }) {
                 for (const category in metricCategories) {
                     processedData[category] = metricCategories[category as keyof typeof metricCategories].map((metric) => {
                         const allValues = allTeamsData.map(team => {
-                            const val = team[metric];
+                            const val = (team as any)[metric];
                             return typeof val === "string" ? parseFloat(val) : typeof val === "number" ? val : 0;
                         }).filter(val => !isNaN(val));
-                        const rawTeamValue = teamData[metric];
+                        const rawTeamValue = (teamData as any)[metric]; 
                         const teamValue = typeof rawTeamValue === "string" ? parseFloat(rawTeamValue) : typeof rawTeamValue === "number" ? rawTeamValue : 0;
                         const leagueAverage = allValues.length > 0 ? allValues.reduce((sum, val) => sum + val, 0) / allValues.length : 0;
                         let percentile;

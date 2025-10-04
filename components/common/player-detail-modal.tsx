@@ -49,14 +49,14 @@ const sixMetricsWithLegend: { [position: string]: string[] } = {
     'Centre Forward': [ 'Non-penalty goals per 90_percentile', 'xG per 90_percentile', 'Shots on target per 90_percentile', 'Touches in box per 90_percentile', 'xA per 90_percentile', 'Offensive duels won, %_percentile' ]
 };
 
-const formatFootylabsScore = (score: number | string | null | undefined): string => {
+const formatFootylabsScore = (score: number | string | boolean | null | undefined): string => {
     if (score === null || score === undefined) return "N/A";
     const numScore = Number(score);
     if (isNaN(numScore)) return "N/A";
     return (numScore * 10).toFixed(1); // Assuming score is 0-1 percentile
 };
 
-const getScoreColor = (score: number | string | null | undefined): string => {
+const getScoreColor = (score: number | string | boolean | null | undefined): string => {
     if (score === null || score === undefined) return "text-muted-foreground";
     const numScore = Number(score);
     if (isNaN(numScore)) return "text-muted-foreground";
@@ -165,6 +165,7 @@ export default function PlayerDetailModal({ isOpen, onClose, player }: {
     useEffect(() => {
         const fetchUser = async () => {
             if (isOpen) {
+                if (!supabase) return;
                 const { data: { user } } = await supabase.auth.getUser();
                 setUserEmail(user?.email ?? null);
                 // Reset request status when a new player modal is opened
@@ -191,6 +192,7 @@ export default function PlayerDetailModal({ isOpen, onClose, player }: {
 
             setLoadingAverages(true);
             try {
+                if (!supabase) return;
                 const { data, error } = await supabase.rpc('get_metric_averages_for_position_league', {
                     p_position_name: currentPosition,
                     p_league_name: player.player_league_name // Use league from player prop
@@ -229,7 +231,7 @@ export default function PlayerDetailModal({ isOpen, onClose, player }: {
 
     // <<< ADD THIS ENTIRE FUNCTION >>>
     const handleRequestSalary = async () => {
-        if (!player || !userEmail || !player.club_id) {
+        if (!player || !userEmail || !player.club_id || !player.name) {
             toast({
                 title: "Error",
                 description: "Missing player or user info to make a request.",
@@ -241,6 +243,7 @@ export default function PlayerDetailModal({ isOpen, onClose, player }: {
         setIsEstimating(true);
 
         try {
+            if (!supabase) return;
             const { error } = await supabase.from("salary_estimation_requests").insert({
                 user_email: userEmail,
                 club_id: player.club_id,

@@ -11,6 +11,7 @@ export default function Home() {
   useEffect(() => {
     const checkSession = async () => {
       try {
+        if (!supabase) return;
         const { data, error } = await supabase.auth.getSession()
 
         if (error) {

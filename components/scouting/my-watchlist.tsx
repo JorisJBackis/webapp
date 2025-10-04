@@ -23,8 +23,8 @@ type WatchlistPlayer = {
   club_league?: string
   stats?: any
   watchlist_id: number
-  wyscout_player_id?: number
-  club_id?: number
+  wyscout_player_id?: number | null
+  club_id?: number | null
 }
 
 export default function MyWatchlist({ userClubId }: { userClubId: number }) {
@@ -47,7 +47,7 @@ export default function MyWatchlist({ userClubId }: { userClubId: number }) {
 
     try {
       console.log("Fetching watchlist for club ID:", userClubId)
-
+      if (!supabase) return;
       const { data, error } = await supabase
         .from("watchlist")
         .select(`
@@ -99,6 +99,7 @@ export default function MyWatchlist({ userClubId }: { userClubId: number }) {
     setRemovingIds((prev) => new Set(prev).add(watchlistId))
 
     try {
+      if (!supabase) return;
       const { error } = await supabase.from("watchlist").delete().eq("id", watchlistId)
 
       if (error) throw error

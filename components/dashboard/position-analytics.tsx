@@ -50,7 +50,7 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
   const [teamStandings, setTeamStandings] = useState<TeamStanding[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [leagueName, setLeagueName] = useState<string | null>(null)
-  const [leagueData, setLeagueData] = useState<Map<string, { total_games: number }>>(new Map())
+  const [leagueData, setLeagueData] = useState<Map<string, { total_games: number | null }>>(new Map())
   const supabase = createClientComponentClient<Database>()
 
 
