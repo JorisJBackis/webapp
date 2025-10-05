@@ -35,7 +35,7 @@ const needFormSchema = z.object({
     budget_loan_fee_max: z.number().positive().optional().nullable(),
     salary_range: z.string().max(50, "Salary range text too long.").optional().nullable(),
     notes: z.string().max(1000, "Notes cannot exceed 1000 characters.").optional().nullable(),
-    status: z.enum(['active', 'closed']), // Added Status
+    status: z.enum(['active', 'closed'], {error: "Status is required"}), // Added Status
 }).refine(data => {
     // Optional: Add validation if min > max
     if (data.min_age && data.max_age && data.min_age > data.max_age) {

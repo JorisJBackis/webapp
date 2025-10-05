@@ -46,7 +46,7 @@ type ClubPlayer = {
 const listingFormSchema = z.object({
     // Use string for wyscout_player_id because form Select returns string value
     wyscout_player_id: z.string().min(1, "Player selection is required"),
-    listing_type: z.enum(['loan', 'transfer']),
+    listing_type: z.enum(['loan', 'transfer'], { error: "Listing type is required" }),
     asking_price: z.number().positive("Price must be positive").optional().nullable(),
     loan_fee: z.number().positive("Fee must be positive").optional().nullable(),
     loan_duration: z.string().optional().nullable(),
