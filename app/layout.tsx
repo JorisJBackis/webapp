@@ -10,7 +10,10 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "FootyLabs | Football Analytics Platform",
   description: "ML-driven recommendations for football clubs",
-    generator: 'v0.dev'
+  generator: 'v0.dev',
+  icons: {
+    icon: '/favicon.png',
+  }
 }
 
 export default function RootLayout({
