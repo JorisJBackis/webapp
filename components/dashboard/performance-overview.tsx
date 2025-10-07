@@ -33,8 +33,8 @@ type TeamMatchStats = {
 
 // Define the processed match data type
 type ProcessedMatch = {
-  match_id: string
-  date: string
+  match_id: string | null
+  date: string | null
   month: string
   goals_scored: number
   goals_conceded: number
@@ -100,6 +100,7 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
 
       try {
         // Fetch all match stats for the team
+        if (!supabase) return;
         const { data: teamMatches, error: teamMatchesError } = await supabase
           .from("team_match_stats")
           .select("*")
@@ -146,7 +147,7 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
             (stat) => stat.match_id === match.match_id && stat.team_id !== clubId,
           )
 
-          if (opponentStats) {
+          if (opponentStats && match.date && match.match_id) {
             const { month } = formatDateAndGetMonth(match.date)
 
             const goalsScored = extractGoals(match.stats)
@@ -177,7 +178,7 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
         console.log("Processed matches:", processedMatches)
         setDebugInfo(debugMatches)
 
-        processedMatches.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        processedMatches.sort((a, b) => new Date(a.date!).getTime() - new Date(b.date!).getTime());
 
         // Calculate statistics
         const totalMatches = processedMatches.length
@@ -198,7 +199,7 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
         const monthMap = new Map<string, MonthlyPerformanceData>();
 
         processedMatches.forEach((match) => {
-          const matchDate = new Date(match.date);
+          const matchDate = new Date(match.date!);
           const monthYearKey = `${matchDate.getFullYear()}-${matchDate.getMonth()}`;
 
           if (!monthMap.has(monthYearKey)) {

@@ -17,6 +17,8 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: "League parameter is required" }, { status: 400 });
         }
 
+      
+        
         const { data, error } = await supabase
             .from("clubs")
             .select(`

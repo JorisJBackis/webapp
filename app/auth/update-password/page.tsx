@@ -26,7 +26,8 @@ export default function UpdatePasswordPage() {
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data } = await supabase.auth.getSession()
+      if (!supabase) return;
+      const { data } = await supabase!.auth.getSession()
       setHasSession(!!data.session)
     }
 
@@ -45,6 +46,7 @@ export default function UpdatePasswordPage() {
     }
 
     try {
+      if (!supabase) return;
       const { error } = await supabase.auth.updateUser({
         password,
       })

@@ -25,6 +25,7 @@ interface OpportunityWithFitScore extends Opportunity {
   fit_reasons: FitReason[]
   club_rating?: number
   review_count?: number
+  posting_club_logo_url?: string | null
 }
 
 interface OpportunitiesBrowserProps {
@@ -58,7 +59,7 @@ const calculateFitScore = (opportunity: Opportunity & { club_rating?: number, re
       text: `Perfect position match - You're exactly what they're looking for as a ${opportunity.position_needed}`
     })
   } else {
-    const similarPositions = {
+    const similarPositions: Record<string, string[]>  = {
       'Centre Forward': ['Winger', 'Attacking Midfielder'],
       'Winger': ['Centre Forward', 'Attacking Midfielder', 'Full Back'],
       'Centre Back': ['Full Back', 'Defensive Midfielder'],
@@ -70,7 +71,7 @@ const calculateFitScore = (opportunity: Opportunity & { club_rating?: number, re
     }
     
     if (playerProfile.playing_positions?.some((pos: string) => 
-      similarPositions[pos as keyof typeof similarPositions]?.includes(opportunity.position_needed)
+      similarPositions[pos]?.includes(opportunity.position_needed || '')
     )) {
       score += 10
       reasons.push({
@@ -114,7 +115,7 @@ const calculateFitScore = (opportunity: Opportunity & { club_rating?: number, re
 
   // Add 1-3 compelling reasons based on seeded randomness
   const numReasons = Math.floor(seededRandom(1, 4))
-  const selectedReasons = []
+  const selectedReasons: FitReason[] = []
   for (let i = 0; i < numReasons; i++) {
     const reasonIndex = Math.floor(seededRandom(0, clubReasons.length, i))
     if (!selectedReasons.includes(clubReasons[reasonIndex])) {
@@ -236,6 +237,8 @@ export default function OpportunitiesBrowser({ playerProfile, userClubId }: Oppo
       try {
         setLoading(true)
         setError(null)
+
+        if (!supabase) return;
 
         // Use a dummy club ID if not provided (for the RPC function requirement)
         const { data, error: rpcError } = await supabase.rpc('get_recruitment_needs', {

@@ -79,6 +79,7 @@ export default function LastGameInsights({ clubId }: { clubId?: number }) {
         // <<< FIX: REVERT TO THE ORIGINAL, WORKING DATA FETCHING PATTERN >>>
 
         // Step 1: Fetch the last game for the logged-in team
+        if (!supabase) return;
         const { data: teamGames, error: teamGamesError } = await supabase
             .from("team_match_stats")
             .select("*")
@@ -91,6 +92,11 @@ export default function LastGameInsights({ clubId }: { clubId?: number }) {
         }
         const lastTeamGame = teamGames[0];
 
+        if (!lastTeamGame.match_id) {
+          throw new Error("Invalid match data");
+        }
+
+
         // Step 2: Fetch the opponent's stats for the same game
         const { data: opponentGames, error: opponentGamesError } = await supabase
             .from("team_match_stats")
@@ -102,6 +108,10 @@ export default function LastGameInsights({ clubId }: { clubId?: number }) {
           throw new Error(opponentGamesError?.message || "No opponent data for the last game");
         }
         const opponentGame = opponentGames[0];
+
+        if (!opponentGame.team_id) {
+          throw new Error("Invalid opponent data");
+        }
 
         // Step 3: Fetch team names separately
         const { data: teams, error: teamsError } = await supabase
@@ -126,12 +136,16 @@ export default function LastGameInsights({ clubId }: { clubId?: number }) {
         const homeTeam = isYourTeamHome ? yourTeamData : opponentData;
         const awayTeam = isYourTeamHome ? opponentData : yourTeamData;
 
-        // This is where the goals were being missed before. We now correctly set them.
-        homeTeam.stats.goals = Number(homeTeam.stats?.goals || homeTeam.stats?.Goals || 0);
-        awayTeam.stats.goals = Number(awayTeam.stats?.goals || awayTeam.stats?.Goals || 0);
+        if (!homeTeam.stats) homeTeam.stats = {};
+        if (!awayTeam.stats) awayTeam.stats = {};
+        
 
-        setHomeTeamGame(homeTeam);
-        setAwayTeamGame(awayTeam);
+                // This is where the goals were being missed before. We now correctly set them.
+        (homeTeam.stats as GameStats['stats']).goals = Number((homeTeam.stats as any).goals || (homeTeam.stats as any).Goals || 0);
+        (awayTeam.stats as GameStats['stats']).goals = Number((awayTeam.stats as any).goals || (awayTeam.stats as any).Goals || 0);
+
+        setHomeTeamGame(homeTeam as GameStats);
+        setAwayTeamGame(awayTeam as GameStats);
 
         // Step 5: Prepare chart data
         const comparisonMetrics = [
@@ -143,8 +157,8 @@ export default function LastGameInsights({ clubId }: { clubId?: number }) {
 
         const chartData = comparisonMetrics.map((metric) => ({
           name: metric.name,
-          [homeTeam.team_name!]: Number.parseFloat(homeTeam.stats[metric.key] || "0"),
-          [awayTeam.team_name!]: Number.parseFloat(awayTeam.stats[metric.key] || "0"),
+          [homeTeam.team_name!]: Number.parseFloat((homeTeam.stats as any)?.[metric.key] || "0"),
+          [awayTeam.team_name!]: Number.parseFloat((awayTeam.stats as any)?.[metric.key] || "0"),
         }));
 
       } catch (err) {
@@ -207,8 +221,8 @@ export default function LastGameInsights({ clubId }: { clubId?: number }) {
     )
   }
 
-  const homeGoals = Number.parseFloat(homeTeamGame.stats.goals || "0");
-  const awayGoals = Number.parseFloat(awayTeamGame.stats.goals || "0");
+  const homeGoals = Number.parseFloat(String(homeTeamGame.stats.goals || 0));
+  const awayGoals = Number.parseFloat(String(awayTeamGame.stats.goals || 0));
   const homeXG = Number.parseFloat(homeTeamGame.stats.xG || "0").toFixed(2);
   const awayXG = Number.parseFloat(awayTeamGame.stats.xG || "0").toFixed(2);
   const homeShots = Number.parseFloat(homeTeamGame.stats["Total Shots"] || "0");

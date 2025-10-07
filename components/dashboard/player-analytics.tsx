@@ -65,6 +65,7 @@ export default function PlayerAnalytics({ playerProfile }: PlayerAnalyticsProps)
 
       try {
         // Get player statistics
+        if (!supabase) return;
         const { data: player } = await supabase
           .from('players')
           .select('*')

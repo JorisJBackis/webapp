@@ -84,6 +84,7 @@ export default function PlayerOnboardingPage() {
 
   useEffect(() => {
     const checkAuth = async () => {
+      if (!supabase) return;
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         router.push('/auth/login')
@@ -151,6 +152,7 @@ export default function PlayerOnboardingPage() {
 
     try {
       // Update player_profiles with onboarding data
+      if (!supabase) return;
       const { error: updateError } = await supabase
         .from('player_profiles')
         .update({
