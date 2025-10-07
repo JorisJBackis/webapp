@@ -11,9 +11,13 @@ export async function middleware(req: NextRequest) {
       data: { session },
     } = await supabase.auth.getSession()
 
-    // Update the middleware to allow access to the verification page
-    // If user is not signed in and the current path is not / or /auth/*, redirect to /auth/login
-    if (!session && !req.nextUrl.pathname.startsWith("/auth") && req.nextUrl.pathname !== "/") {
+    // Update the middleware to allow access to public pages
+    // Allow public access to player profiles, verification page, and home
+    const publicPaths = ["/", "/auth", "/player", "/api/og"]
+    const isPublicPath = publicPaths.some(path => req.nextUrl.pathname.startsWith(path))
+
+    // If user is not signed in and the current path is not public, redirect to /auth/login
+    if (!session && !isPublicPath) {
       return NextResponse.redirect(new URL("/auth/login", req.url))
     }
 
