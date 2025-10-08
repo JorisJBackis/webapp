@@ -264,7 +264,7 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-          <div className="bg-white p-3 border rounded shadow-sm">
+          <div className="bg-white p-3 border rounded shadow-xs">
             <p className="font-medium">{`${label}`}</p>
             {payload.map((entry: any, index: number) => {
               // Wins, Draws, Losses should be whole numbers

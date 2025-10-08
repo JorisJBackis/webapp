@@ -241,7 +241,7 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
                             {player.listingStatus === "Not Listed" ? (
                                 <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/marketplace?tab=my-postings&action=create&wyscout_id=${player.wyscout_player_id}&player_name=${encodeURIComponent(player.name)}`); }}> List Player </Button>
                             ) : (
-                                <Badge variant={ player.listingStatus === "Transfer" ? "default" : player.listingStatus === "Loan" ? "secondary" : "outline" } className={ player.listingStatus === "Transfer" ? "bg-[#31348D] text-white" : player.listingStatus === "Loan" ? "bg-orange-500 text-white" : "" }>
+                                <Badge variant={ player.listingStatus === "Transfer" ? "default" : player.listingStatus === "Loan" ? "secondary" : "outline-solid" } className={ player.listingStatus === "Transfer" ? "bg-[#31348D] text-white" : player.listingStatus === "Loan" ? "bg-orange-500 text-white" : "" }>
                                   {player.listingStatus}
                                 </Badge>
                             )}

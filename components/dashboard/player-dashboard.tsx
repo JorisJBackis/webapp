@@ -338,7 +338,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
         {/* Profile Tab */}
         <TabsContent value="profile" className="space-y-6">
           {/* Public Profile Card */}
-          <Card className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+          <Card className="bg-linear-to-r from-blue-600 to-purple-600 text-white">
             <CardHeader>
               <CardTitle className="flex items-center text-white">
                 <Eye className="h-5 w-5 mr-2" />
@@ -536,7 +536,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
 
               {/* Performance Predictions */}
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-purple-50">
+                <div className="p-4 border rounded-lg bg-linear-to-r from-blue-50 to-purple-50">
                   <h4 className="font-medium flex items-center mb-2">
                     <Zap className="h-4 w-4 mr-2 text-blue-500" />
                     Potential Growth
@@ -551,7 +551,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                   </ul>
                 </div>
 
-                <div className="p-4 border rounded-lg bg-gradient-to-r from-green-50 to-yellow-50">
+                <div className="p-4 border rounded-lg bg-linear-to-r from-green-50 to-yellow-50">
                   <h4 className="font-medium flex items-center mb-2">
                     <Target className="h-4 w-4 mr-2 text-green-500" />
                     Ideal Match

@@ -117,7 +117,7 @@ export default function MyNeeds() {
                                 <TableRow key={need.need_id}>
                                     <TableCell className="font-medium">{need.position_needed}</TableCell>
                                     <TableCell>
-                                        <Badge variant={need.status === 'active' ? 'outline' : 'secondary'} className={need.status === 'active' ? 'border-green-500 text-green-600' : ''}>
+                                        <Badge variant={need.status === 'active' ? 'outline-solid' : 'secondary'} className={need.status === 'active' ? 'border-green-500 text-green-600' : ''}>
                                             {need.status ? need.status.charAt(0).toUpperCase() + need.status.slice(1) : 'N/A'}
                                         </Badge>
                                     </TableCell>

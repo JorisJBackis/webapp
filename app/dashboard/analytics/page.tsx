@@ -207,28 +207,28 @@ export default function AnalyticsPage() {
 
         <div className="flex flex-wrap gap-2 mb-6 border-b pb-2">
           <Button
-              variant={activeTab === "lastGame" ? "default" : "outline"}
+              variant={activeTab === "lastGame" ? "default" : "outline-solid"}
               onClick={() => setActiveTab("lastGame")}
               className={activeTab === "lastGame" ? "bg-[#31348D]" : ""}
           >
             Performance Overview
           </Button>
           <Button
-              variant={activeTab === "currentSeason" ? "default" : "outline"}
+              variant={activeTab === "currentSeason" ? "default" : "outline-solid"}
               onClick={() => setActiveTab("currentSeason")}
               className={activeTab === "currentSeason" ? "bg-[#31348D]" : ""}
           >
             Market Analytics
           </Button>
           <Button
-              variant={activeTab === "league" ? "default" : "outline"}
+              variant={activeTab === "league" ? "default" : "outline-solid"}
               onClick={() => setActiveTab("league")}
               className={activeTab === "league" ? "bg-[#31348D]" : ""}
           >
             Development Tracking
           </Button>
           <Button
-              variant={activeTab === "reputation" ? "default" : "outline"}
+              variant={activeTab === "reputation" ? "default" : "outline-solid"}
               onClick={() => setActiveTab("reputation")}
               className={activeTab === "reputation" ? "bg-[#31348D]" : ""}
           >
@@ -258,28 +258,28 @@ export default function AnalyticsPage() {
 
         <div className="flex flex-wrap gap-2 mb-6 border-b pb-2">
           <Button
-              variant={activeTab === "lastGame" ? "default" : "outline"}
+              variant={activeTab === "lastGame" ? "default" : "outline-solid"}
               onClick={() => setActiveTab("lastGame")}
               className={activeTab === "lastGame" ? "bg-[#31348D]" : ""}
           >
             Last Game Insights
           </Button>
           <Button
-              variant={activeTab === "currentSeason" ? "default" : "outline"}
+              variant={activeTab === "currentSeason" ? "default" : "outline-solid"}
               onClick={() => setActiveTab("currentSeason")}
               className={activeTab === "currentSeason" ? "bg-[#31348D]" : ""}
           >
             Current Season Insights
           </Button>
           <Button
-              variant={activeTab === "league" ? "default" : "outline"}
+              variant={activeTab === "league" ? "default" : "outline-solid"}
               onClick={() => setActiveTab("league")}
               className={activeTab === "league" ? "bg-[#31348D]" : ""}
           >
             League Insights
           </Button>
           <Button
-              variant={activeTab === "reputation" ? "default" : "outline"}
+              variant={activeTab === "reputation" ? "default" : "outline-solid"}
               onClick={() => setActiveTab("reputation")}
               className={activeTab === "reputation" ? "bg-[#31348D]" : ""}
           >

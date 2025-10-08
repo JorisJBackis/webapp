@@ -27,7 +27,7 @@ const StatCard = ({ title, value, subtitle, trend }: {
   }
 
   return (
-    <Card className="border-0 shadow-sm text-center">
+    <Card className="border-0 shadow-xs text-center">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg text-[#31348D]">{title}</CardTitle>
       </CardHeader>

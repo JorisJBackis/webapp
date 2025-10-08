@@ -559,7 +559,7 @@ export default function OpportunitiesBrowser({ playerProfile, userClubId }: Oppo
                                 const IconComponent = reason.icon
                                 return (
                                   <li key={index} className="flex items-start gap-2">
-                                    <IconComponent className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                    <IconComponent className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
                                     {reason.text}
                                   </li>
                                 )

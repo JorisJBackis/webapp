@@ -474,7 +474,7 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
         </h3>
         {teamStandings.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="min-w-full bg-white rounded-lg overflow-hidden shadow-sm">
+            <table className="min-w-full bg-white rounded-lg overflow-hidden shadow-xs">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

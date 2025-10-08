@@ -21,7 +21,7 @@ type GameStats = {
 }
 
 const StatCard = ({ title, valueLeft, valueRight, teamLeft, teamRight }: { title: string, valueLeft: string | number, valueRight?: string | number, teamLeft: string, teamRight?: string }) => (
-    <Card className="border-0 shadow-sm text-center">
+    <Card className="border-0 shadow-xs text-center">
       <CardHeader className="pb-2"><CardTitle className="text-lg text-[#31348D]">{title}</CardTitle></CardHeader>
       <CardContent>
         <div className="flex justify-center items-center">

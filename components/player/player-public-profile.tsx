@@ -75,13 +75,13 @@ export default function PlayerPublicProfile({ profile, userData, wyscoutPlayer }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white shadow-xs border-b">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
+              <div className="w-16 h-16 bg-linear-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
                 <span className="text-white text-xl font-bold">
                   {playerName.charAt(0)}
                 </span>
@@ -336,7 +336,7 @@ export default function PlayerPublicProfile({ profile, userData, wyscoutPlayer }
             </Card>
 
             {/* CTA */}
-            <Card className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+            <Card className="bg-linear-to-r from-blue-600 to-purple-600 text-white">
               <CardContent className="pt-6 text-center">
                 <Star className="h-8 w-8 mx-auto mb-3" />
                 <h3 className="font-bold mb-2">Interested in this player?</h3>

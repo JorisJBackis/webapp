@@ -88,7 +88,7 @@ export default async function DashboardPage() {
   return (
     <div className="container py-8">
       <div className="mb-8 flex items-center">
-        <div className="mr-3 h-10 w-10 overflow-hidden rounded-full bg-white shadow">
+        <div className="mr-3 h-10 w-10 overflow-hidden rounded-full bg-white shadow-sm">
           <Image
             src={clubLogo || "/placeholder.svg"}
             alt={clubName}

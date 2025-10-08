@@ -281,7 +281,7 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
             { label: "Average Duel Success", value: `${duelSuccess.toFixed(1)}%`, subtitle: "Success Rate" },
             { label: "Average Pass Accuracy", value: `${passAccuracy.toFixed(1)}%`, subtitle: "Completion Rate" },
           ].map((metric, i) => (
-              <Card key={i} className="border-0 shadow-sm">
+              <Card key={i} className="border-0 shadow-xs">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg text-[#31348D]">{metric.label}</CardTitle>
                 </CardHeader>
@@ -335,7 +335,7 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
                         if (active && payload && payload.length) {
                           const dataPoint = payload[0].payload;
                           return (
-                              <div className="bg-white p-2 rounded shadow text-sm border border-gray-200">
+                              <div className="bg-white p-2 rounded shadow-sm text-sm border border-gray-200">
                                 <div><strong>{dataPoint.Team}</strong></div>
                                 <div>{selectedMetric}: {dataPoint[selectedMetric]?.toFixed(2)}</div>
                                 <div>Points: {dataPoint["Points Earned"]}</div>
