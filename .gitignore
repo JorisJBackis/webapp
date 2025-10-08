@@ -38,3 +38,9 @@ next-env.d.ts
 supabase/.temp/
 supabase/.branches/
 supabase/functions/
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+bun.lockb
