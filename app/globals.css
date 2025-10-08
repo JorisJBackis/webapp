@@ -140,7 +140,6 @@
 }
 
 
-
 /* Custom styles for charts */
 :root {
     --color-wins: hsl(var(--chart-1));
@@ -158,6 +157,10 @@
     --sidebar-accent-foreground: hsl(240 5.9% 10%);
     --sidebar-border: hsl(220 13% 91%);
     --sidebar-ring: hsl(217.2 91.2% 59.8%);
+
+    --red-card: hsl(0, 100%, 67%);
+    --yellow-card: hsl(51, 77%, 55%);
+    --color-success: hsl(142, 71%, 45%);
 }
 
 .dark {
