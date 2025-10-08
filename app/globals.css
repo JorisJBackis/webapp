@@ -51,7 +51,9 @@
     --animate-accordion-down: accordion-down 0.2s ease-out;
     --animate-accordion-up: accordion-up 0.2s ease-out;
 
-    --background-image-hero-pattern: url('/football-field-night.jpg');
+    --color-red-card: hsl(var(--color-red-card));
+    --color-yellow-card: hsl(var(--color-yellow-card));
+    --color-success: hsl(var(--color-success));
 
     @keyframes accordion-down {
         from {
@@ -107,6 +109,11 @@
     --chart-2: 250 95% 64%;
     --chart-3: 142 76% 36%;
     --chart-4: 341 79% 53%;
+
+    --color-red-card: hsl(0, 100%, 67%);
+    --color-yellow-card: hsl(51, 77%, 55%);
+    --color-success: hsl(142, 71%, 45%);
+
 }
 
 .dark {
@@ -137,6 +144,10 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 238 47% 38%;
+
+    --color-red-card: hsl(0, 100%, 67%);
+    --color-yellow-card: hsl(51, 77%, 55%);
+    --color-success: hsl(142, 71%, 45%);
 }
 
 
@@ -157,10 +168,6 @@
     --sidebar-accent-foreground: hsl(240 5.9% 10%);
     --sidebar-border: hsl(220 13% 91%);
     --sidebar-ring: hsl(217.2 91.2% 59.8%);
-
-    --red-card: hsl(0, 100%, 67%);
-    --yellow-card: hsl(51, 77%, 55%);
-    --color-success: hsl(142, 71%, 45%);
 }
 
 .dark {

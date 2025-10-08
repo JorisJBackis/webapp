@@ -215,7 +215,7 @@ export default function MyWatchlist({ userClubId }: { userClubId: number }) {
                             <Badge variant="outline">{player.position}</Badge>
                           </TableCell>
                           <TableCell>
-                            <LastMatchWatchlist />
+                            <LastMatchWatchlist playerId={player.id}/>
                           </TableCell>
                           <TableCell>
                             <Link href={`/players/${player.id}/all-matches`}

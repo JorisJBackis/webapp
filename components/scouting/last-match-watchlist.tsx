@@ -25,7 +25,8 @@ export function LastMatchWatchlist({ playerId }: { playerId: number | string }) 
           href={`/players/${playerId}/all-matches/${matchData.matchId}`}
           onClick={(e) => e.stopPropagation()} // prevents opening modal onClick
       >
-        <div className="flex flex-col gap-2 cursor-pointer p-2 hover:bg-gray-50 rounded-md">
+        <div className="flex flex-col gap-2 cursor-pointer p-2 hover:bg-gray-50 rounded-md
+         hover:bg-accent hover:text-accent-foreground pointer-events-none">
           <div className="flex items-center gap-2">
             {matchData.result === "W" && <WinBadge />}
             {matchData.result === "L" && <LoseBadge />}
@@ -47,14 +48,14 @@ export function LastMatchWatchlist({ playerId }: { playerId: number | string }) 
 
             {matchData.redCards > 0 && (
                 <div className="flex gap-1 items-center">
-                  <span className="bg-[var(--red-card)] w-4 h-4 rounded-sm" />
+                  <span className="bg-red-card w-4 h-4 rounded-sm" />
                   <div>{matchData.redCards}</div>
                 </div>
             )}
 
             {matchData.yellowCards > 0 && (
                 <div className="flex gap-1 items-center">
-                  <span className="bg-[var(--yellow-card)] w-4 h-4 rounded-sm" />
+                  <span className="bg-yellow-card w-4 h-4 rounded-sm" />
                   <div>{matchData.yellowCards}</div>
                 </div>
             )}
@@ -78,7 +79,7 @@ export function LoseBadge() {
 
 export function WinBadge() {
   return (
-      <span className="text-[var(--color-success)] bg-[var(--color-success)]/20 border border-[var(--color-success)] w-8 h-8 rounded-md font-bold flex justify-center items-center">
+      <span className="text-success bg-success/20 border border-success w-8 h-8 rounded-md font-bold flex justify-center items-center">
       W
     </span>
   );
