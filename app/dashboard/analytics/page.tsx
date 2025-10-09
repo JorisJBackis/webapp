@@ -31,6 +31,8 @@ export default function AnalyticsPage() {
         console.log("Fetching user profile and club ID...")
         setLoading(true)
 
+        if (!supabase) return;
+
         const {
           data: { user },
         } = await supabase.auth.getUser()

@@ -56,6 +56,7 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
       if (!clubId) return
 
       try {
+        if (!supabase) return;
         const { data, error } = await supabase
             .from("team_metrics_aggregated")
             .select("League")
@@ -90,6 +91,7 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
         setLoading(true)
         setError(null)
 
+        if (!supabase) return;
         const { data, error: metricsError } = await supabase
             .from("team_metrics_aggregated")
             .select("*")
@@ -104,7 +106,7 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
           return
         }
 
-        setMetrics(data)
+        setMetrics(data as TeamMetrics)
         setLoading(false)
       } catch (err) {
         console.error("Error fetching team metrics:", err)
@@ -126,6 +128,8 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
 
       try {
         console.log("Fetching teams from league:", teamLeague)
+
+        if (!supabase) return;
 
         const { data, error } = await supabase.from("team_metrics_aggregated").select("*").eq("League", teamLeague)
 
@@ -156,7 +160,7 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
               }))
 
           console.log(`[DEBUG] Found ${cleaned.length} valid teams for league '${teamLeague}'. Regression line requires at least 2.`);
-          setAllTeams(cleaned);
+          setAllTeams(cleaned as TeamMetrics[]);
         } } catch (err) { console.error("Error fetching teams from league:", err); } }; fetchAllTeams()
   }, [teamLeague, supabase]);
 

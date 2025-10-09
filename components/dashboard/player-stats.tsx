@@ -17,6 +17,8 @@ import { useRouter } from 'next/navigation';
 import PlayerDetailModal from '@/components/common/player-detail-modal'; // Adjust path if needed
 import type { PlayerDataForModal, PlayerStatsJSON as ModalPlayerStatsJSON } from '@/components/common/player-detail-modal'; // Import types from modal
 
+
+
 // --- Type Definitions ---
 
 // Type for data returned by `get_latest_players_for_club` RPC call

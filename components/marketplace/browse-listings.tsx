@@ -29,6 +29,7 @@ export default function BrowseListings() {
     // Fetch user's club ID (same as before)
     useEffect(() => {
         const getClubId = async () => {
+            if (!supabase) return;
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.user) {
                 const { data: profile, error: profileError } = await supabase
@@ -67,6 +68,7 @@ export default function BrowseListings() {
                 console.log("Fetching browse listings via RPC, excluding club ID:", userClubId);
 
                 // Call the database function
+                if (!supabase) return;
                 const { data, error: rpcError } = await supabase
                     .rpc('get_player_listings', {
                         requesting_club_id: userClubId,

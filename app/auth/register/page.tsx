@@ -70,6 +70,7 @@ export default function RegisterPage() {
   useEffect(() => {
     const fetchClubs = async () => {
       try {
+        if (!supabase) return;
         setLoadingClubs(true)
         const { data, error } = await supabase.from("clubs").select("id, name, logo_url").order("name")
 
@@ -94,6 +95,7 @@ export default function RegisterPage() {
       if (role !== "player") return
       
       try {
+        if (!supabase) return;
         setLoadingPlayers(true)
         // Use the same RPC function as scouting to get unique/latest players
         const { data, error } = await supabase.rpc('get_scouting_players', {
@@ -143,6 +145,7 @@ export default function RegisterPage() {
   // Check if email exists before attempting registration
   const checkEmailExists = async (email: string) => {
     try {
+      if (!supabase) return;
       // Use the signInWithOtp method instead, which is more reliable for checking email existence
       const { error } = await supabase.auth.signInWithOtp({
         email,
@@ -233,7 +236,7 @@ export default function RegisterPage() {
               player_name: selectedPlayer?.name,
               player_position: selectedPlayer?.position
             };
-
+      if (!supabase) return;
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,

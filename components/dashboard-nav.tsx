@@ -24,6 +24,7 @@ export default function DashboardNav() {
 
   useEffect(() => {
     const fetchUserType = async () => {
+      if (!supabase) return;
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         const { data: profile } = await supabase
@@ -38,6 +39,7 @@ export default function DashboardNav() {
   }, [])
 
   const handleSignOut = async () => {
+    if (!supabase) return;
     await supabase.auth.signOut()
     router.push("/")
     router.refresh()
