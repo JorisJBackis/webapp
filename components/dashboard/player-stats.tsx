@@ -186,9 +186,9 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
       <>
         <Card className="border-0 shadow-md">
           {/* ... CardHeader & Filters (No changes needed here) ... */}
-          <CardHeader className="border-b bg-gray-100">
-            <CardTitle className="text-[#31348D]">Player Statistics</CardTitle>
-            <CardDescription className="text-black/70">
+          <CardHeader className="border-b bg-muted">
+            <CardTitle className="text-primary">Player Statistics</CardTitle>
+            <CardDescription className="text-muted-foreground">
               Latest performance metrics for all players in the current season
             </CardDescription>
           </CardHeader>
@@ -210,26 +210,26 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
               {error && <Alert variant="destructive"><AlertCircle className="h-5 w-5" /><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
               <div className="rounded-md border">
                 <Table>
-                  <TableHeader className="bg-gray-100">
+                  <TableHeader className="bg-muted">
                     <TableRow>
-                      <TableHead className="cursor-pointer text-black font-medium" onClick={() => handleSort("name")}><div className="flex items-center">Name <ArrowUpDown className="ml-1 h-4 w-4" /></div></TableHead>
-                      <TableHead className="cursor-pointer text-black font-medium" onClick={() => handleSort("position")}><div className="flex items-center">Position <ArrowUpDown className="ml-1 h-4 w-4" /></div></TableHead>
-                      <TableHead className="cursor-pointer text-center text-black font-medium" onClick={() => handleSort("age")}><div className="flex justify-center items-center gap-1"><span>Age</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
-                      <TableHead className="cursor-pointer text-center text-black font-medium" onClick={() => handleSort("goals")}><div className="flex justify-center items-center gap-1"><span>Goals</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
-                      <TableHead className="cursor-pointer text-center text-black font-medium" onClick={() => handleSort("xG")}><div className="flex justify-center items-center gap-1"><span>xG</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
-                      <TableHead className="cursor-pointer text-center text-black font-medium" onClick={() => handleSort("assists")}><div className="flex justify-center items-center gap-1"><span>Assists</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
-                      <TableHead className="cursor-pointer text-center text-black font-medium" onClick={() => handleSort("minutes")}><div className="flex justify-center items-center gap-1"><span>Minutes</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
-                      <TableHead className="cursor-pointer text-center text-black font-medium" onClick={() => handleSort("contractEnds")}><div className="flex justify-center items-center gap-1"><span>Contract Ends</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
-                      <TableHead className="cursor-pointer text-center text-black font-medium" onClick={() => handleSort("footylabsScore")}><div className="flex justify-center items-center gap-1"><span>FootyLabs Score</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
-                      <TableHead className="cursor-pointer text-center text-black font-medium" onClick={() => handleSort("listingStatus")}><div className="inline-flex items-center justify-center gap-1"><span>Listing Status</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
+                      <TableHead className="cursor-pointer text-muted-foreground font-medium hover:text-primary/90" onClick={() => handleSort("name")}><div className="flex items-center">Name <ArrowUpDown className="ml-1 h-4 w-4" /></div></TableHead>
+                      <TableHead className="cursor-pointer text-muted-foreground font-medium hover:text-primary/90" onClick={() => handleSort("position")}><div className="flex items-center">Position <ArrowUpDown className="ml-1 h-4 w-4" /></div></TableHead>
+                      <TableHead className="cursor-pointer text-center text-muted-foreground font-medium hover:text-primary/90" onClick={() => handleSort("age")}><div className="flex justify-center items-center gap-1"><span>Age</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
+                      <TableHead className="cursor-pointer text-center text-muted-foreground font-medium hover:text-primary/90" onClick={() => handleSort("goals")}><div className="flex justify-center items-center gap-1"><span>Goals</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
+                      <TableHead className="cursor-pointer text-center text-muted-foreground font-medium hover:text-primary/90" onClick={() => handleSort("xG")}><div className="flex justify-center items-center gap-1"><span>xG</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
+                      <TableHead className="cursor-pointer text-center text-muted-foreground font-medium hover:text-primary/90" onClick={() => handleSort("assists")}><div className="flex justify-center items-center gap-1"><span>Assists</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
+                      <TableHead className="cursor-pointer text-center text-muted-foreground font-medium hover:text-primary/90" onClick={() => handleSort("minutes")}><div className="flex justify-center items-center gap-1"><span>Minutes</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
+                      <TableHead className="cursor-pointer text-center text-muted-foreground font-medium hover:text-primary/90" onClick={() => handleSort("contractEnds")}><div className="flex justify-center items-center gap-1"><span>Contract Ends</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
+                      <TableHead className="cursor-pointer text-center text-muted-foreground font-medium hover:text-primary/90" onClick={() => handleSort("footylabsScore")}><div className="flex justify-center items-center gap-1"><span>FootyLabs Score</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
+                      <TableHead className="cursor-pointer text-center text-muted-foreground font-medium hover:text-primary/90" onClick={() => handleSort("listingStatus")}><div className="inline-flex items-center justify-center gap-1"><span>Listing Status</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {loading && (<TableRow><TableCell colSpan={10} className="h-24 text-center"><div className="flex justify-center items-center"><Loader2 className="mr-2 h-6 w-6 animate-spin" />Loading players...</div></TableCell></TableRow>)}
                     {!loading && filteredPlayers.map((player) => (
-                        <TableRow key={player.id} className="cursor-pointer hover:bg-gray-50" onClick={() => handlePlayerClick(player)}>
+                        <TableRow key={player.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handlePlayerClick(player)}>
                           <TableCell className="font-medium">{player.name}</TableCell>
-                          <TableCell><Badge variant="outline" className="bg-[#31348D]/10 text-[#31348D] border-[#31348D]/20">{player.position}</Badge></TableCell>
+                          <TableCell><Badge variant="outline" className="bg-primary/10 text-primary border-[#31348D]/20">{player.position}</Badge></TableCell>
                           <TableCell className="text-center">{player.age ?? 'N/A'}</TableCell>
                           <TableCell className="text-center">{player.goals}</TableCell>
                           <TableCell className="text-center">{player.xG}</TableCell>
@@ -241,7 +241,7 @@ export default function PlayerStats({ clubId }: { clubId?: number }) {
                             {player.listingStatus === "Not Listed" ? (
                                 <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/marketplace?tab=my-postings&action=create&wyscout_id=${player.wyscout_player_id}&player_name=${encodeURIComponent(player.name)}`); }}> List Player </Button>
                             ) : (
-                                <Badge variant={ player.listingStatus === "Transfer" ? "default" : player.listingStatus === "Loan" ? "secondary" : "outline-solid" } className={ player.listingStatus === "Transfer" ? "bg-[#31348D] text-white" : player.listingStatus === "Loan" ? "bg-orange-500 text-white" : "" }>
+                                <Badge variant={ player.listingStatus === "Transfer" ? "default" : player.listingStatus === "Loan" ? "secondary" : "outline-solid" } className={ player.listingStatus === "Transfer" ? "bg-primary text-primary-foreground" : player.listingStatus === "Loan" ? "bg-orange-500 text-primary-foreground" : "" }>
                                   {player.listingStatus}
                                 </Badge>
                             )}

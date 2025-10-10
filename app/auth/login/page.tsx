@@ -48,13 +48,13 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 py-12">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-backround px-4 py-12">
       <div className="mb-8">
         <Logo />
       </div>
       <Card className="w-full max-w-md border-0 shadow-lg bg-gray-50">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-[#3144C3]">Login</CardTitle>
+          <CardTitle className="text-2xl font-bold text-primary">Login</CardTitle>
           <CardDescription>Enter your email and password to access your account</CardDescription>
         </CardHeader>
         <CardContent>
@@ -81,7 +81,7 @@ export default function LoginPage() {
                 <Label htmlFor="password">Password</Label>
                 <Link
                   href="/auth/reset-password"
-                  className="text-sm font-medium text-[#3144C3] underline-offset-4 hover:underline"
+                  className="text-sm font-medium text-primary underline-offset-4 hover:underline"
                 >
                   Forgot password?
                 </Link>
@@ -94,7 +94,7 @@ export default function LoginPage() {
                 required
               />
             </div>
-            <Button type="submit" className="w-full bg-[#3144C3] hover:bg-[#3144C3]/90" disabled={loading}>
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
               {loading ? "Logging in..." : "Login"}
             </Button>
           </form>
@@ -102,7 +102,7 @@ export default function LoginPage() {
         <CardFooter className="flex flex-col">
           <div className="text-sm text-muted-foreground mt-2">
             Don&apos;t have an account?{" "}
-            <Link href="/auth/register" className="text-[#3144C3] underline-offset-4 hover:underline">
+            <Link href="/auth/register" className="text-primary underline-offset-4 hover:underline">
               Sign up
             </Link>
           </div>

@@ -20,20 +20,20 @@ const StatCard = ({ title, value, subtitle, trend }: {
 }) => {
   const getTrendIcon = () => {
     switch (trend) {
-      case 'up': return <TrendingUp className="h-4 w-4 text-green-500" />
+      case 'up': return <TrendingUp className="h-4 w-4 text-success" />
       case 'down': return <TrendingDown className="h-4 w-4 text-red-500" />
-      default: return <Minus className="h-4 w-4 text-gray-500" />
+      default: return <Minus className="h-4 w-4 text-muted-foreground" />
     }
   }
 
   return (
     <Card className="border-0 shadow-xs text-center">
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg text-[#31348D]">{title}</CardTitle>
+        <CardTitle className="text-lg text-primary">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="text-4xl font-bold mb-1">{value}</div>
-        <div className="text-xs text-gray-500 flex items-center justify-center gap-1">
+        <div className="text-xs text-muted-foreground flex items-center justify-center gap-1">
           {trend && getTrendIcon()}
           {subtitle}
         </div>
@@ -183,8 +183,8 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Performance Trend */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4 text-[#31348D]">Recent Performance Trend</h2>
+        <div className="bg-backround rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4 text-primary">Recent Performance Trend</h2>
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={data.gamePerformance}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -199,8 +199,8 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
         </div>
 
         {/* Playing Style Radar */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4 text-[#31348D]">Playing Style Profile</h2>
+        <div className="bg-backround rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4 text-primary">Playing Style Profile</h2>
           <ResponsiveContainer width="100%" height={280}>
             <RadarChart data={data.playingStyleData}>
               <PolarGrid />
@@ -212,8 +212,8 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
         </div>
 
         {/* Position Heat Map */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4 text-[#31348D]">Position Heat Map</h2>
+        <div className="bg-backround rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4 text-primary">Position Heat Map</h2>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={data.positionHeatData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -228,8 +228,8 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
         </div>
 
         {/* Match Outcomes */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4 text-[#31348D]">Performance by Result</h2>
+        <div className="bg-backround rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4 text-primary">Performance by Result</h2>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={data.outcomeData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -261,8 +261,8 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Market Value Progression */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4 text-[#31348D]">Market Value Progression</h2>
+        <div className="bg-backround rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4 text-primary">Market Value Progression</h2>
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={data.marketData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -275,8 +275,8 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
         </div>
 
         {/* Scout Interest */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4 text-[#31348D]">Scout Interest Over Time</h2>
+        <div className="bg-backround rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4 text-primary">Scout Interest Over Time</h2>
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={data.marketData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -289,8 +289,8 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
         </div>
 
         {/* Shot Conversion Analysis */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4 text-[#31348D]">Shot Analysis by Zone</h2>
+        <div className="bg-backround rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4 text-primary">Shot Analysis by Zone</h2>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={data.shotMapData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -305,8 +305,8 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
         </div>
 
         {/* Pass Type Analysis */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4 text-[#31348D]">Passing Breakdown</h2>
+        <div className="bg-backround rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4 text-primary">Passing Breakdown</h2>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={data.passTypeData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -338,8 +338,8 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Development Potential */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4 text-[#31348D]">Development Potential</h2>
+        <div className="bg-backround rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4 text-primary">Development Potential</h2>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={data.developmentData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -354,8 +354,8 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
         </div>
 
         {/* Fitness & Availability */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4 text-[#31348D]">Fitness & Availability</h2>
+        <div className="bg-backround rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4 text-primary">Fitness & Availability</h2>
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={data.fitnessData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -370,8 +370,8 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
         </div>
 
         {/* Training Load Distribution */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4 text-[#31348D]">Training Focus Areas</h2>
+        <div className="bg-backround rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4 text-primary">Training Focus Areas</h2>
           <ResponsiveContainer width="100%" height={280}>
             <PieChart>
               <Pie
@@ -393,8 +393,8 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
         </div>
 
         {/* Skill Progression Over Time */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4 text-[#31348D]">6-Month Skill Progression</h2>
+        <div className="bg-backround rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4 text-primary">6-Month Skill Progression</h2>
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={data.marketData.slice(6)}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -424,8 +424,8 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Position Comparison */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4 text-[#31348D]">vs League Average ({data.position})</h2>
+        <div className="bg-backround rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4 text-primary">vs League Average ({data.position})</h2>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={data.positionMetrics}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -440,8 +440,8 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
         </div>
 
         {/* Age Group Comparison */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4 text-[#31348D]">Age Group Performance</h2>
+        <div className="bg-backround rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4 text-primary">Age Group Performance</h2>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={[
               { metric: 'Goals', you: data.performanceStats.goals, peers: 8 },
@@ -461,8 +461,8 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
         </div>
 
         {/* Playing Style Comparison */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4 text-[#31348D]">Playing Style vs Top Players</h2>
+        <div className="bg-backround rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4 text-primary">Playing Style vs Top Players</h2>
           <ResponsiveContainer width="100%" height={280}>
             <RadarChart data={data.playingStyleData}>
               <PolarGrid />
@@ -474,8 +474,8 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
         </div>
 
         {/* Competitive Analysis */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4 text-[#31348D]">Competitive Benchmarking</h2>
+        <div className="bg-backround rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4 text-primary">Competitive Benchmarking</h2>
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={[
               { category: 'League Top 10', score: 85 },
@@ -498,7 +498,7 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
   if (loading) {
     return (
       <div className="flex h-[300px] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#31348D]" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }

@@ -233,9 +233,9 @@ export default function LeaguePlayerBrowser({ initialUserClubId }: { initialUser
   return (
       <div className="space-y-6">
         <Card className="border-0 shadow-md">
-          <CardHeader className="border-b bg-gray-100">
-            <CardTitle className="text-[#31348D]">League Players ({loading ? '...' : filteredAndSortedPlayers.length})</CardTitle>
-            <CardDescription className="text-black/70">Browse players matching your criteria. Click star to watchlist.</CardDescription>
+          <CardHeader className="border-b bg-muted">
+            <CardTitle className="text-primary">League Players ({loading ? '...' : filteredAndSortedPlayers.length})</CardTitle>
+            <CardDescription className="text-muted-foreground">Browse players matching your criteria. Click star to watchlist.</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="flex flex-col space-y-4">
@@ -244,10 +244,10 @@ export default function LeaguePlayerBrowser({ initialUserClubId }: { initialUser
                 <div className="space-y-1"><Label htmlFor="leagueFilter">League</Label><Select value={filters.league} onValueChange={(value) => handleFilterChange('league', value)}><SelectTrigger id="leagueFilter"><SelectValue placeholder="Any League" /></SelectTrigger><SelectContent><SelectItem value="all">All Leagues</SelectItem>{leagues.map(league => (<SelectItem key={league} value={league}>{league}</SelectItem>))}</SelectContent></Select></div>
                 <div className="space-y-1"><Label htmlFor="positionFilter">Position</Label><Select value={filters.position} onValueChange={(value) => handleFilterChange('position', value)}><SelectTrigger id="positionFilter"><SelectValue placeholder="Any Position" /></SelectTrigger><SelectContent><SelectItem value="all">All Positions</SelectItem><SelectItem value="Goalkeeper">Goalkeeper</SelectItem><SelectItem value="Centre Back">Centre Back</SelectItem><SelectItem value="Full Back">Full Back</SelectItem><SelectItem value="Defensive Midfielder">Defensive Midfielder</SelectItem><SelectItem value="Central Midfielder">Central Midfielder</SelectItem><SelectItem value="Attacking Midfielder">Attacking Midfielder</SelectItem><SelectItem value="Winger">Winger</SelectItem><SelectItem value="Centre Forward">Centre Forward</SelectItem><SelectItem value="Other">Other</SelectItem></SelectContent></Select></div>
                 <div className="space-y-1"><Label htmlFor="footFilter">Preferred Foot</Label><Select value={filters.foot} onValueChange={(value) => handleFilterChange('foot', value)}><SelectTrigger id="footFilter"><SelectValue placeholder="Any Foot" /></SelectTrigger><SelectContent><SelectItem value="all">Any Foot</SelectItem><SelectItem value="left">Left</SelectItem><SelectItem value="right">Right</SelectItem><SelectItem value="both">Both</SelectItem></SelectContent></Select></div>
-                <div className="flex gap-2 items-end space-y-1"><div className="flex-1"><Label htmlFor="minHeight">Height (cm)</Label><Input id="minHeight" type="number" placeholder="Min" value={filters.minHeight} onChange={(e) => handleFilterChange('minHeight', e.target.value)} /></div><div className="flex-1"><Label className="sr-only" htmlFor="maxHeight">Max Height</Label><Input id="maxHeight" type="number" placeholder="Max" value={filters.maxHeight} onChange={(e) => handleFilterChange('maxHeight', e.target.value)} /></div></div>
+                <div className="flex gap-2 items-end"><div className="flex-1"><Label htmlFor="minHeight">Height (cm)</Label><Input id="minHeight" type="number" placeholder="Min" value={filters.minHeight} onChange={(e) => handleFilterChange('minHeight', e.target.value)} /></div><div className="flex-1"><Label className="sr-only" htmlFor="maxHeight">Max Height</Label><Input id="maxHeight" type="number" placeholder="Max" value={filters.maxHeight} onChange={(e) => handleFilterChange('maxHeight', e.target.value)} /></div></div>
               </div>
 
-              {loading && <div className="flex justify-center items-center py-20 h-64"><Loader2 className="h-10 w-10 animate-spin text-[#31348D]" /></div>}
+              {loading && <div className="flex justify-center items-center py-20 h-64"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>}
               {error && <Alert variant="destructive" className="my-4"><AlertCircle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
               {!loading && !error && allPlayers.length > 0 && paginatedPlayers.length === 0 && <p className="text-center text-muted-foreground py-10">No players match the current filters.</p>}
 
@@ -255,18 +255,18 @@ export default function LeaguePlayerBrowser({ initialUserClubId }: { initialUser
                   <>
                     <div className="rounded-md border mt-4 relative overflow-x-auto">
                       <Table>
-                        <TableHeader className="bg-gray-100 sticky top-0 z-10">
+                        <TableHeader className="bg-muted sticky top-0 z-10">
                           <TableRow>
-                            <TableHead className="cursor-pointer text-black font-medium" onClick={() => handleSort('name')}><div className="flex items-center">Name <ArrowUpDown className="inline h-4 w-4 ml-1" /></div></TableHead>
-                            <TableHead className="cursor-pointer text-black font-medium" onClick={() => handleSort('club_name')}><div className="flex items-center">Club <ArrowUpDown className="inline h-4 w-4 ml-1" /></div></TableHead>
-                            <TableHead className="cursor-pointer text-black font-medium" onClick={() => handleSort('player_pos')}><div className="flex items-center">Position <ArrowUpDown className="inline h-4 w-4 ml-1" /></div></TableHead>
-                            <TableHead className="cursor-pointer text-center text-black font-medium" onClick={() => handleSort('age')}><div className="flex justify-center items-center gap-1"><span>Age</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
-                            <TableHead className="cursor-pointer text-center text-black font-medium" onClick={() => handleSort('height')}><div className="flex justify-center items-center gap-1"><span>Height</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
-                            <TableHead className="cursor-pointer text-center text-black font-medium" onClick={() => handleSort('foot')}><div className="flex justify-center items-center gap-1"><span>Foot</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
-                            <TableHead className="cursor-pointer text-center text-black font-medium" onClick={() => handleSort('contract_expiry')}><div className="flex justify-center items-center gap-1"><span>Contract Ends</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
-                            <TableHead className="cursor-pointer text-center text-black font-medium" onClick={() => handleSort('avg_percentile')}><div className="flex justify-center items-center gap-1"><span>FootyLabs Score</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
-                            <TableHead className="cursor-pointer text-center text-black font-medium" onClick={() => handleSort('listing_status')}><div className="inline-flex items-center justify-center gap-1"><span>Listing Status</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
-                            <TableHead className="text-center text-black font-medium">Watch</TableHead>
+                            <TableHead className="cursor-pointer text-muted-foreground font-medium hover:text-primary/90" onClick={() => handleSort('name')}><div className="flex items-center">Name <ArrowUpDown className="inline h-4 w-4 ml-1" /></div></TableHead>
+                            <TableHead className="cursor-pointer text-muted-foreground font-medium hover:text-primary/90" onClick={() => handleSort('club_name')}><div className="flex items-center">Club <ArrowUpDown className="inline h-4 w-4 ml-1" /></div></TableHead>
+                            <TableHead className="cursor-pointer text-muted-foreground font-medium hover:text-primary/90" onClick={() => handleSort('player_pos')}><div className="flex items-center">Position <ArrowUpDown className="inline h-4 w-4 ml-1" /></div></TableHead>
+                            <TableHead className="cursor-pointer text-center text-muted-foreground font-medium hover:text-primary/90" onClick={() => handleSort('age')}><div className="flex justify-center items-center gap-1"><span>Age</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
+                            <TableHead className="cursor-pointer text-center text-muted-foreground font-medium hover:text-primary/90" onClick={() => handleSort('height')}><div className="flex justify-center items-center gap-1"><span>Height</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
+                            <TableHead className="cursor-pointer text-center text-muted-foreground font-medium hover:text-primary/90" onClick={() => handleSort('foot')}><div className="flex justify-center items-center gap-1"><span>Foot</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
+                            <TableHead className="cursor-pointer text-center text-muted-foreground font-medium hover:text-primary/90" onClick={() => handleSort('contract_expiry')}><div className="flex justify-center items-center gap-1"><span>Contract Ends</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
+                            <TableHead className="cursor-pointer text-center text-muted-foreground font-medium hover:text-primary/90" onClick={() => handleSort('avg_percentile')}><div className="flex justify-center items-center gap-1"><span>FootyLabs Score</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
+                            <TableHead className="cursor-pointer text-center text-muted-foreground font-medium hover:text-primary/90" onClick={() => handleSort('listing_status')}><div className="inline-flex items-center justify-center gap-1"><span>Listing Status</span><ArrowUpDown className="h-4 w-4" /></div></TableHead>
+                            <TableHead className="text-center text-muted-foreground font-medium">Watch</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -277,13 +277,13 @@ export default function LeaguePlayerBrowser({ initialUserClubId }: { initialUser
                                 <TableRow key={player.player_id?.toString()} className="hover:bg-muted/50">
                                   <TableCell className="font-medium cursor-pointer" onClick={() => handlePlayerRowClick(player)}>{player.name || 'N/A'}</TableCell>
                                   <TableCell className="cursor-pointer" onClick={() => handlePlayerRowClick(player)}>{player.club_name || 'N/A'}</TableCell>
-                                  <TableCell className="cursor-pointer whitespace-nowrap" onClick={() => handlePlayerRowClick(player)}><Badge variant="outline" className="bg-[#31348D]/10 text-[#31348D] border-[#31348D]/20">{player.player_pos || 'N/A'}</Badge></TableCell>
+                                  <TableCell className="cursor-pointer whitespace-nowrap" onClick={() => handlePlayerRowClick(player)}><Badge variant="outline" className="bg-primary/10 text-primary border-[#31348D]/20">{player.player_pos || 'N/A'}</Badge></TableCell>
                                   <TableCell className="text-center cursor-pointer" onClick={() => handlePlayerRowClick(player)}>{player.age ?? 'N/A'}</TableCell>
                                   <TableCell className="text-center cursor-pointer" onClick={() => handlePlayerRowClick(player)}>{player.height ? `${player.height} cm` : 'N/A'}</TableCell>
                                   <TableCell className="text-center cursor-pointer" onClick={() => handlePlayerRowClick(player)}>{formatFootDisplay(player.foot)}</TableCell>
                                   <TableCell className="text-center cursor-pointer" onClick={() => handlePlayerRowClick(player)}>{player.contract_expiry ? new Date(player.contract_expiry).toLocaleDateString() : 'N/A'}</TableCell>
                                   <TableCell className={`text-center font-medium ${getScoreColor(player.avg_percentile)} cursor-pointer`} onClick={() => handlePlayerRowClick(player)}>{formatFootylabsScore(player.avg_percentile)}</TableCell>
-                                  <TableCell className="text-center cursor-pointer" onClick={() => handlePlayerRowClick(player)}>{player.listing_status === "Not Listed" ? (<Badge variant="outline" className="text-muted-foreground">Not Listed</Badge>) : ( <Badge variant={player.listing_status === "Transfer" ? "default" : "secondary"} className={ player.listing_status === "Transfer" ? "bg-[#31348D] text-white" : "bg-orange-500 text-white" }> {player.listing_status} </Badge> )}</TableCell>
+                                  <TableCell className="text-center cursor-pointer" onClick={() => handlePlayerRowClick(player)}>{player.listing_status === "Not Listed" ? (<Badge variant="outline" className="text-muted-foreground">Not Listed</Badge>) : ( <Badge variant={player.listing_status === "Transfer" ? "default" : "secondary"} className={ player.listing_status === "Transfer" ? "bg-primary text-primary-foreground" : "bg-orange-500 text-primary-foreground" }> {player.listing_status} </Badge> )}</TableCell>
                                   <TableCell className="text-center">
                                     <Button variant="ghost" size="icon" className="h-8 w-8 p-0 hover:bg-accent" onClick={(e) => { e.stopPropagation(); toggleWatchlist(player); }} disabled={isTogglingThisPlayer} title={isPlayerInWatchlist ? "Remove from Watchlist" : "Add to Watchlist"}>
                                       {isTogglingThisPlayer ? (<Loader2 className="h-4 w-4 animate-spin" />) : (<Star className={`h-5 w-5 transition-colors ${ isPlayerInWatchlist ? "fill-yellow-400 text-yellow-500" : "text-gray-400 hover:text-yellow-400"}`} />)}

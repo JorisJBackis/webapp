@@ -135,7 +135,7 @@ export default function TeamComparison({ clubId }: { clubId?: number }) {
     if (loading) {
         return (
             <Card className="border-0 shadow-md">
-                <CardHeader><CardTitle className="text-[#31348D]">Team Comparison</CardTitle><CardDescription className="text-black/70">Loading comparison data...</CardDescription></CardHeader>
+                <CardHeader><CardTitle className="text-primary">Team Comparison</CardTitle><CardDescription className="text-muted-foreground">Loading comparison data...</CardDescription></CardHeader>
                 <CardContent className="flex h-[400px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></CardContent>
             </Card>
         );
@@ -144,10 +144,10 @@ export default function TeamComparison({ clubId }: { clubId?: number }) {
     if (error) {
         return (
             <Card className="border-0 shadow-md">
-                <CardHeader><CardTitle className="text-[#31348D]">Team Comparison</CardTitle><CardDescription className="text-black/70">Error loading comparison data</CardDescription></CardHeader>
+                <CardHeader><CardTitle className="text-primary">Team Comparison</CardTitle><CardDescription className="text-muted-foreground">Error loading comparison data</CardDescription></CardHeader>
                 <CardContent className="pt-6">
                     <div className="text-center text-red-500">{error}</div>
-                    <div className="mt-4 text-center text-sm text-gray-500">Please ensure team metrics data is available for your league. Try refreshing the page.</div>
+                    <div className="mt-4 text-center text-sm text-muted-foreground">Please ensure team metrics data is available for your league. Try refreshing the page.</div>
                 </CardContent>
             </Card>
         );
@@ -162,8 +162,8 @@ export default function TeamComparison({ clubId }: { clubId?: number }) {
     return (
         <Card className="border-0 shadow-md">
             <CardHeader>
-                <CardTitle className="text-[#31348D]">Team Comparison</CardTitle>
-                <CardDescription className="text-black/70">How your team compares to the league across key metrics (percentile ranking).</CardDescription>
+                <CardTitle className="text-primary">Team Comparison</CardTitle>
+                <CardDescription className="text-muted-foreground">How your team compares to the league across key metrics (percentile ranking).</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 {/* <<< NEW: Dropdown selector >>> */}

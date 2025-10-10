@@ -25,7 +25,7 @@ export function LastMatchWatchlist({ playerId }: { playerId: number | string }) 
           href={`/players/${playerId}/all-matches/${matchData.matchId}`}
           onClick={(e) => e.stopPropagation()} // prevents opening modal onClick
       >
-        <div className="flex flex-col gap-2 cursor-pointer p-2 hover:bg-gray-50 rounded-md
+        <div className="flex flex-col gap-2 cursor-pointer p-2 hover:bg-muted/50 rounded-md
          hover:bg-accent hover:text-accent-foreground pointer-events-none">
           <div className="flex items-center gap-2">
             {matchData.result === "W" && <WinBadge />}

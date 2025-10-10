@@ -127,15 +127,15 @@ const CustomRadarTooltip = ({ active, payload }: any) => {
                 <div className="space-y-1">
                     <div className="flex justify-between items-center">
                         <span className="text-muted-foreground mr-2">Percentile:</span>
-                        <span className="font-mono text-[#31348D] font-medium">{dataPoint.percentile}%</span>
+                        <span className="font-mono text-primary font-medium">{dataPoint.percentile}%</span>
                     </div>
                     <div className="flex justify-between items-center">
                         <span className="text-muted-foreground mr-2">Actual Value:</span>
-                        <span className="font-mono text-[#31348D] font-medium">{dataPoint.actualValue}</span>
+                        <span className="font-mono text-primary font-medium">{dataPoint.actualValue}</span>
                     </div>
                     <div className="flex justify-between items-center">
                         <span className="text-muted-foreground mr-2">League Average:</span>
-                        <span className="font-mono text-[#31348D] font-medium">{dataPoint.leagueAverage}</span>
+                        <span className="font-mono text-primary font-medium">{dataPoint.leagueAverage}</span>
                     </div>
                 </div>
             </div>
@@ -286,7 +286,7 @@ export default function PlayerDetailModal({ isOpen, onClose, player }: {
                 <DialogHeader>
                     <DialogTitle className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <span className="text-[#31348D]">{player.name}</span>
+                            <span className="text-primary">{player.name}</span>
                             <Button
                                 onClick={handleRequestSalary}
                                 disabled={isEstimating || hasRequested}
@@ -310,10 +310,10 @@ export default function PlayerDetailModal({ isOpen, onClose, player }: {
                 <div className="mt-4">
                     {/* Summary Cards ... */}
                     <div className="mb-6 grid grid-cols-4 gap-4">
-                        <div className="rounded-lg bg-gray-50 p-3 text-center"><div className="text-sm text-gray-500">Minutes</div><div className="text-xl font-bold text-[#31348D]">{displayMinutes}</div></div>
-                        <div className="rounded-lg bg-gray-50 p-3 text-center"><div className="text-sm text-gray-500">Goals</div><div className="text-xl font-bold text-[#31348D]">{displayGoals}</div></div>
-                        <div className="rounded-lg bg-gray-50 p-3 text-center"><div className="text-sm text-gray-500">Assists</div><div className="text-xl font-bold text-[#31348D]">{displayAssists}</div></div>
-                        <div className="rounded-lg bg-gray-50 p-3 text-center"><div className="text-sm text-gray-500">Footylabs Score</div><div className={`text-xl font-bold ${scoreColor}`}>{displayFootylabsScore}</div></div>
+                        <div className="rounded-lg bg-gray-50 p-3 text-center"><div className="text-sm text-muted-foreground">Minutes</div><div className="text-xl font-bold text-primary">{displayMinutes}</div></div>
+                        <div className="rounded-lg bg-gray-50 p-3 text-center"><div className="text-sm text-muted-foreground">Goals</div><div className="text-xl font-bold text-primary">{displayGoals}</div></div>
+                        <div className="rounded-lg bg-gray-50 p-3 text-center"><div className="text-sm text-muted-foreground">Assists</div><div className="text-xl font-bold text-primary">{displayAssists}</div></div>
+                        <div className="rounded-lg bg-gray-50 p-3 text-center"><div className="text-sm text-muted-foreground">Footylabs Score</div><div className={`text-xl font-bold ${scoreColor}`}>{displayFootylabsScore}</div></div>
                     </div>
 
                     {/* Radar Chart */}

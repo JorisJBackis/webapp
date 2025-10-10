@@ -98,7 +98,7 @@ export default function MyNeeds() {
                 </Button>
             </CardHeader>
             <CardContent>
-                {loading && <div className="flex justify-center items-center py-10"><Loader2 className="h-6 w-6 animate-spin text-[#31348D]" /></div>}
+                {loading && <div className="flex justify-center items-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}
                 {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
                 {!loading && !error && myNeeds.length === 0 && <p className="text-center text-muted-foreground py-10">You haven't posted any recruitment needs yet.</p>}
                 {!loading && !error && myNeeds.length > 0 && (
@@ -117,7 +117,7 @@ export default function MyNeeds() {
                                 <TableRow key={need.need_id}>
                                     <TableCell className="font-medium">{need.position_needed}</TableCell>
                                     <TableCell>
-                                        <Badge variant={need.status === 'active' ? 'outline-solid' : 'secondary'} className={need.status === 'active' ? 'border-green-500 text-green-600' : ''}>
+                                        <Badge variant={need.status === 'active' ? 'outline-solid' : 'secondary'} className={need.status === 'active' ? 'border-success text-green-600' : ''}>
                                             {need.status ? need.status.charAt(0).toUpperCase() + need.status.slice(1) : 'N/A'}
                                         </Badge>
                                     </TableCell>

@@ -170,7 +170,7 @@ const calculateFitScore = (opportunity: Opportunity & { club_rating?: number, re
 }
 
 const getFitScoreColor = (score: number) => {
-  if (score >= 85) return 'bg-green-500'
+  if (score >= 85) return 'bg-success'
   if (score >= 70) return 'bg-yellow-500'
   return 'bg-gray-400'
 }
@@ -504,7 +504,7 @@ export default function OpportunitiesBrowser({ playerProfile, userClubId }: Oppo
                               </div>
                             </div>
                             <Badge 
-                              className={`${getFitScoreColor(opportunity.fit_score)} text-white`}
+                              className={`${getFitScoreColor(opportunity.fit_score)} text-primary-foreground`}
                             >
                               {opportunity.fit_score}% {getFitScoreLabel(opportunity.fit_score)}
                             </Badge>
@@ -559,7 +559,7 @@ export default function OpportunitiesBrowser({ playerProfile, userClubId }: Oppo
                                 const IconComponent = reason.icon
                                 return (
                                   <li key={index} className="flex items-start gap-2">
-                                    <IconComponent className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                                    <IconComponent className="h-4 w-4 text-success mt-0.5 shrink-0" />
                                     {reason.text}
                                   </li>
                                 )

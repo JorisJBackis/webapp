@@ -88,7 +88,7 @@ export default async function DashboardPage() {
   return (
     <div className="container py-8">
       <div className="mb-8 flex items-center">
-        <div className="mr-3 h-10 w-10 overflow-hidden rounded-full bg-white shadow-sm">
+        <div className="mr-3 h-10 w-10 overflow-hidden rounded-full bg-backround shadow-sm">
           <Image
             src={clubLogo || "/placeholder.svg"}
             alt={clubName}
@@ -98,23 +98,23 @@ export default async function DashboardPage() {
           />
         </div>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-footylabs-newblue">{clubName} Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-primary">{clubName} Dashboard</h1>
           <p className="text-muted-foreground">View analytics and insights for your football club</p>
         </div>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="bg-gray-100 text-black">
-          <TabsTrigger value="overview" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
+        <TabsList className="bg-muted text-muted-foreground">
+          <TabsTrigger value="overview" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             Overview
           </TabsTrigger>
-          <TabsTrigger value="players" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
+          <TabsTrigger value="players" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             Players
           </TabsTrigger>
-          <TabsTrigger value="comparison" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
+          <TabsTrigger value="comparison" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             Team Comparison
           </TabsTrigger>
-          <TabsTrigger value="my-activity" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
+          <TabsTrigger value="my-activity" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             My Club's Activity
           </TabsTrigger>
         </TabsList>

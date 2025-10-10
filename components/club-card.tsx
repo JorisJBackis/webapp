@@ -13,9 +13,9 @@ type ClubCardProps = {
 export function ClubCard({ club, className = "" }: ClubCardProps) {
   return (
     <Card className={`border-0 shadow-md ${className}`}>
-      <CardHeader className="border-b bg-footylabs-darkblue text-white">
+      <CardHeader className="border-b bg-footylabs-darkblue text-primary-foreground">
         <CardTitle>Club Information</CardTitle>
-        <CardDescription className="text-white/80">Your associated football club</CardDescription>
+        <CardDescription className="text-primary-foreground/80">Your associated football club</CardDescription>
       </CardHeader>
       <CardContent className="pt-6">
         {club ? (

@@ -27,7 +27,7 @@ export default async function ScoutingPage() {
               The scouting feature is exclusively available for club accounts to discover
               and analyze players across different leagues.
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               As a player, you can use the Dashboard and Insights features to track your performance
               and view analytics.
             </p>
@@ -44,7 +44,7 @@ export default async function ScoutingPage() {
   return (
     <div className="container mx-auto py-8">
       <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-footylabs-newblue">Player Scouting</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-primary">Player Scouting</h1>
         <p className="text-muted-foreground">Discover and track players across leagues.</p>
       </div>
 

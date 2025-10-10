@@ -474,16 +474,16 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
         </h3>
         {teamStandings.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="min-w-full bg-white rounded-lg overflow-hidden shadow-xs">
-              <thead className="bg-gray-50">
+            <table className="min-w-full bg-backround rounded-lg overflow-hidden shadow-xs">
+              <thead className="bg-muted text-muted-foreground!">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Rank
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Team
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     <div className="flex items-center justify-center gap-1">
                       <span>Matches<br/>Played</span>
                       <HoverCard>
@@ -496,7 +496,7 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
                       </HoverCard>
                     </div>
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     <div className="flex items-center justify-center gap-1">
                       <span>Actual<br/>Points</span>
                       <HoverCard>
@@ -509,7 +509,7 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
                       </HoverCard>
                     </div>
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     <div className="flex items-center justify-center gap-1">
                       <span>Current<br/>Expected</span>
                       <HoverCard>
@@ -522,7 +522,7 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
                       </HoverCard>
                     </div>
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     <div className="flex items-center justify-center gap-1">
                       <span>Final<br/>Expected</span>
                       <HoverCard>
@@ -541,25 +541,25 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
                 {teamStandings.map((team) => (
                   <tr
                     key={team.teamId}
-                    className={`${team.isUserTeam ? "bg-blue-50" : team.rank % 2 === 0 ? "bg-gray-50" : "bg-white"} hover:bg-gray-100`}
+                    className={`${team.isUserTeam ? "bg-blue-50 dark:bg-blue-950" : team.rank % 2 === 0 ? "bg-muted" : "bg-backround"} hover:bg-muted/50`}
                   >
-                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{team.rank}</td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-muted-foreground">{team.rank}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground">
                       {team.isUserTeam ? <span className="font-semibold">{team.teamName}</span> : team.teamName}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground text-center">
                       {team.matchesPlayed}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 text-center font-medium">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground text-center font-medium">
                       {team.actualPoints}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground text-center">
                       {team.currentExpectedPoints === team.actualPoints ?
                         <span className="text-gray-400">N/A</span> :
                         team.currentExpectedPoints
                       }
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 text-center font-medium">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground text-center font-medium">
                       {team.expectedPoints}
                     </td>
                   </tr>
@@ -568,21 +568,21 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
             </table>
           </div>
         ) : (
-          <div className="text-center py-4 bg-gray-50 rounded-lg">
+          <div className="text-center py-4 bg-muted rounded-lg">
             {isLoading ? "Loading standings data..." : "No standings data available. Check console for detailed logs."}
           </div>
         )}
         <div className="mt-4 space-y-1">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             <strong>Matches Played:</strong> Games completed so far this season
           </p>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             <strong>Actual Points:</strong> Points earned in current season
           </p>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             <strong>Current Expected:</strong> Monte Carlo simulation based on current form
           </p>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             <strong>Final Expected:</strong> Projected points for full {totalGamesInSeason}-match season
           </p>
         </div>

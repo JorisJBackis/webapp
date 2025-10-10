@@ -77,12 +77,12 @@ export default function PlayerPublicProfile({ profile, userData, wyscoutPlayer }
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100">
       {/* Header */}
-      <div className="bg-white shadow-xs border-b">
+      <div className="bg-backround shadow-xs border-b">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="w-16 h-16 bg-linear-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-xl font-bold">
+                <span className="text-primary-foreground text-xl font-bold">
                   {playerName.charAt(0)}
                 </span>
               </div>
@@ -142,7 +142,7 @@ export default function PlayerPublicProfile({ profile, userData, wyscoutPlayer }
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-orange-600">{mockData.assists}</div>
-                    <div className="text-sm text-gray-600">Assists</div>
+                    <div className="text-sm text-muted-foreground">Assists</div>
                   </div>
                 </div>
               </CardContent>
@@ -204,7 +204,7 @@ export default function PlayerPublicProfile({ profile, userData, wyscoutPlayer }
                         <Badge key={country} variant="secondary">
                           {country}
                         </Badge>
-                      )) || <span className="text-gray-500">Not specified</span>}
+                      )) || <span className="text-muted-foreground">Not specified</span>}
                     </div>
                   </div>
                   <div>
@@ -214,7 +214,7 @@ export default function PlayerPublicProfile({ profile, userData, wyscoutPlayer }
                         <Badge key={language} variant="outline">
                           {language}
                         </Badge>
-                      )) || <span className="text-gray-500">Not specified</span>}
+                      )) || <span className="text-muted-foreground">Not specified</span>}
                     </div>
                   </div>
                   <div>
@@ -234,7 +234,7 @@ export default function PlayerPublicProfile({ profile, userData, wyscoutPlayer }
                   <CardTitle>Highlight Video</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
+                  <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
                     <Button variant="outline">
                       <Globe className="h-4 w-4 mr-2" />
                       View Highlights
@@ -336,14 +336,14 @@ export default function PlayerPublicProfile({ profile, userData, wyscoutPlayer }
             </Card>
 
             {/* CTA */}
-            <Card className="bg-linear-to-r from-blue-600 to-purple-600 text-white">
+            <Card className="bg-linear-to-r from-blue-600 to-purple-600 text-primary-foreground">
               <CardContent className="pt-6 text-center">
                 <Star className="h-8 w-8 mx-auto mb-3" />
                 <h3 className="font-bold mb-2">Interested in this player?</h3>
                 <p className="text-sm mb-4 text-blue-100">
                   Get in touch to discuss opportunities and availability
                 </p>
-                <Button className="w-full bg-white text-blue-600 hover:bg-gray-100">
+                <Button className="w-full bg-backround text-blue-600 hover:bg-muted">
                   Contact Player
                 </Button>
               </CardContent>

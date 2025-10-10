@@ -212,9 +212,9 @@ export default function PlayerAnalytics({ playerProfile }: PlayerAnalyticsProps)
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
-      case 'up': return <ArrowUp className="h-4 w-4 text-green-500" />
+      case 'up': return <ArrowUp className="h-4 w-4 text-success" />
       case 'down': return <ArrowDown className="h-4 w-4 text-red-500" />
-      default: return <Minus className="h-4 w-4 text-gray-500" />
+      default: return <Minus className="h-4 w-4 text-muted-foreground" />
     }
   }
 
