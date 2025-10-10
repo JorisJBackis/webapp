@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_users: {
+        Row: {
+          admin_level: string | null
+          created_at: string | null
+          granted_by: string | null
+          id: string
+        }
+        Insert: {
+          admin_level?: string | null
+          created_at?: string | null
+          granted_by?: string | null
+          id: string
+        }
+        Update: {
+          admin_level?: string | null
+          created_at?: string | null
+          granted_by?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       agency_rb_prospects: {
         Row: {
           accurate_crosses_pct: number | null
@@ -620,23 +641,38 @@ export type Database = {
       }
       profiles: {
         Row: {
+          admin_notes: string | null
+          approval_status: string | null
+          approved_at: string | null
+          approved_by: string | null
           club_id: number | null
           created_at: string
           id: string
+          rejection_reason: string | null
           updated_at: string
           user_type: string | null
         }
         Insert: {
+          admin_notes?: string | null
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           club_id?: number | null
           created_at?: string
           id: string
+          rejection_reason?: string | null
           updated_at?: string
           user_type?: string | null
         }
         Update: {
+          admin_notes?: string | null
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           club_id?: number | null
           created_at?: string
           id?: string
+          rejection_reason?: string | null
           updated_at?: string
           user_type?: string | null
         }
@@ -1200,9 +1236,33 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      pending_user_approvals: {
+        Row: {
+          approval_status: string | null
+          club_id: number | null
+          club_name: string | null
+          email: string | null
+          email_confirmed_at: string | null
+          id: string | null
+          registered_at: string | null
+          user_type: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      approve_user: {
+        Args: { admin_notes_text?: string; target_user_id: string }
+        Returns: undefined
+      }
       get_latest_players_for_club: {
         Args: { p_club_id: number }
         Returns: {
@@ -1333,6 +1393,18 @@ export type Database = {
           updated_at: string
           wyscout_player_id: number
         }[]
+      }
+      is_admin: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
+      reject_user: {
+        Args: {
+          admin_notes_text?: string
+          reason: string
+          target_user_id: string
+        }
+        Returns: undefined
       }
       try_cast_to_date: {
         Args: { p_text: string }

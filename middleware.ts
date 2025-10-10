@@ -12,8 +12,8 @@ export async function middleware(req: NextRequest) {
     } = await supabase.auth.getSession()
 
     // Update the middleware to allow access to public pages
-    // Allow public access to player profiles, verification page, and home
-    const publicPaths = ["/", "/auth", "/player", "/api/og"]
+    // Allow public access to player profiles, verification page, home, and admin routes
+    const publicPaths = ["/", "/auth", "/player", "/api/og", "/admin"]
     const isPublicPath = publicPaths.some(path => req.nextUrl.pathname.startsWith(path))
 
     // If user is not signed in and the current path is not public, redirect to /auth/login
@@ -21,9 +21,30 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL("/auth/login", req.url))
     }
 
-    // If user is signed in and the current path is /auth/login or /auth/register, redirect to /dashboard
-    if (session && (req.nextUrl.pathname === "/auth/login" || req.nextUrl.pathname === "/auth/register")) {
-      return NextResponse.redirect(new URL("/dashboard", req.url))
+    // If user is signed in, check their approval status
+    if (session) {
+      // Don't check approval status for auth pages (they need to see pending/rejected pages)
+      if (!req.nextUrl.pathname.startsWith("/auth")) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("approval_status")
+          .eq("id", session.user.id)
+          .single()
+
+        // Redirect based on approval status
+        if (profile?.approval_status === "pending" && req.nextUrl.pathname !== "/auth/pending-approval") {
+          return NextResponse.redirect(new URL("/auth/pending-approval", req.url))
+        }
+
+        if (profile?.approval_status === "rejected" && req.nextUrl.pathname !== "/auth/rejected") {
+          return NextResponse.redirect(new URL("/auth/rejected", req.url))
+        }
+      }
+
+      // If user is approved and on /auth/login or /auth/register, redirect to /dashboard
+      if (req.nextUrl.pathname === "/auth/login" || req.nextUrl.pathname === "/auth/register") {
+        return NextResponse.redirect(new URL("/dashboard", req.url))
+      }
     }
 
     // Allow access to verification page and callback regardless of auth status
