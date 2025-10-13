@@ -187,7 +187,7 @@ export default function AgencyRBProspectsTab() {
                                     <TableBody>
                                         {filteredProspects.map((p) => (
                                             <TableRow key={p.id} className="hover:bg-muted/50">
-                                                <TableCell className="font-medium sticky left-0 bg-backround group-hover:bg-muted/50 z-10 w-[180px] group-hover:shadow-md">
+                                                <TableCell className="font-medium sticky left-0 bg-background group-hover:bg-muted/50 z-10 w-[180px] group-hover:shadow-md">
                                                     {p.player_name}
                                                 </TableCell>
                                                 <TableCell>{p.original_team_name || 'N/A'}</TableCell>

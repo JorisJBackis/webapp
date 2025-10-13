@@ -183,7 +183,7 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Performance Trend */}
-        <div className="bg-backround rounded-lg shadow-md p-6">
+        <div className="bg-background rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold mb-4 text-primary">Recent Performance Trend</h2>
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={data.gamePerformance}>
@@ -199,7 +199,7 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
         </div>
 
         {/* Playing Style Radar */}
-        <div className="bg-backround rounded-lg shadow-md p-6">
+        <div className="bg-background rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold mb-4 text-primary">Playing Style Profile</h2>
           <ResponsiveContainer width="100%" height={280}>
             <RadarChart data={data.playingStyleData}>
@@ -212,7 +212,7 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
         </div>
 
         {/* Position Heat Map */}
-        <div className="bg-backround rounded-lg shadow-md p-6">
+        <div className="bg-background rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold mb-4 text-primary">Position Heat Map</h2>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={data.positionHeatData}>
@@ -228,7 +228,7 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
         </div>
 
         {/* Match Outcomes */}
-        <div className="bg-backround rounded-lg shadow-md p-6">
+        <div className="bg-background rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold mb-4 text-primary">Performance by Result</h2>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={data.outcomeData}>
@@ -261,7 +261,7 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Market Value Progression */}
-        <div className="bg-backround rounded-lg shadow-md p-6">
+        <div className="bg-background rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold mb-4 text-primary">Market Value Progression</h2>
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={data.marketData}>
@@ -275,7 +275,7 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
         </div>
 
         {/* Scout Interest */}
-        <div className="bg-backround rounded-lg shadow-md p-6">
+        <div className="bg-background rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold mb-4 text-primary">Scout Interest Over Time</h2>
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={data.marketData}>
@@ -289,7 +289,7 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
         </div>
 
         {/* Shot Conversion Analysis */}
-        <div className="bg-backround rounded-lg shadow-md p-6">
+        <div className="bg-background rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold mb-4 text-primary">Shot Analysis by Zone</h2>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={data.shotMapData}>
@@ -305,7 +305,7 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
         </div>
 
         {/* Pass Type Analysis */}
-        <div className="bg-backround rounded-lg shadow-md p-6">
+        <div className="bg-background rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold mb-4 text-primary">Passing Breakdown</h2>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={data.passTypeData}>
@@ -338,7 +338,7 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Development Potential */}
-        <div className="bg-backround rounded-lg shadow-md p-6">
+        <div className="bg-background rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold mb-4 text-primary">Development Potential</h2>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={data.developmentData}>
@@ -354,7 +354,7 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
         </div>
 
         {/* Fitness & Availability */}
-        <div className="bg-backround rounded-lg shadow-md p-6">
+        <div className="bg-background rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold mb-4 text-primary">Fitness & Availability</h2>
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={data.fitnessData}>
@@ -370,7 +370,7 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
         </div>
 
         {/* Training Load Distribution */}
-        <div className="bg-backround rounded-lg shadow-md p-6">
+        <div className="bg-background rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold mb-4 text-primary">Training Focus Areas</h2>
           <ResponsiveContainer width="100%" height={280}>
             <PieChart>
@@ -393,7 +393,7 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
         </div>
 
         {/* Skill Progression Over Time */}
-        <div className="bg-backround rounded-lg shadow-md p-6">
+        <div className="bg-background rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold mb-4 text-primary">6-Month Skill Progression</h2>
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={data.marketData.slice(6)}>
@@ -424,7 +424,7 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Position Comparison */}
-        <div className="bg-backround rounded-lg shadow-md p-6">
+        <div className="bg-background rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold mb-4 text-primary">vs League Average ({data.position})</h2>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={data.positionMetrics}>
@@ -440,7 +440,7 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
         </div>
 
         {/* Age Group Comparison */}
-        <div className="bg-backround rounded-lg shadow-md p-6">
+        <div className="bg-background rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold mb-4 text-primary">Age Group Performance</h2>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={[
@@ -461,7 +461,7 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
         </div>
 
         {/* Playing Style Comparison */}
-        <div className="bg-backround rounded-lg shadow-md p-6">
+        <div className="bg-background rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold mb-4 text-primary">Playing Style vs Top Players</h2>
           <ResponsiveContainer width="100%" height={280}>
             <RadarChart data={data.playingStyleData}>
@@ -474,7 +474,7 @@ export default function PlayerInsightsV2({ playerProfile, category }: PlayerInsi
         </div>
 
         {/* Competitive Analysis */}
-        <div className="bg-backround rounded-lg shadow-md p-6">
+        <div className="bg-background rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold mb-4 text-primary">Competitive Benchmarking</h2>
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={[

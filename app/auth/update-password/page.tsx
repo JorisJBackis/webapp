@@ -71,7 +71,7 @@ export default function UpdatePasswordPage() {
   // If user doesn't have a valid session
   if (!hasSession && !loading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-backround px-4 py-12">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
         <div className="mb-8">
           <Logo />
         </div>
@@ -101,7 +101,7 @@ export default function UpdatePasswordPage() {
   // If password update was successful, show confirmation message
   if (success) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-backround px-4 py-12">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
         <div className="mb-8">
           <Logo />
         </div>
@@ -122,7 +122,7 @@ export default function UpdatePasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-backround px-4 py-12">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
       <div className="mb-8">
         <Logo />
       </div>

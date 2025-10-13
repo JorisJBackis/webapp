@@ -41,7 +41,8 @@ export function LastMatchWatchlist({ playerId }: { playerId: number | string }) 
           </div>
 
           <div className="flex gap-4 items-center">
-            <div className="flex gap-1 items-center">
+            <div className="flex gap-1 items-center text-muted-foreground">
+
               <SoccerIcon width={16} height={16} />
               <div>{matchData.goals}</div>
             </div>

@@ -433,15 +433,46 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
               label={{ value: "Points", angle: 90, position: "insideRight" }}
             />
             <Tooltip
-              formatter={(value, name) => {
-                if (name === "points") return [`${value} points`, "Points"]
-                if (name === "goalsScored") return [`${value} goals`, "Goals Scored"]
-                if (name === "goalsConceded") return [`${value} goals`, "Goals Conceded"]
-                return [value, name]
-              }}
-              labelFormatter={(label) => `Position: ${label}`}
+                formatter={(value, name) => {
+                  if (name === "points") return [`${value} points`, "Points"];
+                  if (name === "goalsScored") return [`${value} goals`, "Goals Scored"];
+                  if (name === "goalsConceded") return [`${value} goals`, "Goals Conceded"];
+                  return [value, name];
+                }}
+                labelFormatter={(label) => `Position: ${label}`}
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+
+                  return (
+                      <div className="bg-background p-3 border rounded shadow-xs">
+                        <p className="font-medium text-foreground">{label && `Position: ${label}`}</p>
+                        {payload.map((entry, index) => {
+                          const displayName = entry.name === "points"
+                              ? "Points"
+                              : entry.name === "goalsScored"
+                                  ? "Goals Scored"
+                                  : entry.name === "goalsConceded"
+                                      ? "Goals Conceded"
+                                      : entry.name;
+
+                          const displayValue = typeof entry.value === "number"
+                              ? entry.value.toFixed(2)
+                              : entry.value;
+
+                          return (
+                              <p key={index} className="text-muted-foreground">
+                                {displayName}: {displayValue}
+                              </p>
+                          );
+                        })}
+                      </div>
+                  );
+                }}
             />
-            <Legend />
+
+            <Legend   wrapperStyle={{
+              position: "relative",
+            }}/>
             <Bar yAxisId="right" dataKey="points" fill="#3182CE" opacity={0.7} barSize={30} name="Points" />
             <Line
               yAxisId="left"
@@ -474,7 +505,7 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
         </h3>
         {teamStandings.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="min-w-full bg-backround rounded-lg overflow-hidden shadow-xs">
+            <table className="min-w-full bg-background rounded-lg overflow-hidden shadow-xs">
               <thead className="bg-muted text-muted-foreground!">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -541,7 +572,7 @@ export default function PositionAnalytics({ positionData, clubId }: PositionAnal
                 {teamStandings.map((team) => (
                   <tr
                     key={team.teamId}
-                    className={`${team.isUserTeam ? "bg-blue-50 dark:bg-blue-950" : team.rank % 2 === 0 ? "bg-muted" : "bg-backround"} hover:bg-muted/50`}
+                    className={`${team.isUserTeam ? "bg-blue-50 dark:bg-blue-950" : team.rank % 2 === 0 ? "bg-muted" : "bg-background"} hover:bg-muted/50`}
                   >
                     <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-muted-foreground">{team.rank}</td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground">

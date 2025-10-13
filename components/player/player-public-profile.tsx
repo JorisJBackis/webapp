@@ -77,7 +77,7 @@ export default function PlayerPublicProfile({ profile, userData, wyscoutPlayer }
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100">
       {/* Header */}
-      <div className="bg-backround shadow-xs border-b">
+      <div className="bg-background shadow-xs border-b">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -343,7 +343,7 @@ export default function PlayerPublicProfile({ profile, userData, wyscoutPlayer }
                 <p className="text-sm mb-4 text-blue-100">
                   Get in touch to discuss opportunities and availability
                 </p>
-                <Button className="w-full bg-backround text-blue-600 hover:bg-muted">
+                <Button className="w-full bg-background text-blue-600 hover:bg-muted">
                   Contact Player
                 </Button>
               </CardContent>

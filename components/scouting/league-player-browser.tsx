@@ -232,7 +232,7 @@ export default function LeaguePlayerBrowser({ initialUserClubId }: { initialUser
 
   return (
       <div className="space-y-6">
-        <Card className="border-0 shadow-md">
+        <Card className="shadow-md">
           <CardHeader className="border-b bg-muted">
             <CardTitle className="text-primary">League Players ({loading ? '...' : filteredAndSortedPlayers.length})</CardTitle>
             <CardDescription className="text-muted-foreground">Browse players matching your criteria. Click star to watchlist.</CardDescription>

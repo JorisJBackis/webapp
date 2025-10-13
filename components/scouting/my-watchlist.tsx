@@ -188,7 +188,7 @@ export default function MyWatchlist({ userClubId }: { userClubId: number }) {
           ) : (
               <div className="rounded-md border">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="bg-muted text-muted-foreground ">
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Club</TableHead>

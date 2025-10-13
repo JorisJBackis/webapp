@@ -194,7 +194,7 @@ export default function PlayerOnboardingPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-backround px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <div className="mb-8 absolute top-8">
         <Logo />
       </div>

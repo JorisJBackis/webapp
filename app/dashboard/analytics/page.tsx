@@ -140,7 +140,7 @@ export default function AnalyticsPage() {
         return <CurrentSeasonInsights clubId={clubId} />
       case "league":
         return (
-            <div className="bg-backround rounded-lg shadow-md p-6 mb-8">
+            <div className="bg-background rounded-lg shadow-md p-6 mb-8">
               <h2 className="text-xl font-semibold mb-4">League Position Analysis</h2>
               <p className="text-gray-600 mb-6">
                 These charts show the average goals scored, goals conceded, and points accumulated by teams based on their

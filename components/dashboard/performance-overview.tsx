@@ -264,7 +264,7 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-          <div className="bg-backround p-3 border rounded shadow-xs">
+          <div className="bg-background p-3 border rounded shadow-xs">
             <p className="font-medium">{`${label}`}</p>
             {payload.map((entry: any, index: number) => {
               // Wins, Draws, Losses should be whole numbers
@@ -330,11 +330,12 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
                       <YAxis />
-                      <Tooltip content={<CustomTooltip />} />
+                      <Tooltip content={<CustomTooltip />}
+                               cursor={{fill: "var(--color-muted)", opacity: 0.5}}/>
                       <Legend />
-                      <Bar dataKey="wins" name="Wins" stackId="a" fill="#22c55e" />
+                      <Bar dataKey="wins" name="Wins" stackId="a"  fill="var(--color-success)" />
                       <Bar dataKey="draws" name="Draws" stackId="a" fill="#f97316" />
-                      <Bar dataKey="losses" name="Losses" stackId="a" fill="#ef4444" />
+                      <Bar dataKey="losses" name="Losses" stackId="a"   fill="var(--color-destructive)" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -354,7 +355,7 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
                         name="Goals Scored per 90"
                         stroke="#3949AB"
                         strokeWidth={2}
-                        dot={{ r: 4 }}
+                        dot={{ r: 4 }}R
                         activeDot={{ r: 6 }}
                       />
                       <Line

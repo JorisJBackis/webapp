@@ -349,16 +349,16 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="bg-backround/10 rounded-lg p-4">
+              <div className="bg-background/10 rounded-lg p-4">
                 <p className="text-sm mb-2 text-blue-100">Your profile link:</p>
-                <div className="flex items-center justify-between bg-backround/20 rounded px-3 py-2">
+                <div className="flex items-center justify-between bg-background/20 rounded px-3 py-2">
                   <code className="text-sm font-mono">
                     {typeof window !== 'undefined' ? `${window.location.origin}/player/${data.user?.id}` : `/player/${data.user?.id}`}
                   </code>
                   <Button 
                     size="sm" 
                     variant="ghost" 
-                    className="text-primary-foreground hover:bg-backround/20"
+                    className="text-primary-foreground hover:bg-background/20"
                     onClick={() => {
                       const link = `${window.location.origin}/player/${data.user?.id}`
                       navigator.clipboard.writeText(link)
@@ -371,7 +371,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
               </div>
               <div className="flex gap-2 flex-wrap">
                 <Button
-                  className="bg-backround text-blue-600 hover:bg-muted"
+                  className="bg-background text-blue-600 hover:bg-muted"
                   onClick={() => window.open(`/player/${data.user?.id}`, '_blank')}
                 >
                   <Eye className="h-4 w-4 mr-2" />
@@ -379,7 +379,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                 </Button>
                 <Button
                   variant="ghost"
-                  className="text-primary-foreground border-white/30 hover:bg-backround/20"
+                  className="text-primary-foreground border-white/30 hover:bg-background/20"
                   onClick={() => alert('Profile editing coming soon!')}
                 >
                   Edit Profile
@@ -391,7 +391,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="bg-backround/10 hover:bg-backround/20 text-primary-foreground"
+                    className="bg-background/10 hover:bg-background/20 text-primary-foreground"
                     onClick={() => {
                       // Placeholder for Facebook share
                       console.log("Share to Facebook")
@@ -405,7 +405,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="bg-backround/10 hover:bg-backround/20 text-primary-foreground"
+                    className="bg-background/10 hover:bg-background/20 text-primary-foreground"
                     onClick={() => {
                       // Placeholder for X (Twitter) share
                       console.log("Share to X")
@@ -419,7 +419,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="bg-backround/10 hover:bg-backround/20 text-primary-foreground"
+                    className="bg-background/10 hover:bg-background/20 text-primary-foreground"
                     onClick={() => {
                       // Placeholder for Instagram share
                       console.log("Share to Instagram")
