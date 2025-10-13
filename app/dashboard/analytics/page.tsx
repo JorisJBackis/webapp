@@ -166,7 +166,7 @@ export default function AnalyticsPage() {
 
         {/* Pending Data Request Alert */}
         {dataRequest && (
-          <Card className="mb-6 border-blue-200 bg-blue-50">
+          <Card className="mb-6 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950">
             <CardContent className="pt-6">
               <div className="flex items-start space-x-3">
                 <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />

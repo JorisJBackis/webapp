@@ -48,66 +48,66 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
-      <div className="mb-8">
-        <Logo />
-      </div>
-      <Card className="w-full max-w-md border-0 shadow-lg bg-gray-50">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-primary">Login</CardTitle>
-          <CardDescription>Enter your email and password to access your account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="name@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link
-                  href="/auth/reset-password"
-                  className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-                >
-                  Forgot password?
-                </Link>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
+        <div className="mb-8">
+          <Logo/>
+        </div>
+        <Card className="w-full max-w-md shadow-lg bg-card">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-foreground">Login</CardTitle>
+            <CardDescription>Enter your email and password to access your account</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleLogin} className="space-y-4">
+              {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4"/>
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                    id="email"
+                    type="email"
+                    placeholder="name@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                />
               </div>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  <Link
+                      href="/auth/reset-password"
+                      className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+                <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                />
+              </div>
+              <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
+                {loading ? "Logging in..." : "Login"}
+              </Button>
+            </form>
+          </CardContent>
+          <CardFooter className="flex flex-col">
+            <div className="text-sm text-muted-foreground mt-2">
+              Don&apos;t have an account?{" "}
+              <Link href="/auth/register" className="text-foreground underline-offset-4 hover:underline">
+                Sign up
+              </Link>
             </div>
-            <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
-              {loading ? "Logging in..." : "Login"}
-            </Button>
-          </form>
-        </CardContent>
-        <CardFooter className="flex flex-col">
-          <div className="text-sm text-muted-foreground mt-2">
-            Don&apos;t have an account?{" "}
-            <Link href="/auth/register" className="text-primary underline-offset-4 hover:underline">
-              Sign up
-            </Link>
-          </div>
-        </CardFooter>
-      </Card>
-    </div>
+          </CardFooter>
+        </Card>
+      </div>
   )
 }

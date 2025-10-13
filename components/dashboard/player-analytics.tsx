@@ -518,7 +518,7 @@ export default function PlayerAnalytics({ playerProfile }: PlayerAnalyticsProps)
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 bg-blue-50 rounded-lg">
+            <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
               <h4 className="font-medium text-blue-900 mb-2">Career Development</h4>
               <p className="text-sm text-blue-800">
                 Your recent performances show consistent improvement. Consider targeting clubs in higher divisions 

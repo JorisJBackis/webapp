@@ -388,7 +388,7 @@ export default function RegisterPage() {
         <div className="mb-8">
           <Logo />
         </div>
-        <Card className="w-full max-w-md border-0 shadow-lg bg-gray-50">
+        <Card className="w-full max-w-md shadow-lg bg-card">
           <CardHeader className="space-y-1">
             <div className="flex justify-center mb-4">
               <AlertCircle className="h-12 w-12 text-amber-500" />
@@ -447,7 +447,7 @@ export default function RegisterPage() {
         <div className="mb-8">
           <Logo />
         </div>
-        <Card className="w-full max-w-md border-0 shadow-lg bg-gray-50">
+        <Card className="w-full max-w-md shadow-lg bg-card">
           <CardHeader className="space-y-1">
             <div className="flex justify-center mb-4">
               <Mail className="h-12 w-12 text-primary" />
@@ -473,7 +473,7 @@ export default function RegisterPage() {
       <div className="mb-8">
         <Logo />
       </div>
-      <Card className="w-full max-w-md border-0 shadow-lg bg-gray-50">
+      <Card className="w-full max-w-md shadow-lg bg-card">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-primary">Create an account</CardTitle>
           <CardDescription>Enter your email, create a password, and select your club to get started</CardDescription>
@@ -481,7 +481,7 @@ export default function RegisterPage() {
         <CardContent>
           <form onSubmit={handleRegister} className="space-y-4">
             {error && (
-                <Alert variant={messageType === 'error' ? 'destructive' : 'default'} className={messageType === 'info' ? 'bg-blue-50 border-blue-200 text-blue-800' : ''}>
+                <Alert variant={messageType === 'error' ? 'destructive' : 'default'} className={messageType === 'info' ? 'bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 text-blue-800' : ''}>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
@@ -699,8 +699,8 @@ export default function RegisterPage() {
                 </div>
 
                 {playerNotFound && (
-                  <div className="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="text-sm font-medium text-blue-900">
+                  <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <div className="text-sm font-medium text-blue-900 dark:text-blue-100">
                       FootyLabs will be notified of your registration and will add your data within 5 working days.
                     </div>
                     <div className="space-y-3">
@@ -769,7 +769,7 @@ export default function RegisterPage() {
         <CardFooter className="flex flex-col">
           <div className="text-sm text-muted-foreground mt-2">
             Already have an account?{" "}
-            <Link href="/auth/login" className="text-primary underline-offset-4 hover:underline">
+            <Link href="/auth/login" className="text-foreground underline-offset-4 hover:underline">
               Login
             </Link>
           </div>
