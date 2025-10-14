@@ -36,7 +36,7 @@ export function LastMatchWatchlist({ playerId }: { playerId: number | string }) 
           </div>
 
           <div className="flex items-center gap-4">
-            <Progress value={matchData.minutesPlayed} className="h-2 w-full min-w-[176px]" />
+            <Progress value={matchData.minutesPlayed}  className="h-2 w-full min-w-[176px]" />
             <span className="text-muted-foreground">{matchData.minutesPlayed}'</span>
           </div>
 
