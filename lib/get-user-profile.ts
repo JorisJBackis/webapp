@@ -1,9 +1,10 @@
 import { createClient } from "@/lib/supabase/server"
 
 export async function getUserProfile() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Get the current user
+
   const {
     data: { user },
   } = await supabase.auth.getUser()
