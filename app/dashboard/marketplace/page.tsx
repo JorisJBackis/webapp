@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Lock } from "lucide-react";
 
 export default async function MarketplacePage() {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // Check user type
     const { data: { user } } = await supabase.auth.getUser();
