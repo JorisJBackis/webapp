@@ -6,7 +6,7 @@ WORKDIR /app
 RUN npm install -g pnpm
 
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --strict-peer-dependencies=false
+RUN pnpm install --frozen-lockfile
 
 COPY . .
 
