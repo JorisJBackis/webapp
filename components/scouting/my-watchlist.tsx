@@ -170,7 +170,7 @@ export default function MyWatchlist({ userClubId }: { userClubId: number }) {
           <>
           {loading ? (
               <div className="flex justify-center items-center py-20">
-                <Loader2 className="h-10 w-10 animate-spin text-[#31348D]" />
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
               </div>
           ) : error ? (
               <Alert variant="destructive">
@@ -188,7 +188,7 @@ export default function MyWatchlist({ userClubId }: { userClubId: number }) {
           ) : (
               <div className="rounded-md border">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="bg-muted text-muted-foreground ">
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Club</TableHead>
@@ -205,7 +205,7 @@ export default function MyWatchlist({ userClubId }: { userClubId: number }) {
                     {players.map((player) => (
                         <TableRow
                             key={player.watchlist_id}
-                            className="hover:bg-gray-50 cursor-pointer"
+                            className="hover:bg-muted/50 cursor-pointer"
                             onClick={() => handlePlayerClick(player)}
                         >
                           <TableCell className="font-medium">{player.name}</TableCell>

@@ -1,15 +1,13 @@
-import { NextResponse } from "next/server"
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
+import {NextResponse} from "next/server"
+import {createClient} from "@/lib/supabase/server";
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, {params}: { params: { id: string } }) {
   try {
     const id = params.id
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = await createClient();
 
     // Get club details
-    const { data: club, error: clubError } = await supabase.from("clubs").select("*").eq("id", id).single()
+    const {data: club, error: clubError} = await supabase.from("clubs").select("*").eq("id", id).single()
 
     if (clubError) {
       throw clubError
@@ -37,6 +35,6 @@ export async function GET(request: Request, { params }: { params: { id: string }
     })
   } catch (error) {
     console.error("Error fetching club:", error)
-    return NextResponse.json({ error: "Failed to fetch club data" }, { status: 500 })
+    return NextResponse.json({error: "Failed to fetch club data"}, {status: 500})
   }
 }

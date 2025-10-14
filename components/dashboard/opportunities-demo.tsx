@@ -75,7 +75,7 @@ export default function OpportunitiesDemo() {
                   <div className="font-medium">{opp.salary}</div>
                   <div className="text-xs text-muted-foreground">{opp.contract}</div>
                 </div>
-                <Button size="sm" className="bg-[#3144C3] hover:bg-[#3144C3]/90">
+                <Button size="sm" className="bg-primary hover:bg-primary/90">
                   Apply
                 </Button>
               </div>

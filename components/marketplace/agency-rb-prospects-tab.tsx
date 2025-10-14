@@ -156,7 +156,7 @@ export default function AgencyRBProspectsTab() {
                         </div>
                     </div>
 
-                    {loading && <div className="flex justify-center items-center py-10 h-64"><Loader2 className="h-12 w-12 animate-spin text-[#31348D]" /></div>}
+                    {loading && <div className="flex justify-center items-center py-10 h-64"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}
                     {error && <Alert variant="destructive" className="my-6"><AlertCircle className="h-4 w-4" /><AlertTitle>Error Loading Prospects</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
                     {!loading && !error && prospects.length === 0 && totalCount === 0 && <p className="text-center text-muted-foreground py-10">No agency prospects found.</p>}
                     {!loading && !error && prospects.length > 0 && filteredProspects.length === 0 && <p className="text-center text-muted-foreground py-10">No prospects match your current search query.</p>}
@@ -165,29 +165,29 @@ export default function AgencyRBProspectsTab() {
                         <>
                             <ScrollArea className="w-full whitespace-nowrap rounded-md border">
                                 <Table className="min-w-[1600px]"> {/* Adjusted min-width slightly */}
-                                    <TableHeader className="bg-slate-100">
+                                    <TableHeader className="bg-muted text-muted-foreground">
                                         <TableRow>
-                                            <TableHead className="sticky left-0 bg-slate-100 z-10 w-[180px] font-semibold text-slate-700">Player</TableHead>
-                                            <TableHead className="w-[150px] font-semibold text-slate-700">Team</TableHead>
-                                            <TableHead className="w-[150px] font-semibold text-slate-700">League</TableHead>
-                                            <TableHead className="w-[120px] font-semibold text-slate-700">Position</TableHead> {/* Changed Header */}
-                                            <TableHead className="w-[60px] text-center font-semibold text-slate-700">Age</TableHead>
-                                            <TableHead className="w-[70px] text-center font-semibold text-slate-700">Height</TableHead>
-                                            <TableHead className="w-[80px] font-semibold text-slate-700">Foot</TableHead>
-                                            <TableHead className="w-[120px] font-semibold text-slate-700">Market Val.</TableHead>
-                                            <TableHead className="w-[100px] font-semibold text-slate-700">Contract End</TableHead>
-                                            <TableHead className="w-[100px] text-center font-semibold text-slate-700">FootyLabs Score</TableHead>
-                                            <TableHead className="w-[60px] text-center font-semibold text-slate-700">G</TableHead>
-                                            <TableHead className="w-[60px] text-center font-semibold text-slate-700">A</TableHead>
-                                            <TableHead className="w-[60px] text-center font-semibold text-slate-700">MP</TableHead>
+                                            <TableHead className="sticky left-0  z-10 w-[180px] font-semibold">Player</TableHead>
+                                            <TableHead className="w-[150px] font-semibold">Team</TableHead>
+                                            <TableHead className="w-[150px] font-semibold">League</TableHead>
+                                            <TableHead className="w-[120px] font-semibold">Position</TableHead> {/* Changed Header */}
+                                            <TableHead className="w-[60px] text-center font-semibold">Age</TableHead>
+                                            <TableHead className="w-[70px] text-center font-semibold">Height</TableHead>
+                                            <TableHead className="w-[80px] font-semibold">Foot</TableHead>
+                                            <TableHead className="w-[120px] font-semibold">Market Val.</TableHead>
+                                            <TableHead className="w-[100px] font-semibold">Contract End</TableHead>
+                                            <TableHead className="w-[100px] text-center font-semibold">FootyLabs Score</TableHead>
+                                            <TableHead className="w-[60px] text-center font-semibold">G</TableHead>
+                                            <TableHead className="w-[60px] text-center font-semibold">A</TableHead>
+                                            <TableHead className="w-[60px] text-center font-semibold">MP</TableHead>
                                             {/* Response Column Removed from Headers */}
-                                            <TableHead className="w-[100px] text-center font-semibold text-slate-700">Links</TableHead>
+                                            <TableHead className="w-[100px] text-center font-semibold">Links</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {filteredProspects.map((p) => (
-                                            <TableRow key={p.id} className="hover:bg-slate-50">
-                                                <TableCell className="font-medium sticky left-0 bg-white group-hover:bg-slate-50 z-10 w-[180px] group-hover:shadow-md">
+                                            <TableRow key={p.id} className="hover:bg-muted/50">
+                                                <TableCell className="font-medium sticky left-0 bg-background group-hover:bg-muted/50 z-10 w-[180px] group-hover:shadow-md">
                                                     {p.player_name}
                                                 </TableCell>
                                                 <TableCell>{p.original_team_name || 'N/A'}</TableCell>

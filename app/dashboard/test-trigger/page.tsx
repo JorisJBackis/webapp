@@ -5,7 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle, CheckCircle } from "lucide-react"
 
 export default async function TestTriggerPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Get the current user
   const {
@@ -35,9 +35,9 @@ export default async function TestTriggerPage() {
 
       <div className="grid gap-6">
         <Card className="border-0 shadow-md">
-          <CardHeader className="border-b bg-footylabs-darkblue text-white">
+          <CardHeader className="border-b bg-footylabs-darkblue text-primary-foreground">
             <CardTitle>Trigger Status</CardTitle>
-            <CardDescription className="text-white/80">
+            <CardDescription className="text-primary-foreground/80">
               Check if the club_id is being properly stored in your profile
             </CardDescription>
           </CardHeader>

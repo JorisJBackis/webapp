@@ -48,16 +48,16 @@ export default function ResetPasswordPage() {
   // If reset password request was successful, show confirmation message
   if (success) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 py-12">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
         <div className="mb-8">
           <Logo />
         </div>
         <Card className="w-full max-w-md border-0 shadow-lg bg-gray-50">
           <CardHeader className="space-y-1">
             <div className="flex justify-center mb-4">
-              <Mail className="h-12 w-12 text-[#3144C3]" />
+              <Mail className="h-12 w-12 text-primary" />
             </div>
-            <CardTitle className="text-2xl font-bold text-center text-[#3144C3]">Check Your Email</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center text-primary">Check Your Email</CardTitle>
             <CardDescription className="text-center">
               We've sent a password reset link to <span className="font-medium">{email}</span>
             </CardDescription>
@@ -69,7 +69,7 @@ export default function ResetPasswordPage() {
             </p>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <Button asChild className="w-full bg-[#3144C3] hover:bg-[#3144C3]/90">
+            <Button asChild className="w-full bg-primary hover:bg-primary/90">
               <Link href="/auth/login">Return to login</Link>
             </Button>
           </CardFooter>
@@ -79,13 +79,13 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 py-12">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
       <div className="mb-8">
         <Logo />
       </div>
-      <Card className="w-full max-w-md border-0 shadow-lg bg-gray-50">
+      <Card className="w-full max-w-md shadow-lg bg-card border">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-[#3144C3]">Reset Password</CardTitle>
+          <CardTitle className="text-2xl font-bold text-primary">Reset Password</CardTitle>
           <CardDescription>Enter your email address and we'll send you a link to reset your password</CardDescription>
         </CardHeader>
         <CardContent>
@@ -107,13 +107,13 @@ export default function ResetPasswordPage() {
                 required
               />
             </div>
-            <Button type="submit" className="w-full bg-[#3144C3] hover:bg-[#3144C3]/90" disabled={loading}>
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
               {loading ? "Sending reset link..." : "Send reset link"}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="flex justify-center">
-          <Button variant="link" asChild className="text-[#3144C3]">
+          <Button variant="link" asChild className="text-primary">
             <Link href="/auth/login" className="flex items-center">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to login
