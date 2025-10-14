@@ -113,15 +113,15 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
 
       {/* Demo Data Alert for Players Without Stats */}
       {!data.wyscoutPlayer && !data.dataRequest && (
-        <Card className="mb-6 border-amber-200 bg-amber-50">
+        <Card className="mb-6 border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 ">
           <CardContent className="pt-6">
             <div className="flex items-start space-x-3">
-              <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+              <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
               <div className="flex-1">
-                <h3 className="font-semibold text-amber-900 mb-1">
+                <h3 className="font-semibold text-amber-900 dark:text-amber-100 mb-1">
                   Demo Mode - Sample Data Displayed
                 </h3>
-                <p className="text-sm text-amber-800">
+                <p className="text-sm text-amber-800 dark:text-amber-200">
                   This is a demo of how your profile and stats will look once we have your data in our database.
                   For now, you can freely use the marketplace/opportunities window to find club offers.
                 </p>
@@ -358,7 +358,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                   <Button 
                     size="sm" 
                     variant="ghost" 
-                    className="text-primary-foreground hover:bg-background/20"
+                    className="text-primary-foreground hover:bg-background/20 dark:hover:text-white"
                     onClick={() => {
                       const link = `${window.location.origin}/player/${data.user?.id}`
                       navigator.clipboard.writeText(link)
@@ -371,7 +371,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
               </div>
               <div className="flex gap-2 flex-wrap">
                 <Button
-                  className="bg-background text-blue-600 hover:bg-muted"
+                  className="bg-background text-blue-600 dark:text-blue-200 hover:bg-muted"
                   onClick={() => window.open(`/player/${data.user?.id}`, '_blank')}
                 >
                   <Eye className="h-4 w-4 mr-2" />
@@ -379,7 +379,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                 </Button>
                 <Button
                   variant="ghost"
-                  className="text-primary-foreground border-white/30 hover:bg-background/20"
+                  className="text-primary-foreground border-white/30 hover:bg-background/20 dark:hover:text-white"
                   onClick={() => alert('Profile editing coming soon!')}
                 >
                   Edit Profile
@@ -391,7 +391,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="bg-background/10 hover:bg-background/20 text-primary-foreground"
+                    className="bg-background/10 hover:bg-background/20 dark:hover:text-white text-primary-foreground"
                     onClick={() => {
                       // Placeholder for Facebook share
                       console.log("Share to Facebook")
@@ -405,7 +405,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="bg-background/10 hover:bg-background/20 text-primary-foreground"
+                    className="bg-background/10 hover:bg-background/20 dark:hover:text-white text-primary-foreground"
                     onClick={() => {
                       // Placeholder for X (Twitter) share
                       console.log("Share to X")
@@ -419,7 +419,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="bg-background/10 hover:bg-background/20 text-primary-foreground"
+                    className="bg-background/10 hover:bg-background/20 dark:hover:text-white text-primary-foreground"
                     onClick={() => {
                       // Placeholder for Instagram share
                       console.log("Share to Instagram")
@@ -536,7 +536,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
 
               {/* Performance Predictions */}
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="p-4 border rounded-lg bg-linear-to-r from-blue-50 to-purple-50">
+                <div className="p-4 border rounded-lg bg-linear-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950">
                   <h4 className="font-medium flex items-center mb-2">
                     <Zap className="h-4 w-4 mr-2 text-blue-500" />
                     Potential Growth
@@ -551,7 +551,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                   </ul>
                 </div>
 
-                <div className="p-4 border rounded-lg bg-linear-to-r from-green-50 to-yellow-50">
+                <div className="p-4 border rounded-lg bg-linear-to-r from-green-50 to-yellow-50 dark:from-emerald-950 dark:to-teal-900">
                   <h4 className="font-medium flex items-center mb-2">
                     <Target className="h-4 w-4 mr-2 text-success" />
                     Ideal Match

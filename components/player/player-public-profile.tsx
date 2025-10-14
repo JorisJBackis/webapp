@@ -21,6 +21,7 @@ import {
   Download
 } from "lucide-react"
 import { useState } from "react"
+import {ModeToggleInstant} from "@/components/mode-toggle";
 
 interface PlayerPublicProfileProps {
   profile: any
@@ -75,19 +76,19 @@ export default function PlayerPublicProfile({ profile, userData, wyscoutPlayer }
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 dark:from-blue-900 dark:to-indigo-900">
       {/* Header */}
       <div className="bg-background shadow-xs border-b">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-linear-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
+              <div className="w-16 h-16 bg-linear-to-r from-blue-600 to-purple-600 dark:from-blue-300 dark:to-purple-300 rounded-full flex items-center justify-center">
                 <span className="text-primary-foreground text-xl font-bold">
                   {playerName.charAt(0)}
                 </span>
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">{playerName}</h1>
+                <h1 className="text-2xl font-bold text-muted-foreground">{playerName}</h1>
                 <p className="text-gray-600">{playerPosition}</p>
                 <div className="flex items-center mt-1">
                   <MapPin className="h-4 w-4 text-gray-400 mr-1" />
@@ -98,6 +99,7 @@ export default function PlayerPublicProfile({ profile, userData, wyscoutPlayer }
               </div>
             </div>
             <div className="flex items-center space-x-3">
+              <ModeToggleInstant />
               <Button variant="outline" onClick={handleShare}>
                 <Share2 className="h-4 w-4 mr-2" />
                 Share
@@ -336,14 +338,14 @@ export default function PlayerPublicProfile({ profile, userData, wyscoutPlayer }
             </Card>
 
             {/* CTA */}
-            <Card className="bg-linear-to-r from-blue-600 to-purple-600 text-primary-foreground">
+            <Card className="bg-linear-to-r from-blue-600 to-purple-600 text-white dark:text-foreground">
               <CardContent className="pt-6 text-center">
                 <Star className="h-8 w-8 mx-auto mb-3" />
                 <h3 className="font-bold mb-2">Interested in this player?</h3>
                 <p className="text-sm mb-4 text-blue-100">
                   Get in touch to discuss opportunities and availability
                 </p>
-                <Button className="w-full bg-background text-blue-600 hover:bg-muted">
+                <Button className="w-full">
                   Contact Player
                 </Button>
               </CardContent>
