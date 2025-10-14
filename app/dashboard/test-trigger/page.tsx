@@ -5,7 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle, CheckCircle } from "lucide-react"
 
 export default async function TestTriggerPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Get the current user
   const {
