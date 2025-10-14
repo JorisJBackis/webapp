@@ -4,7 +4,7 @@ import { cookies } from "next/headers"
 
 export async function GET() {
   try {
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
     const { data, error } = await supabase.from("clubs").select("id, name, logo_url").order("name")

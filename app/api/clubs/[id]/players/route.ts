@@ -5,7 +5,7 @@ import { cookies } from "next/headers"
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     const id = params.id
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
     // Get players for the club
