@@ -5,13 +5,13 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify request is from Supabase (optional: add API key verification)
-    const authHeader = request.headers.get('authorization')
-    const expectedKey = process.env.EMAIL_API_SECRET_KEY
-
-    if (expectedKey && authHeader !== `Bearer ${expectedKey}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // Optional: Verify request is from Supabase with API key
+    // Uncomment these lines if you want to add API key security
+    // const authHeader = request.headers.get('authorization')
+    // const expectedKey = process.env.EMAIL_API_SECRET_KEY
+    // if (expectedKey && authHeader !== `Bearer ${expectedKey}`) {
+    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // }
 
     const body = await request.json()
     const { userEmail, userType, clubName, registeredAt } = body

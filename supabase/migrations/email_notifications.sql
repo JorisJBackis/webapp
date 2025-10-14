@@ -24,9 +24,9 @@ BEGIN
     SELECT name INTO club_name FROM clubs WHERE id = NEW.club_id;
   END IF;
 
-  -- Get API URL and secret from environment
-  api_url := current_setting('app.settings.site_url', true) || '/api/emails/notify-admin';
-  api_secret := current_setting('app.settings.email_api_secret', true);
+  -- Use production URL (change this to your actual domain)
+  api_url := 'https://app.footylabs.ai/api/emails/notify-admin';
+  api_secret := '';
 
   -- Trigger email notification via API
   PERFORM extensions.http_post(
@@ -80,9 +80,9 @@ BEGIN
   -- Get user email
   SELECT email INTO user_email FROM auth.users WHERE id = target_user_id;
 
-  -- Get API URL and secret
-  api_url := current_setting('app.settings.site_url', true) || '/api/emails/notify-approval';
-  api_secret := current_setting('app.settings.email_api_secret', true);
+  -- Use production URL (change this to your actual domain)
+  api_url := 'https://app.footylabs.ai/api/emails/notify-approval';
+  api_secret := '';
 
   -- Send approval notification email
   PERFORM extensions.http_post(
@@ -128,9 +128,9 @@ BEGIN
   -- Get user email
   SELECT email INTO user_email FROM auth.users WHERE id = target_user_id;
 
-  -- Get API URL and secret
-  api_url := current_setting('app.settings.site_url', true) || '/api/emails/notify-rejection';
-  api_secret := current_setting('app.settings.email_api_secret', true);
+  -- Use production URL (change this to your actual domain)
+  api_url := 'https://app.footylabs.ai/api/emails/notify-rejection';
+  api_secret := '';
 
   -- Send rejection notification email
   PERFORM extensions.http_post(
@@ -148,7 +148,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Set database configuration for email API
--- Note: You'll need to set these values in your Supabase dashboard under Database > Settings > Custom settings
--- ALTER DATABASE postgres SET app.settings.site_url = 'https://your-domain.com';
--- ALTER DATABASE postgres SET app.settings.email_api_secret = 'your-secret-key';
+-- Note: The API URLs are hardcoded to https://app.footylabs.ai
+-- To test locally, temporarily change the URLs in the functions above to your ngrok/cloudflare tunnel URL
+-- For production, the URLs point to https://app.footylabs.ai which is your deployed domain
