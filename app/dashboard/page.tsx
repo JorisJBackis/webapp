@@ -10,9 +10,10 @@ import MyNeeds from "@/components/marketplace/my-needs";
 import PlayerDashboard from "@/components/dashboard/player-dashboard";
 
 export default async function DashboardPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Get the current user
+  
   
   const {
     data: { user },

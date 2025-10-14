@@ -10,7 +10,7 @@ export default function VerificationPage() {
       <div className="mb-8">
         <Logo />
       </div>
-      <Card className="w-full max-w-md border-0 shadow-lg bg-gray-50">
+      <Card className="w-full max-w-md border shadow-lg bg-card">
         <CardHeader className="space-y-1">
           <div className="flex justify-center mb-4">
             <Mail className="h-12 w-12 text-primary-foreground" />
