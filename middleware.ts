@@ -12,8 +12,8 @@ export async function middleware(req: NextRequest) {
     } = await supabase.auth.getSession()
 
     // Update the middleware to allow access to public pages
-    // Allow public access to player profiles, verification page, home, and admin routes
-    const publicPaths = ["/", "/auth", "/player", "/api/og", "/admin"]
+    // Allow public access to player profiles, verification page, home, admin routes, and email API
+    const publicPaths = ["/", "/auth", "/player", "/api/og", "/api/emails", "/admin"]
     const isPublicPath = publicPaths.some(path => req.nextUrl.pathname.startsWith(path))
 
     // If user is not signed in and the current path is not public, redirect to /auth/login
