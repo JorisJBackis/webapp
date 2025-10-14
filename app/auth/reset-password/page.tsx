@@ -83,7 +83,7 @@ export default function ResetPasswordPage() {
       <div className="mb-8">
         <Logo />
       </div>
-      <Card className="w-full max-w-md border-0 shadow-lg bg-gray-50">
+      <Card className="w-full max-w-md shadow-lg bg-card border">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-primary">Reset Password</CardTitle>
           <CardDescription>Enter your email address and we'll send you a link to reset your password</CardDescription>
