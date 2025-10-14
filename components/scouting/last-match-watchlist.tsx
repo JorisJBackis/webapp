@@ -1,16 +1,16 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { Progress } from "@/components/ui/progress"
+import {useState, useEffect} from "react"
+import {createClient} from "@/lib/supabase/client"
+import {Progress} from "@/components/ui/progress"
 import SoccerIcon from "@/components/scouting/soccer-icon"
 import Link from "next/link"
-import { Loader2 } from "lucide-react"
+import {Loader2} from "lucide-react"
 
 export function LastMatchWatchlist({
-  playerId,
-  playerName
-}: {
+                                     playerId,
+                                     playerName
+                                   }: {
   playerId: number | string
   playerName: string
 }) {
@@ -52,12 +52,12 @@ export function LastMatchWatchlist({
         for (const pattern of patterns) {
           console.log(`  ➤ Trying pattern: "${pattern}"`)
 
-          const { data: result, error } = await supabase
-            .from("new_watchlist")
-            .select("*")
-            .ilike("player_name", pattern)
-            .order("match_date", { ascending: false })
-            .limit(1)
+          const {data: result, error} = await supabase
+              .from("new_watchlist")
+              .select("*")
+              .ilike("player_name", pattern)
+              .order("match_date", {ascending: false})
+              .limit(1)
 
           if (error) {
             console.error(`    ❌ Error with pattern "${pattern}":`, error)
@@ -82,12 +82,12 @@ export function LastMatchWatchlist({
             const wildcardPattern = `%${pattern}%`
             console.log(`  ➤ Trying wildcard: "${wildcardPattern}"`)
 
-            const { data: result, error } = await supabase
-              .from("new_watchlist")
-              .select("*")
-              .ilike("player_name", wildcardPattern)
-              .order("match_date", { ascending: false })
-              .limit(1)
+            const {data: result, error} = await supabase
+                .from("new_watchlist")
+                .select("*")
+                .ilike("player_name", wildcardPattern)
+                .order("match_date", {ascending: false})
+                .limit(1)
 
             if (error) {
               console.error(`    ❌ Error:`, error)
@@ -109,14 +109,14 @@ export function LastMatchWatchlist({
           console.log(`❌ No matches found for "${playerName}" with any pattern`)
 
           // Debug: Check if player exists at all in the table
-          const { data: allMatches, error: debugError } = await supabase
-            .from("new_watchlist")
-            .select("player_name")
-            .limit(100)
+          const {data: allMatches, error: debugError} = await supabase
+              .from("new_watchlist")
+              .select("player_name")
+              .limit(100)
 
           if (!debugError && allMatches) {
             console.log(`📊 Sample player names in watchlist:`,
-              allMatches.slice(0, 10).map(m => m.player_name))
+                allMatches.slice(0, 10).map(m => m.player_name))
           }
 
           setLoading(false)
@@ -188,17 +188,17 @@ export function LastMatchWatchlist({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-4">
-        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-      </div>
+        <div className="flex items-center justify-center p-4">
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground"/>
+        </div>
     )
   }
 
   if (!matchData) {
     return (
-      <div className="p-2">
-        <span className="text-muted-foreground text-sm">No matches found</span>
-      </div>
+        <div className="p-2">
+          <span className="text-muted-foreground text-sm">No matches found</span>
+        </div>
     )
   }
 
@@ -210,51 +210,51 @@ export function LastMatchWatchlist({
         <div className="flex flex-col gap-2 cursor-pointer p-2 hover:bg-muted/50 rounded-md
          hover:bg-accent hover:text-accent-foreground pointer-events-none">
           <div className="flex items-center gap-2">
-            {matchData.result === "W" && <WinBadge />}
-            {matchData.result === "L" && <LoseBadge />}
-            {matchData.result === "D" && <DrawBadge />}
+            {matchData.result === "W" && <WinBadge/>}
+            {matchData.result === "L" && <LoseBadge/>}
+            {matchData.result === "D" && <DrawBadge/>}
             vs
             <span className="text-base font-medium">{matchData.opponent}</span>
           </div>
 
-        <div className="flex items-center gap-4">
-          <Progress value={matchData.minutesPlayed} className="h-2 w-full min-w-[176px]" />
-          <span className="text-muted-foreground">{matchData.minutesPlayed}'</span>
-        </div>
+          <div className="flex items-center gap-4">
+            <Progress value={matchData.minutesPlayed} className="h-2 w-full min-w-[176px]" max={90}/>
+            <span className="text-muted-foreground">{matchData.minutesPlayed}'</span>
+          </div>
 
           <div className="flex gap-4 items-center">
             <div className="flex gap-1 items-center text-muted-foreground">
 
-              <SoccerIcon width={16} height={16} />
+              <SoccerIcon width={16} height={16}/>
               <div>{matchData.goals}</div>
             </div>
 
-          {matchData.redCards > 0 && (
+
             <div className="flex gap-1 items-center">
-              <span className="bg-red-card w-4 h-4 rounded-sm" />
+              <span className="bg-red-card w-4 h-4 rounded-sm"/>
               <div>{matchData.redCards}</div>
             </div>
-          )}
 
-          {matchData.yellowCards > 0 && (
+
             <div className="flex gap-1 items-center">
-              <span className="bg-yellow-card w-4 h-4 rounded-sm" />
+              <span className="bg-yellow-card w-4 h-4 rounded-sm"/>
               <div>{matchData.yellowCards}</div>
             </div>
-          )}
 
-          <div className="text-xs text-muted-foreground text-right flex-1">
-            &#8226; {matchData.daysAgo} {matchData.daysAgo === 1 ? 'day' : 'days'} ago
+
+            <div className="text-xs text-muted-foreground text-right flex-1">
+              &#8226; {matchData.daysAgo} {matchData.daysAgo === 1 ? 'day' : 'days'} ago
+            </div>
           </div>
         </div>
-      </div>
-    </Link>
+      </Link>
   )
 }
 
 export function LoseBadge() {
   return (
-    <span className="text-destructive bg-destructive/20 border border-destructive w-8 h-8 rounded-md font-bold flex justify-center items-center">
+      <span
+          className="text-destructive bg-destructive/20 border border-destructive w-8 h-8 rounded-md font-bold flex justify-center items-center">
       L
     </span>
   )
@@ -262,7 +262,8 @@ export function LoseBadge() {
 
 export function WinBadge() {
   return (
-    <span className="text-success bg-success/20 border border-success w-8 h-8 rounded-md font-bold flex justify-center items-center">
+      <span
+          className="text-success bg-success/20 border border-success w-8 h-8 rounded-md font-bold flex justify-center items-center">
       W
     </span>
   )
@@ -270,7 +271,8 @@ export function WinBadge() {
 
 export function DrawBadge() {
   return (
-    <span className="text-muted-foreground bg-muted border border-border w-8 h-8 rounded-md font-bold flex justify-center items-center">
+      <span
+          className="text-muted-foreground bg-muted border border-border w-8 h-8 rounded-md font-bold flex justify-center items-center">
       D
     </span>
   )
