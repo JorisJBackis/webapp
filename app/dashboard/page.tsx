@@ -10,15 +10,21 @@ import MyNeeds from "@/components/marketplace/my-needs";
 import PlayerDashboard from "@/components/dashboard/player-dashboard";
 
 export default async function DashboardPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Get the current user
+  
+  
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
+  if (!user) {
+    redirect('/auth/login')
+  }
+
   // Get the user's profile with club information
-  const { data: profile } = await supabase.from("profiles").select("*, clubs(*)").eq("id", user?.id).single()
+  const { data: profile } = await supabase.from("profiles").select("*, clubs(*)").eq("id", user.id).single()
 
   // If user is a player, check if they need onboarding
   if (profile?.user_type === 'player') {
@@ -83,7 +89,7 @@ export default async function DashboardPage() {
   return (
     <div className="container py-8">
       <div className="mb-8 flex items-center">
-        <div className="mr-3 h-10 w-10 overflow-hidden rounded-full bg-white shadow">
+        <div className="mr-3 h-10 w-10 overflow-hidden rounded-full bg-background shadow-sm">
           <Image
             src={clubLogo || "/placeholder.svg"}
             alt={clubName}
@@ -93,34 +99,34 @@ export default async function DashboardPage() {
           />
         </div>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-footylabs-newblue">{clubName} Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-primary">{clubName} Dashboard</h1>
           <p className="text-muted-foreground">View analytics and insights for your football club</p>
         </div>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="bg-gray-100 text-black">
-          <TabsTrigger value="overview" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
+        <TabsList className="bg-muted text-muted-foreground">
+          <TabsTrigger value="overview" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             Overview
           </TabsTrigger>
-          <TabsTrigger value="players" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
+          <TabsTrigger value="players" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             Players
           </TabsTrigger>
-          <TabsTrigger value="comparison" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
+          <TabsTrigger value="comparison" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             Team Comparison
           </TabsTrigger>
-          <TabsTrigger value="my-activity" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
+          <TabsTrigger value="my-activity" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             My Club's Activity
           </TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="space-y-6">
-          <PerformanceOverview clubId={profile?.club_id} />
+          <PerformanceOverview clubId={profile?.club_id ?? undefined} />
         </TabsContent>
         <TabsContent value="players" className="space-y-6">
-          <PlayerStats clubId={profile?.club_id} />
+          <PlayerStats clubId={profile?.club_id ?? undefined} />
         </TabsContent>
         <TabsContent value="comparison" className="space-y-6">
-          <TeamComparison clubId={profile?.club_id} />
+          <TeamComparison clubId={profile?.club_id ?? undefined} />
         </TabsContent>
         <TabsContent value="my-activity" className="space-y-6">
           <MyListings />

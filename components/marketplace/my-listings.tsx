@@ -46,9 +46,9 @@ type ClubPlayer = {
 const listingFormSchema = z.object({
     // Use string for wyscout_player_id because form Select returns string value
     wyscout_player_id: z.string().min(1, "Player selection is required"),
-    listing_type: z.enum(['loan', 'transfer'], { required_error: "Listing type is required" }),
-    asking_price: z.coerce.number().positive("Price must be positive").optional().nullable(),
-    loan_fee: z.coerce.number().positive("Fee must be positive").optional().nullable(),
+    listing_type: z.enum(['loan', 'transfer'], { error: "Listing type is required" }),
+    asking_price: z.number().positive("Price must be positive").optional().nullable(),
+    loan_fee: z.number().positive("Fee must be positive").optional().nullable(),
     loan_duration: z.string().optional().nullable(),
     listing_notes: z.string().max(500, "Notes too long").optional().nullable(),
 }).refine(data => {
@@ -451,7 +451,7 @@ export default function MyListings() {
                 </Button>
             </CardHeader>
             <CardContent>
-                {loading && <div className="flex justify-center items-center py-10"><Loader2 className="h-8 w-8 animate-spin text-[#31348D]" /></div>}
+                {loading && <div className="flex justify-center items-center py-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}
                 {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
                 {!loading && !error && myListings.length === 0 && <p className="text-center text-muted-foreground py-10">You haven't listed any players yet.</p>}
                 {!loading && !error && myListings.length > 0 && (
@@ -473,7 +473,7 @@ export default function MyListings() {
                                     <TableCell className="font-medium">{listing.player_name || 'N/A'}</TableCell>
                                     <TableCell><Badge variant="outline">{listing.player_pos || 'N/A'}</Badge></TableCell>
                                     <TableCell><Badge variant={listing.listing_type === 'loan' ? 'secondary' : 'default'}>{listing.listing_type ? listing.listing_type.charAt(0).toUpperCase() + listing.listing_type.slice(1) : 'N/A'}</Badge></TableCell>
-                                    <TableCell><Badge variant={listing.status === 'active' ? 'outline' : 'destructive'} className={listing.status === 'active' ? 'border-green-500 text-green-600' : ''}>{listing.status ? listing.status.charAt(0).toUpperCase() + listing.status.slice(1) : 'N/A'}</Badge></TableCell>
+                                    <TableCell><Badge variant={listing.status === 'active' ? 'outline-solid' : 'destructive'} className={listing.status === 'active' ? 'border-success text-green-600' : ''}>{listing.status ? listing.status.charAt(0).toUpperCase() + listing.status.slice(1) : 'N/A'}</Badge></TableCell>
                                     <TableCell> {listing.listing_type === 'transfer' ? (listing.asking_price ? `€${listing.asking_price.toLocaleString()}` : '-') : (listing.loan_fee ? `€${listing.loan_fee.toLocaleString()}` : '-')} {listing.listing_type === 'loan' && listing.loan_duration && ` (${listing.loan_duration})`}</TableCell>
                                     <TableCell>{listing.listing_created_at ? new Date(listing.listing_created_at).toLocaleDateString() : 'N/A'}</TableCell>
                                     <TableCell className="text-right"> <Button variant="ghost" size="icon" className="h-8 w-8 mr-1" onClick={(e) => {e.stopPropagation(); handleOpenEditModal(listing)}}><Pencil className="h-4 w-4"/><span className="sr-only">Edit</span></Button> <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700" onClick={(e) => {e.stopPropagation(); handleDeleteClick(listing)}}><Trash2 className="h-4 w-4"/><span className="sr-only">Delete</span></Button> </TableCell>

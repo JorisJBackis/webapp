@@ -6,16 +6,16 @@ import { Logo } from "@/components/logo"
 
 export default function VerificationPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 py-12">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
       <div className="mb-8">
         <Logo />
       </div>
-      <Card className="w-full max-w-md border-0 shadow-lg bg-gray-50">
+      <Card className="w-full max-w-md border shadow-lg bg-card">
         <CardHeader className="space-y-1">
           <div className="flex justify-center mb-4">
-            <Mail className="h-12 w-12 text-[#3144C3]" />
+            <Mail className="h-12 w-12 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl font-bold text-center text-[#3144C3]">Check your email</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center text-primary">Check your email</CardTitle>
           <CardDescription className="text-center">
             We've sent you a verification link to complete your registration
           </CardDescription>
@@ -27,12 +27,12 @@ export default function VerificationPage() {
           </p>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
-          <Button asChild className="w-full bg-[#3144C3] hover:bg-[#3144C3]/90">
+          <Button asChild className="w-full bg-primary hover:bg-primary/90">
             <Link href="/auth/login">Return to login</Link>
           </Button>
           <p className="text-xs text-center text-muted-foreground">
             Didn't receive an email? Check your spam folder or{" "}
-            <Link href="/auth/register" className="text-[#3144C3] underline-offset-4 hover:underline">
+            <Link href="/auth/register" className="text-primary underline-offset-4 hover:underline">
               try again
             </Link>
           </p>

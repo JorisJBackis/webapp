@@ -23,15 +23,15 @@ export default async function ProfilePage() {
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="border-0 shadow-md">
-          <CardHeader className="border-b bg-footylabs-darkblue text-white">
+          <CardHeader className="border-b bg-footylabs-darkblue text-primary-foreground">
             <CardTitle>Account Information</CardTitle>
-            <CardDescription className="text-white/80">Your personal account details</CardDescription>
+            <CardDescription className="text-primary-foreground/80">Your personal account details</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="flex items-center space-x-4">
               <Avatar className="h-16 w-16">
                 <AvatarImage src={user.user_metadata?.avatar_url || ""} alt={user.email || ""} />
-                <AvatarFallback className="bg-footylabs-blue text-white text-lg">
+                <AvatarFallback className="bg-footylabs-blue text-primary-foreground text-lg">
                   {user.email?.charAt(0).toUpperCase() || "U"}
                 </AvatarFallback>
               </Avatar>
@@ -46,9 +46,9 @@ export default async function ProfilePage() {
         </Card>
 
         <Card className="border-0 shadow-md">
-          <CardHeader className="border-b bg-footylabs-darkblue text-white">
+          <CardHeader className="border-b bg-footylabs-darkblue text-primary-foreground">
             <CardTitle>Club Information</CardTitle>
-            <CardDescription className="text-white/80">Your associated football club</CardDescription>
+            <CardDescription className="text-primary-foreground/80">Your associated football club</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             {club ? (
@@ -96,9 +96,9 @@ export default async function ProfilePage() {
 
       <div className="mt-6">
         <Card className="border-0 shadow-md">
-          <CardHeader className="border-b bg-footylabs-darkblue text-white">
+          <CardHeader className="border-b bg-footylabs-darkblue text-primary-foreground">
             <CardTitle>Registration Details</CardTitle>
-            <CardDescription className="text-white/80">Information about your profile record</CardDescription>
+            <CardDescription className="text-primary-foreground/80">Information about your profile record</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="grid gap-4 md:grid-cols-2">

@@ -49,14 +49,14 @@ const sixMetricsWithLegend: { [position: string]: string[] } = {
     'Centre Forward': [ 'Non-penalty goals per 90_percentile', 'xG per 90_percentile', 'Shots on target per 90_percentile', 'Touches in box per 90_percentile', 'xA per 90_percentile', 'Offensive duels won, %_percentile' ]
 };
 
-const formatFootylabsScore = (score: number | string | null | undefined): string => {
+const formatFootylabsScore = (score: number | string | boolean | null | undefined): string => {
     if (score === null || score === undefined) return "N/A";
     const numScore = Number(score);
     if (isNaN(numScore)) return "N/A";
     return (numScore * 10).toFixed(1); // Assuming score is 0-1 percentile
 };
 
-const getScoreColor = (score: number | string | null | undefined): string => {
+const getScoreColor = (score: number | string | boolean | null | undefined): string => {
     if (score === null || score === undefined) return "text-muted-foreground";
     const numScore = Number(score);
     if (isNaN(numScore)) return "text-muted-foreground";
@@ -127,15 +127,15 @@ const CustomRadarTooltip = ({ active, payload }: any) => {
                 <div className="space-y-1">
                     <div className="flex justify-between items-center">
                         <span className="text-muted-foreground mr-2">Percentile:</span>
-                        <span className="font-mono text-[#31348D] font-medium">{dataPoint.percentile}%</span>
+                        <span className="font-mono text-primary font-medium">{dataPoint.percentile}%</span>
                     </div>
                     <div className="flex justify-between items-center">
                         <span className="text-muted-foreground mr-2">Actual Value:</span>
-                        <span className="font-mono text-[#31348D] font-medium">{dataPoint.actualValue}</span>
+                        <span className="font-mono text-primary font-medium">{dataPoint.actualValue}</span>
                     </div>
                     <div className="flex justify-between items-center">
                         <span className="text-muted-foreground mr-2">League Average:</span>
-                        <span className="font-mono text-[#31348D] font-medium">{dataPoint.leagueAverage}</span>
+                        <span className="font-mono text-primary font-medium">{dataPoint.leagueAverage}</span>
                     </div>
                 </div>
             </div>
@@ -165,6 +165,7 @@ export default function PlayerDetailModal({ isOpen, onClose, player }: {
     useEffect(() => {
         const fetchUser = async () => {
             if (isOpen) {
+                if (!supabase) return;
                 const { data: { user } } = await supabase.auth.getUser();
                 setUserEmail(user?.email ?? null);
                 // Reset request status when a new player modal is opened
@@ -191,6 +192,7 @@ export default function PlayerDetailModal({ isOpen, onClose, player }: {
 
             setLoadingAverages(true);
             try {
+                if (!supabase) return;
                 const { data, error } = await supabase.rpc('get_metric_averages_for_position_league', {
                     p_position_name: currentPosition,
                     p_league_name: player.player_league_name // Use league from player prop
@@ -229,7 +231,7 @@ export default function PlayerDetailModal({ isOpen, onClose, player }: {
 
     // <<< ADD THIS ENTIRE FUNCTION >>>
     const handleRequestSalary = async () => {
-        if (!player || !userEmail || !player.club_id) {
+        if (!player || !userEmail || !player.club_id || !player.name) {
             toast({
                 title: "Error",
                 description: "Missing player or user info to make a request.",
@@ -241,6 +243,7 @@ export default function PlayerDetailModal({ isOpen, onClose, player }: {
         setIsEstimating(true);
 
         try {
+            if (!supabase) return;
             const { error } = await supabase.from("salary_estimation_requests").insert({
                 user_email: userEmail,
                 club_id: player.club_id,
@@ -283,7 +286,7 @@ export default function PlayerDetailModal({ isOpen, onClose, player }: {
                 <DialogHeader>
                     <DialogTitle className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <span className="text-[#31348D]">{player.name}</span>
+                            <span className="text-primary">{player.name}</span>
                             <Button
                                 onClick={handleRequestSalary}
                                 disabled={isEstimating || hasRequested}
@@ -307,10 +310,10 @@ export default function PlayerDetailModal({ isOpen, onClose, player }: {
                 <div className="mt-4">
                     {/* Summary Cards ... */}
                     <div className="mb-6 grid grid-cols-4 gap-4">
-                        <div className="rounded-lg bg-gray-50 p-3 text-center"><div className="text-sm text-gray-500">Minutes</div><div className="text-xl font-bold text-[#31348D]">{displayMinutes}</div></div>
-                        <div className="rounded-lg bg-gray-50 p-3 text-center"><div className="text-sm text-gray-500">Goals</div><div className="text-xl font-bold text-[#31348D]">{displayGoals}</div></div>
-                        <div className="rounded-lg bg-gray-50 p-3 text-center"><div className="text-sm text-gray-500">Assists</div><div className="text-xl font-bold text-[#31348D]">{displayAssists}</div></div>
-                        <div className="rounded-lg bg-gray-50 p-3 text-center"><div className="text-sm text-gray-500">Footylabs Score</div><div className={`text-xl font-bold ${scoreColor}`}>{displayFootylabsScore}</div></div>
+                        <div className="rounded-lg bg-gray-50 p-3 text-center"><div className="text-sm text-muted-foreground">Minutes</div><div className="text-xl font-bold text-primary">{displayMinutes}</div></div>
+                        <div className="rounded-lg bg-gray-50 p-3 text-center"><div className="text-sm text-muted-foreground">Goals</div><div className="text-xl font-bold text-primary">{displayGoals}</div></div>
+                        <div className="rounded-lg bg-gray-50 p-3 text-center"><div className="text-sm text-muted-foreground">Assists</div><div className="text-xl font-bold text-primary">{displayAssists}</div></div>
+                        <div className="rounded-lg bg-gray-50 p-3 text-center"><div className="text-sm text-muted-foreground">Footylabs Score</div><div className={`text-xl font-bold ${scoreColor}`}>{displayFootylabsScore}</div></div>
                     </div>
 
                     {/* Radar Chart */}

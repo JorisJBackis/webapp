@@ -33,8 +33,8 @@ type TeamMatchStats = {
 
 // Define the processed match data type
 type ProcessedMatch = {
-  match_id: string
-  date: string
+  match_id: string | null
+  date: string | null
   month: string
   goals_scored: number
   goals_conceded: number
@@ -100,6 +100,7 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
 
       try {
         // Fetch all match stats for the team
+        if (!supabase) return;
         const { data: teamMatches, error: teamMatchesError } = await supabase
           .from("team_match_stats")
           .select("*")
@@ -146,7 +147,7 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
             (stat) => stat.match_id === match.match_id && stat.team_id !== clubId,
           )
 
-          if (opponentStats) {
+          if (opponentStats && match.date && match.match_id) {
             const { month } = formatDateAndGetMonth(match.date)
 
             const goalsScored = extractGoals(match.stats)
@@ -177,7 +178,7 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
         console.log("Processed matches:", processedMatches)
         setDebugInfo(debugMatches)
 
-        processedMatches.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        processedMatches.sort((a, b) => new Date(a.date!).getTime() - new Date(b.date!).getTime());
 
         // Calculate statistics
         const totalMatches = processedMatches.length
@@ -198,7 +199,7 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
         const monthMap = new Map<string, MonthlyPerformanceData>();
 
         processedMatches.forEach((match) => {
-          const matchDate = new Date(match.date);
+          const matchDate = new Date(match.date!);
           const monthYearKey = `${matchDate.getFullYear()}-${matchDate.getMonth()}`;
 
           if (!monthMap.has(monthYearKey)) {
@@ -263,7 +264,7 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-          <div className="bg-white p-3 border rounded shadow-sm">
+          <div className="bg-background p-3 border rounded shadow-xs">
             <p className="font-medium">{`${label}`}</p>
             {payload.map((entry: any, index: number) => {
               // Wins, Draws, Losses should be whole numbers
@@ -286,16 +287,16 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       <Card className="col-span-full border-0 shadow-md">
-        <CardHeader className="border-b bg-gray-100">
-          <CardTitle className="text-[#31348D]">Season Performance</CardTitle>
-          <CardDescription className="text-black/70">
+        <CardHeader className="border-b bg-muted">
+          <CardTitle className="text-primary">Season Performance</CardTitle>
+          <CardDescription className="text-muted-foreground">
             Overview of match results and goals for the current season
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
           {loading ? (
             <div className="flex h-[300px] items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-[#31348D]" />
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : error ? (
             <Alert variant="destructive">
@@ -306,19 +307,19 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
             <div className="flex h-[300px] items-center justify-center flex-col">
               <p className="text-muted-foreground">No match data available</p>
               {process.env.NODE_ENV === "development" && (
-                <pre className="text-xs mt-4 p-2 bg-gray-100 rounded max-h-40 overflow-auto">{debugInfo}</pre>
+                <pre className="text-xs mt-4 p-2 bg-muted rounded max-h-40 overflow-auto">{debugInfo}</pre>
               )}
             </div>
           ) : (
             <Tabs defaultValue="results" className="space-y-4">
-              <TabsList className="bg-gray-100 text-black">
+              <TabsList className="bg-muted text-muted-foreground">
                 <TabsTrigger
                   value="results"
-                  className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white"
+                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
                 >
                   Match Results
                 </TabsTrigger>
-                <TabsTrigger value="goals" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
+                <TabsTrigger value="goals" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                   Goals
                 </TabsTrigger>
               </TabsList>
@@ -329,11 +330,12 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
                       <YAxis />
-                      <Tooltip content={<CustomTooltip />} />
+                      <Tooltip content={<CustomTooltip />}
+                               cursor={{fill: "var(--color-muted)", opacity: 0.5}}/>
                       <Legend />
-                      <Bar dataKey="wins" name="Wins" stackId="a" fill="#22c55e" />
+                      <Bar dataKey="wins" name="Wins" stackId="a"  fill="var(--color-success)" />
                       <Bar dataKey="draws" name="Draws" stackId="a" fill="#f97316" />
-                      <Bar dataKey="losses" name="Losses" stackId="a" fill="#ef4444" />
+                      <Bar dataKey="losses" name="Losses" stackId="a"   fill="var(--color-destructive)" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -353,7 +355,7 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
                         name="Goals Scored per 90"
                         stroke="#3949AB"
                         strokeWidth={2}
-                        dot={{ r: 4 }}
+                        dot={{ r: 4 }}R
                         activeDot={{ r: 6 }}
                       />
                       <Line
@@ -375,18 +377,18 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
       </Card>
 
       <Card className="border-0 shadow-md">
-        <CardHeader className="border-b bg-gray-100">
-          <CardTitle className="text-[#31348D]">Win Rate</CardTitle>
-          <CardDescription className="text-black/70">Current season win percentage</CardDescription>
+        <CardHeader className="border-b bg-muted">
+          <CardTitle className="text-primary">Win Rate</CardTitle>
+          <CardDescription className="text-muted-foreground">Current season win percentage</CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
           {loading ? (
             <div className="flex h-24 items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-[#31348D]" />
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center space-y-2">
-              <div className="text-5xl font-bold text-footylabs-newblue">{winRate}%</div>
+              <div className="text-5xl font-bold text-primary">{winRate}%</div>
               <p className="text-sm text-muted-foreground">
                 {totalMatches > 0
                   ? `${performanceData.reduce((sum, month) => sum + month.wins, 0)} wins in ${totalMatches} matches`
@@ -398,18 +400,18 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
       </Card>
 
       <Card className="border-0 shadow-md">
-        <CardHeader className="border-b bg-gray-100">
-          <CardTitle className="text-[#31348D]">Goals Per Game</CardTitle>
-          <CardDescription className="text-black/70">Average goals scored per match</CardDescription>
+        <CardHeader className="border-b bg-muted">
+          <CardTitle className="text-primary">Goals Per Game</CardTitle>
+          <CardDescription className="text-muted-foreground">Average goals scored per match</CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
           {loading ? (
             <div className="flex h-24 items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-[#31348D]" />
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center space-y-2">
-              <div className="text-5xl font-bold text-footylabs-newblue">{goalsPerGame}</div>
+              <div className="text-5xl font-bold text-primary">{goalsPerGame}</div>
               <p className="text-sm text-muted-foreground">
                 {totalMatches > 0
                   ? `${performanceData.reduce((sum, month) => sum + month.goalsScored, 0)} goals in ${totalMatches} matches`
@@ -421,18 +423,18 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
       </Card>
 
       <Card className="border-0 shadow-md">
-        <CardHeader className="border-b bg-gray-100">
-          <CardTitle className="text-[#31348D]">Clean Sheets</CardTitle>
-          <CardDescription className="text-black/70">Matches without conceding</CardDescription>
+        <CardHeader className="border-b bg-muted">
+          <CardTitle className="text-primary">Clean Sheets</CardTitle>
+          <CardDescription className="text-muted-foreground">Matches without conceding</CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
           {loading ? (
             <div className="flex h-24 items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-[#31348D]" />
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center space-y-2">
-              <div className="text-5xl font-bold text-footylabs-newblue">{cleanSheets}</div>
+              <div className="text-5xl font-bold text-primary">{cleanSheets}</div>
               <p className="text-sm text-muted-foreground">
                 {totalMatches > 0
                   ? `${Math.round((cleanSheets / totalMatches) * 100)}% of all matches`

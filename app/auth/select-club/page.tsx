@@ -36,6 +36,7 @@ export default function SelectClubPage() {
   useEffect(() => {
     const fetchClubs = async () => {
       try {
+        if (!supabase) return;
         const { data, error } = await supabase.from("clubs").select("id, name, logo_url").order("name")
 
         if (error) {
@@ -64,6 +65,7 @@ export default function SelectClubPage() {
     setError(null)
 
     try {
+      if (!supabase) return;
       const {
         data: { session },
       } = await supabase.auth.getSession()
@@ -113,13 +115,13 @@ export default function SelectClubPage() {
     search === "" ? clubs : clubs.filter((club) => club.name.toLowerCase().includes(search.toLowerCase()))
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <div className="mb-8 absolute top-8">
         <Logo />
       </div>
       <Card className="w-full max-w-md bg-gray-50 shadow-lg">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-[#3144C3]">Select Your Club</CardTitle>
+          <CardTitle className="text-2xl font-bold text-primary">Select Your Club</CardTitle>
           <CardDescription>Choose the football club you represent</CardDescription>
         </CardHeader>
         <CardContent>
@@ -140,7 +142,7 @@ export default function SelectClubPage() {
                       <div className="flex items-center">
                         <Avatar className="h-6 w-6 mr-2">
                           <AvatarImage src={selectedClub.logo_url || ""} alt={selectedClub.name} />
-                          <AvatarFallback className="bg-[#3144C3] text-white text-xs">
+                          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                             {selectedClub.name.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
@@ -170,7 +172,7 @@ export default function SelectClubPage() {
                           >
                             <Avatar className="h-6 w-6 mr-2">
                               <AvatarImage src={club.logo_url || ""} alt={club.name} />
-                              <AvatarFallback className="bg-[#3144C3] text-white text-xs">
+                              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                                 {club.name.charAt(0)}
                               </AvatarFallback>
                             </Avatar>
@@ -190,7 +192,7 @@ export default function SelectClubPage() {
               </Popover>
             </div>
 
-            <Button type="submit" className="w-full bg-[#3144C3] hover:bg-[#3144C3]/90" disabled={loading}>
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
               {loading ? "Saving..." : "Continue"}
             </Button>
           </form>

@@ -29,6 +29,7 @@ export default function BrowseListings() {
     // Fetch user's club ID (same as before)
     useEffect(() => {
         const getClubId = async () => {
+            if (!supabase) return;
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.user) {
                 const { data: profile, error: profileError } = await supabase
@@ -67,6 +68,7 @@ export default function BrowseListings() {
                 console.log("Fetching browse listings via RPC, excluding club ID:", userClubId);
 
                 // Call the database function
+                if (!supabase) return;
                 const { data, error: rpcError } = await supabase
                     .rpc('get_player_listings', {
                         requesting_club_id: userClubId,
@@ -139,7 +141,7 @@ export default function BrowseListings() {
                     </Select>
                 </div>
 
-                {loading && <div className="flex justify-center items-center py-10"><Loader2 className="h-8 w-8 animate-spin text-[#31348D]" /></div>}
+                {loading && <div className="flex justify-center items-center py-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}
                 {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
                 {!loading && !error && listings.length === 0 && <p className="text-center text-muted-foreground py-10">No active player listings found from other clubs.</p>}
                 {!loading && !error && listings.length > 0 && filteredListings.length === 0 && <p className="text-center text-muted-foreground py-10">No listings match your current filters.</p>}

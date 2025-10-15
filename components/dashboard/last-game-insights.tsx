@@ -21,12 +21,12 @@ type GameStats = {
 }
 
 const StatCard = ({ title, valueLeft, valueRight, teamLeft, teamRight }: { title: string, valueLeft: string | number, valueRight?: string | number, teamLeft: string, teamRight?: string }) => (
-    <Card className="border-0 shadow-sm text-center">
-      <CardHeader className="pb-2"><CardTitle className="text-lg text-[#31348D]">{title}</CardTitle></CardHeader>
+    <Card className="border-0 shadow-xs text-center">
+      <CardHeader className="pb-2"><CardTitle className="text-lg text-primary">{title}</CardTitle></CardHeader>
       <CardContent>
         <div className="flex justify-center items-center">
-          <div className="px-3"><div className="text-4xl font-bold">{valueLeft}</div><div className="text-xs text-gray-500 truncate" title={teamLeft}>{teamLeft}</div></div>
-          {valueRight !== undefined && teamRight && (<><div className="text-xl font-bold px-2">-</div><div className="px-3"><div className="text-4xl font-bold">{valueRight}</div><div className="text-xs text-gray-500 truncate" title={teamRight}>{teamRight}</div></div></>)}
+          <div className="px-3"><div className="text-4xl font-bold">{valueLeft}</div><div className="text-xs text-muted-foreground truncate" title={teamLeft}>{teamLeft}</div></div>
+          {valueRight !== undefined && teamRight && (<><div className="text-xl font-bold px-2">-</div><div className="px-3"><div className="text-4xl font-bold">{valueRight}</div><div className="text-xs text-muted-foreground truncate" title={teamRight}>{teamRight}</div></div></>)}
         </div>
       </CardContent>
     </Card>
@@ -79,6 +79,7 @@ export default function LastGameInsights({ clubId }: { clubId?: number }) {
         // <<< FIX: REVERT TO THE ORIGINAL, WORKING DATA FETCHING PATTERN >>>
 
         // Step 1: Fetch the last game for the logged-in team
+        if (!supabase) return;
         const { data: teamGames, error: teamGamesError } = await supabase
             .from("team_match_stats")
             .select("*")
@@ -91,6 +92,11 @@ export default function LastGameInsights({ clubId }: { clubId?: number }) {
         }
         const lastTeamGame = teamGames[0];
 
+        if (!lastTeamGame.match_id) {
+          throw new Error("Invalid match data");
+        }
+
+
         // Step 2: Fetch the opponent's stats for the same game
         const { data: opponentGames, error: opponentGamesError } = await supabase
             .from("team_match_stats")
@@ -102,6 +108,10 @@ export default function LastGameInsights({ clubId }: { clubId?: number }) {
           throw new Error(opponentGamesError?.message || "No opponent data for the last game");
         }
         const opponentGame = opponentGames[0];
+
+        if (!opponentGame.team_id) {
+          throw new Error("Invalid opponent data");
+        }
 
         // Step 3: Fetch team names separately
         const { data: teams, error: teamsError } = await supabase
@@ -126,12 +136,16 @@ export default function LastGameInsights({ clubId }: { clubId?: number }) {
         const homeTeam = isYourTeamHome ? yourTeamData : opponentData;
         const awayTeam = isYourTeamHome ? opponentData : yourTeamData;
 
-        // This is where the goals were being missed before. We now correctly set them.
-        homeTeam.stats.goals = Number(homeTeam.stats?.goals || homeTeam.stats?.Goals || 0);
-        awayTeam.stats.goals = Number(awayTeam.stats?.goals || awayTeam.stats?.Goals || 0);
+        if (!homeTeam.stats) homeTeam.stats = {};
+        if (!awayTeam.stats) awayTeam.stats = {};
+        
 
-        setHomeTeamGame(homeTeam);
-        setAwayTeamGame(awayTeam);
+                // This is where the goals were being missed before. We now correctly set them.
+        (homeTeam.stats as GameStats['stats']).goals = Number((homeTeam.stats as any).goals || (homeTeam.stats as any).Goals || 0);
+        (awayTeam.stats as GameStats['stats']).goals = Number((awayTeam.stats as any).goals || (awayTeam.stats as any).Goals || 0);
+
+        setHomeTeamGame(homeTeam as GameStats);
+        setAwayTeamGame(awayTeam as GameStats);
 
         // Step 5: Prepare chart data
         const comparisonMetrics = [
@@ -143,8 +157,8 @@ export default function LastGameInsights({ clubId }: { clubId?: number }) {
 
         const chartData = comparisonMetrics.map((metric) => ({
           name: metric.name,
-          [homeTeam.team_name!]: Number.parseFloat(homeTeam.stats[metric.key] || "0"),
-          [awayTeam.team_name!]: Number.parseFloat(awayTeam.stats[metric.key] || "0"),
+          [homeTeam.team_name!]: Number.parseFloat((homeTeam.stats as any)?.[metric.key] || "0"),
+          [awayTeam.team_name!]: Number.parseFloat((awayTeam.stats as any)?.[metric.key] || "0"),
         }));
 
       } catch (err) {
@@ -177,10 +191,10 @@ export default function LastGameInsights({ clubId }: { clubId?: number }) {
 
   if (loading) {
     return (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div className="bg-background rounded-lg shadow-md p-6 mb-8">
           <h2 className="text-xl font-semibold mb-4">Last Game Insights</h2>
           <div className="flex h-[200px] items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-[#31348D]" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         </div>
     )
@@ -188,7 +202,7 @@ export default function LastGameInsights({ clubId }: { clubId?: number }) {
 
   if (error) {
     return (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div className="bg-background rounded-lg shadow-md p-6 mb-8">
           <h2 className="text-xl font-semibold mb-4">Last Game Insights</h2>
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -200,15 +214,15 @@ export default function LastGameInsights({ clubId }: { clubId?: number }) {
 
   if (!homeTeamGame || !awayTeamGame) {
     return (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div className="bg-background rounded-lg shadow-md p-6 mb-8">
           <h2 className="text-xl font-semibold mb-4">Last Game Insights</h2>
-          <p className="text-gray-500">No game data available to display.</p>
+          <p className="text-muted-foreground">No game data available to display.</p>
         </div>
     )
   }
 
-  const homeGoals = Number.parseFloat(homeTeamGame.stats.goals || "0");
-  const awayGoals = Number.parseFloat(awayTeamGame.stats.goals || "0");
+  const homeGoals = Number.parseFloat(String(homeTeamGame.stats.goals || 0));
+  const awayGoals = Number.parseFloat(String(awayTeamGame.stats.goals || 0));
   const homeXG = Number.parseFloat(homeTeamGame.stats.xG || "0").toFixed(2);
   const awayXG = Number.parseFloat(awayTeamGame.stats.xG || "0").toFixed(2);
   const homeShots = Number.parseFloat(homeTeamGame.stats["Total Shots"] || "0");
@@ -218,10 +232,10 @@ export default function LastGameInsights({ clubId }: { clubId?: number }) {
   const gameDate = new Date(homeTeamGame.date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 
   return (
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+      <div className="bg-background rounded-lg shadow-md p-6 mb-8">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold">Last Game Insights</h2>
-          <div className="text-sm text-gray-500">{homeTeamGame.team_name} vs {awayTeamGame.team_name} • {gameDate}</div>
+          <div className="text-sm text-muted-foreground">{homeTeamGame.team_name} vs {awayTeamGame.team_name} • {gameDate}</div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -257,16 +271,19 @@ export default function LastGameInsights({ clubId }: { clubId?: number }) {
                 {/* <<< CHANGE: Dynamic Y-Axis Domain >>> */}
                 <YAxis domain={isCurrentCategoryPercentage ? [0, 100] : [0, 'auto']} />
                 <Tooltip
-                    formatter={(value, name, props) => {
-                      const metricConfig = METRIC_CATEGORIES[selectedCategory as keyof typeof METRIC_CATEGORIES]
-                          .find(m => m.name === props.payload.name);
-
-                      const formattedValue = typeof value === 'number' ? value.toFixed(2) : value;
-
-                      if (metricConfig?.isPercentage) {
-                        return [`${formattedValue}%`, name];
-                      }
-                      return [formattedValue, name];
+                    cursor={{fill: "var(--color-muted)", opacity: 0.5}}
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null
+                      return (
+                          <div className="bg-background p-3 border rounded shadow-xs">
+                            <p className="font-medium text-foreground">{label}</p>
+                            {payload.map((entry, i) => (
+                                <p key={i} className="text-muted-foreground">
+                                  {entry.name}: {entry.value}
+                                </p>
+                            ))}
+                          </div>
+                      )
                     }}
                 />
                 <Legend />

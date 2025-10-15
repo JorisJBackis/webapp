@@ -85,7 +85,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
     <div className="container py-8">
       {/* Pending Data Request Alert */}
       {data.dataRequest && (
-        <Card className="mb-6 border-blue-200 bg-blue-50">
+        <Card className="mb-6 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950">
           <CardContent className="pt-6">
             <div className="flex items-start space-x-3">
               <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
@@ -113,15 +113,15 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
 
       {/* Demo Data Alert for Players Without Stats */}
       {!data.wyscoutPlayer && !data.dataRequest && (
-        <Card className="mb-6 border-amber-200 bg-amber-50">
+        <Card className="mb-6 border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 ">
           <CardContent className="pt-6">
             <div className="flex items-start space-x-3">
-              <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+              <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
               <div className="flex-1">
-                <h3 className="font-semibold text-amber-900 mb-1">
+                <h3 className="font-semibold text-amber-900 dark:text-amber-100 mb-1">
                   Demo Mode - Sample Data Displayed
                 </h3>
-                <p className="text-sm text-amber-800">
+                <p className="text-sm text-amber-800 dark:text-amber-200">
                   This is a demo of how your profile and stats will look once we have your data in our database.
                   For now, you can freely use the marketplace/opportunities window to find club offers.
                 </p>
@@ -135,7 +135,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-footylabs-newblue">
+            <h1 className="text-3xl font-bold tracking-tight text-primary">
               {playerName}'s Dashboard
             </h1>
             <p className="text-muted-foreground">
@@ -144,7 +144,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
           </div>
           <Button
             onClick={() => setShowStatsModal(true)}
-            className="bg-[#3144C3] hover:bg-[#3144C3]/90"
+            className="bg-primary hover:bg-primary/90"
             disabled={!data.wyscoutPlayer && !data.dataRequest}
           >
             <BarChart3 className="h-4 w-4 mr-2" />
@@ -154,17 +154,17 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="bg-gray-100 text-black">
-          <TabsTrigger value="overview" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
+        <TabsList className="bg-muted text-muted-foreground">
+          <TabsTrigger value="overview" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             Performance Overview
           </TabsTrigger>
-          <TabsTrigger value="opportunities" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
+          <TabsTrigger value="opportunities" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             Opportunities
           </TabsTrigger>
-          <TabsTrigger value="profile" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
+          <TabsTrigger value="profile" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             My Profile
           </TabsTrigger>
-          <TabsTrigger value="insights" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
+          <TabsTrigger value="insights" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             AI Insights
           </TabsTrigger>
         </TabsList>
@@ -173,7 +173,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
         <TabsContent value="overview" className="space-y-6">
           {/* Key Performance Metrics */}
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            <Card className="border-l-4 border-l-green-500">
+            <Card className="border-l-4 border-l-success">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">FootyLabs Score</CardTitle>
                 <Award className="h-4 w-4 text-muted-foreground" />
@@ -240,7 +240,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <Sparkles className="h-5 w-5 mr-2 text-green-500" />
+                  <Sparkles className="h-5 w-5 mr-2 text-success" />
                   Your Strengths
                 </CardTitle>
               </CardHeader>
@@ -338,9 +338,9 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
         {/* Profile Tab */}
         <TabsContent value="profile" className="space-y-6">
           {/* Public Profile Card */}
-          <Card className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+          <Card className="bg-linear-to-r from-blue-600 to-purple-600 text-primary-foreground">
             <CardHeader>
-              <CardTitle className="flex items-center text-white">
+              <CardTitle className="flex items-center text-primary-foreground">
                 <Eye className="h-5 w-5 mr-2" />
                 Your Public Profile
               </CardTitle>
@@ -349,16 +349,16 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="bg-white/10 rounded-lg p-4">
+              <div className="bg-background/10 rounded-lg p-4">
                 <p className="text-sm mb-2 text-blue-100">Your profile link:</p>
-                <div className="flex items-center justify-between bg-white/20 rounded px-3 py-2">
+                <div className="flex items-center justify-between bg-background/20 rounded px-3 py-2">
                   <code className="text-sm font-mono">
                     {typeof window !== 'undefined' ? `${window.location.origin}/player/${data.user?.id}` : `/player/${data.user?.id}`}
                   </code>
                   <Button 
                     size="sm" 
                     variant="ghost" 
-                    className="text-white hover:bg-white/20"
+                    className="text-primary-foreground hover:bg-background/20 dark:hover:text-white"
                     onClick={() => {
                       const link = `${window.location.origin}/player/${data.user?.id}`
                       navigator.clipboard.writeText(link)
@@ -371,7 +371,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
               </div>
               <div className="flex gap-2 flex-wrap">
                 <Button
-                  className="bg-white text-blue-600 hover:bg-gray-100"
+                  className="bg-background text-blue-600 dark:text-blue-200 hover:bg-muted"
                   onClick={() => window.open(`/player/${data.user?.id}`, '_blank')}
                 >
                   <Eye className="h-4 w-4 mr-2" />
@@ -379,7 +379,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                 </Button>
                 <Button
                   variant="ghost"
-                  className="text-white border-white/30 hover:bg-white/20"
+                  className="text-primary-foreground border-white/30 hover:bg-background/20 dark:hover:text-white"
                   onClick={() => alert('Profile editing coming soon!')}
                 >
                   Edit Profile
@@ -391,7 +391,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="bg-white/10 hover:bg-white/20 text-white"
+                    className="bg-background/10 hover:bg-background/20 dark:hover:text-white text-primary-foreground"
                     onClick={() => {
                       // Placeholder for Facebook share
                       console.log("Share to Facebook")
@@ -405,7 +405,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="bg-white/10 hover:bg-white/20 text-white"
+                    className="bg-background/10 hover:bg-background/20 dark:hover:text-white text-primary-foreground"
                     onClick={() => {
                       // Placeholder for X (Twitter) share
                       console.log("Share to X")
@@ -419,7 +419,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="bg-white/10 hover:bg-white/20 text-white"
+                    className="bg-background/10 hover:bg-background/20 dark:hover:text-white text-primary-foreground"
                     onClick={() => {
                       // Placeholder for Instagram share
                       console.log("Share to Instagram")
@@ -536,7 +536,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
 
               {/* Performance Predictions */}
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-purple-50">
+                <div className="p-4 border rounded-lg bg-linear-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950">
                   <h4 className="font-medium flex items-center mb-2">
                     <Zap className="h-4 w-4 mr-2 text-blue-500" />
                     Potential Growth
@@ -551,9 +551,9 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                   </ul>
                 </div>
 
-                <div className="p-4 border rounded-lg bg-gradient-to-r from-green-50 to-yellow-50">
+                <div className="p-4 border rounded-lg bg-linear-to-r from-green-50 to-yellow-50 dark:from-emerald-950 dark:to-teal-900">
                   <h4 className="font-medium flex items-center mb-2">
-                    <Target className="h-4 w-4 mr-2 text-green-500" />
+                    <Target className="h-4 w-4 mr-2 text-success" />
                     Ideal Match
                   </h4>
                   <p className="text-sm text-muted-foreground mb-2">

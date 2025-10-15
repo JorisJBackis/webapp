@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { Loader2, AlertCircle, Trash2 } from "lucide-react"
+import {Loader2, AlertCircle, Trash2, EyeIcon} from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 // UI Components
@@ -14,6 +14,8 @@ import { Badge } from "@/components/ui/badge"
 
 // Import the player detail modal
 import PlayerDetailModal, { type PlayerDataForModal } from "@/components/common/player-detail-modal"
+import Link from "next/link";
+import {LastMatchWatchlist} from "@/components/scouting/last-match-watchlist";
 
 type WatchlistPlayer = {
   id: number
@@ -23,13 +25,13 @@ type WatchlistPlayer = {
   club_league?: string
   stats?: any
   watchlist_id: number
-  wyscout_player_id?: number
-  club_id?: number
+  wyscout_player_id?: number | null
+  club_id?: number | null
 }
 
 export default function MyWatchlist({ userClubId }: { userClubId: number }) {
   const [players, setPlayers] = useState<WatchlistPlayer[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
   const [removingIds, setRemovingIds] = useState<Set<number>>(new Set())
 
@@ -47,7 +49,7 @@ export default function MyWatchlist({ userClubId }: { userClubId: number }) {
 
     try {
       console.log("Fetching watchlist for club ID:", userClubId)
-
+      if (!supabase) return;
       const { data, error } = await supabase
         .from("watchlist")
         .select(`
@@ -99,6 +101,7 @@ export default function MyWatchlist({ userClubId }: { userClubId: number }) {
     setRemovingIds((prev) => new Set(prev).add(watchlistId))
 
     try {
+      if (!supabase) return;
       const { error } = await supabase.from("watchlist").delete().eq("id", watchlistId)
 
       if (error) throw error
@@ -164,79 +167,99 @@ export default function MyWatchlist({ userClubId }: { userClubId: number }) {
           <CardDescription>Players you're keeping an eye on. Click on a player to view detailed stats.</CardDescription>
         </CardHeader>
         <CardContent>
-          {loading && (
-            <div className="flex justify-center items-center py-20">
-              <Loader2 className="h-10 w-10 animate-spin text-[#31348D]" />
-            </div>
-          )}
-
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {!loading && !error && players.length === 0 && (
-            <div className="text-center py-10">
-              <p className="text-muted-foreground mb-4">Your watchlist is empty.</p>
-              <p className="text-sm text-muted-foreground">
-                Add players to your watchlist by clicking the star icon in the Browse Players tab.
-              </p>
-            </div>
-          )}
-
-          {!loading && !error && players.length > 0 && (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Club</TableHead>
-                    <TableHead>League</TableHead>
-                    <TableHead>Position</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {players.map((player) => (
-                    <TableRow
-                      key={player.watchlist_id}
-                      className="hover:bg-gray-50 cursor-pointer"
-                      onClick={() => handlePlayerClick(player)}
-                    >
-                      <TableCell className="font-medium">{player.name}</TableCell>
-                      <TableCell>{player.club_name}</TableCell>
-                      <TableCell>{player.club_league}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{player.position}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation() // Prevent row click when clicking remove button
-                            removeFromWatchlist(player.watchlist_id, player.name)
-                          }}
-                          disabled={removingIds.has(player.watchlist_id)}
-                          className="p-1 hover:bg-red-50 hover:text-red-600"
-                        >
-                          {removingIds.has(player.watchlist_id) ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </TableCell>
+          <>
+          {loading ? (
+              <div className="flex justify-center items-center py-20">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              </div>
+          ) : error ? (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+          ) : players.length === 0 ? (
+              <div className="text-center py-10">
+                <p className="text-muted-foreground mb-4">Your watchlist is empty.</p>
+                <p className="text-sm text-muted-foreground">
+                  Add players to your watchlist by clicking the star icon in the Browse Players tab.
+                </p>
+              </div>
+          ) : (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader className="bg-muted text-muted-foreground ">
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Club</TableHead>
+                      <TableHead>League</TableHead>
+                      <TableHead>Position</TableHead>
+                      <TableHead>Last Match</TableHead>
+                      {/* All Matches Head*/}
+                      <TableHead></TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    <>
+                    {players.map((player) => (
+                        <TableRow
+                            key={player.watchlist_id}
+                            className="hover:bg-muted/50 cursor-pointer"
+                            onClick={() => handlePlayerClick(player)}
+                        >
+                          <TableCell className="font-medium">{player.name}</TableCell>
+                          <TableCell>{player.club_name}</TableCell>
+                          <TableCell>{player.club_league}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{player.position}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <LastMatchWatchlist 
+                              playerId={player.id} 
+                              playerName={player.name}  // ADD THIS
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Link href={`/players/${player.id}/all-matches`}
+                                  onClick={(e) => {
+                                    e.stopPropagation()  // prevents opening modal onClick
+                                  }}
+                                  className="flex justify-end"
+                            >
+                            <Button variant="ghost"><EyeIcon/>All Matches</Button>
+                            </Link>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  removeFromWatchlist(player.watchlist_id, player.name)
+                                }}
+                                disabled={removingIds.has(player.watchlist_id)}
+                                className="p-1 hover:bg-red-50 hover:text-red-600"
+                            >
+                              <>
+                              {removingIds.has(player.watchlist_id) ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                  <Trash2 className="h-4 w-4" />
+                              )}
+                              </>
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                    ))}
+                    </>
+                  </TableBody>
+                </Table>
+              </div>
           )}
+          </>
         </CardContent>
+
       </Card>
 
       {/* Player Detail Modal */}

@@ -9,7 +9,7 @@ interface PlayerPageProps {
 }
 
 export default async function PlayerPage({ params }: PlayerPageProps) {
-  const supabase = createClient()
+  const supabase = await createClient()
   const playerId = params.id
 
   try {

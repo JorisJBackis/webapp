@@ -26,7 +26,8 @@ export default function UpdatePasswordPage() {
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data } = await supabase.auth.getSession()
+      if (!supabase) return;
+      const { data } = await supabase!.auth.getSession()
       setHasSession(!!data.session)
     }
 
@@ -45,6 +46,7 @@ export default function UpdatePasswordPage() {
     }
 
     try {
+      if (!supabase) return;
       const { error } = await supabase.auth.updateUser({
         password,
       })
@@ -69,13 +71,13 @@ export default function UpdatePasswordPage() {
   // If user doesn't have a valid session
   if (!hasSession && !loading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 py-12">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
         <div className="mb-8">
           <Logo />
         </div>
         <Card className="w-full max-w-md border-0 shadow-lg bg-gray-50">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center text-[#3144C3]">Invalid or Expired Link</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center text-primary">Invalid or Expired Link</CardTitle>
             <CardDescription className="text-center">
               This password reset link is invalid or has expired.
             </CardDescription>
@@ -84,10 +86,10 @@ export default function UpdatePasswordPage() {
             <p className="text-sm text-muted-foreground">Please request a new password reset link to continue.</p>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <Button asChild className="w-full bg-[#3144C3] hover:bg-[#3144C3]/90">
+            <Button asChild className="w-full bg-primary hover:bg-primary/90">
               <Link href="/auth/reset-password">Request new reset link</Link>
             </Button>
-            <Button asChild variant="outline" className="w-full border-[#3144C3] text-[#3144C3]">
+            <Button asChild variant="outline" className="w-full border-[#3144C3] text-primary">
               <Link href="/auth/login">Return to login</Link>
             </Button>
           </CardFooter>
@@ -99,16 +101,16 @@ export default function UpdatePasswordPage() {
   // If password update was successful, show confirmation message
   if (success) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 py-12">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
         <div className="mb-8">
           <Logo />
         </div>
         <Card className="w-full max-w-md border-0 shadow-lg bg-gray-50">
           <CardHeader className="space-y-1">
             <div className="flex justify-center mb-4">
-              <CheckCircle className="h-12 w-12 text-green-500" />
+              <CheckCircle className="h-12 w-12 text-success" />
             </div>
-            <CardTitle className="text-2xl font-bold text-center text-[#3144C3]">Password Updated</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center text-primary">Password Updated</CardTitle>
             <CardDescription className="text-center">Your password has been successfully updated</CardDescription>
           </CardHeader>
           <CardContent className="text-center">
@@ -120,13 +122,13 @@ export default function UpdatePasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 py-12">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
       <div className="mb-8">
         <Logo />
       </div>
       <Card className="w-full max-w-md border-0 shadow-lg bg-gray-50">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-[#3144C3]">Set New Password</CardTitle>
+          <CardTitle className="text-2xl font-bold text-primary">Set New Password</CardTitle>
           <CardDescription>Create a new password for your account</CardDescription>
         </CardHeader>
         <CardContent>
@@ -157,7 +159,7 @@ export default function UpdatePasswordPage() {
                 required
               />
             </div>
-            <Button type="submit" className="w-full bg-[#3144C3] hover:bg-[#3144C3]/90" disabled={loading}>
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
               {loading ? "Updating password..." : "Update password"}
             </Button>
           </form>

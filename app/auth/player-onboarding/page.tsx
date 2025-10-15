@@ -84,6 +84,7 @@ export default function PlayerOnboardingPage() {
 
   useEffect(() => {
     const checkAuth = async () => {
+      if (!supabase) return;
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         router.push('/auth/login')
@@ -151,6 +152,7 @@ export default function PlayerOnboardingPage() {
 
     try {
       // Update player_profiles with onboarding data
+      if (!supabase) return;
       const { error: updateError } = await supabase
         .from('player_profiles')
         .update({
@@ -192,7 +194,7 @@ export default function PlayerOnboardingPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <div className="mb-8 absolute top-8">
         <Logo />
       </div>
@@ -201,7 +203,7 @@ export default function PlayerOnboardingPage() {
         <CardHeader className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-2xl font-bold text-[#3144C3]">
+              <CardTitle className="text-2xl font-bold text-primary">
                 Complete Your Profile
               </CardTitle>
               <CardDescription>
@@ -428,7 +430,7 @@ export default function PlayerOnboardingPage() {
               <Button 
                 onClick={handleComplete} 
                 disabled={loading}
-                className="bg-[#3144C3] hover:bg-[#3144C3]/90"
+                className="bg-primary hover:bg-primary/90"
               >
                 {loading ? "Completing..." : (
                   <>

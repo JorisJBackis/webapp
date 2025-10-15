@@ -10,11 +10,11 @@ interface ScoutingTabsProps {
 export default function ScoutingTabs({ userClubId }: ScoutingTabsProps) {
   return (
     <Tabs defaultValue="browse-players" className="space-y-6">
-      <TabsList className="bg-gray-100 text-black">
-        <TabsTrigger value="browse-players" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
+      <TabsList className="bg-muted text-muted-foreground">
+        <TabsTrigger value="browse-players" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
           Browse Players
         </TabsTrigger>
-        <TabsTrigger value="my-watchlist" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
+        <TabsTrigger value="my-watchlist" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
           My Watchlist
         </TabsTrigger>
       </TabsList>

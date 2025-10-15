@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Lock } from "lucide-react";
 
 export default async function MarketplacePage() {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // Check user type
     const { data: { user } } = await supabase.auth.getUser();
@@ -35,7 +35,7 @@ export default async function MarketplacePage() {
                                 The marketplace feature is exclusively available for club accounts to browse players,
                                 post recruitment needs, and manage transfers.
                             </p>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-muted-foreground">
                                 As a player, you can use the Dashboard and Insights features to track your performance
                                 and view analytics.
                             </p>
@@ -49,19 +49,19 @@ export default async function MarketplacePage() {
     return (
         <div className="container mx-auto py-8">
             <div className="mb-8">
-                <h1 className="text-3xl font-bold tracking-tight text-footylabs-newblue">Player Marketplace</h1>
+                <h1 className="text-3xl font-bold tracking-tight text-primary">Player Marketplace</h1>
                 <p className="text-muted-foreground">Discover talent: Browse club listings, our curated prospects, or define your recruitment needs.</p>
             </div>
 
             <Tabs defaultValue="agency-rb-prospects" className="space-y-6">
-                <TabsList className="bg-gray-100 text-black">
-                    <TabsTrigger value="agency-rb-prospects" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
+                <TabsList className="bg-muted text-muted-foreground">
+                    <TabsTrigger value="agency-rb-prospects" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                        Recommended Players
                     </TabsTrigger>
-                    <TabsTrigger value="browse-players" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
+                    <TabsTrigger value="browse-players" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                         On Transfer List
                     </TabsTrigger>
-                    <TabsTrigger value="club-needs" className="data-[state=active]:bg-[#31348D] data-[state=active]:text-white">
+                    <TabsTrigger value="club-needs" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                         Club Requests
                     </TabsTrigger>
                 </TabsList>
