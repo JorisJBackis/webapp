@@ -217,10 +217,15 @@ export function LastMatchWatchlist({
             <span className="text-base font-medium">{matchData.opponent}</span>
           </div>
 
-          <div className="flex items-center gap-4">
-            <Progress value={matchData.minutesPlayed} className="h-2 w-full min-w-[176px]" max={90}/>
-            <span className="text-muted-foreground">{matchData.minutesPlayed}'</span>
-          </div>
+
+          {matchData.minutesPlayed === 0 ? (
+            <div className="text-muted-foreground italic">Sat on the bench</div>
+          ) : (
+            <div className="flex items-center gap-4">
+              <Progress value={matchData.minutesPlayed} className="h-2 w-full min-w-[176px]" max={90}/>
+              <span className="text-muted-foreground">{matchData.minutesPlayed}'</span>
+            </div>
+          )}
 
           <div className="flex gap-4 items-center">
             <div className="flex gap-1 items-center text-muted-foreground">
