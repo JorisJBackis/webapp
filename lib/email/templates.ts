@@ -20,8 +20,8 @@ const emailStyles = `
       margin-bottom: 32px;
     }
     .logo {
-      width: 120px;
-      height: 60px;
+      height: 50px;
+      width: auto;
       margin-bottom: 16px;
     }
     h1 {
@@ -111,7 +111,7 @@ export function adminNotificationTemplate(data: AdminNotificationData): string {
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://jbqljjyctbsyawijlxfa.supabase.co/storage/v1/object/public/footylabs-logo/FootyLabs_logo.svg" alt="Footy Labs" class="logo">
+            <img src="https://jbqljjyctbsyawijlxfa.supabase.co/storage/v1/object/public/footylabs-logo/logo.png" alt="Footy Labs" class="logo">
             <h1>🔔 New User Registration</h1>
           </div>
 
@@ -171,7 +171,7 @@ export function userApprovedTemplate(data: UserApprovedData): string {
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://jbqljjyctbsyawijlxfa.supabase.co/storage/v1/object/public/footylabs-logo/FootyLabs_logo.svg" alt="Footy Labs" class="logo">
+            <img src="https://jbqljjyctbsyawijlxfa.supabase.co/storage/v1/object/public/footylabs-logo/logo.png" alt="Footy Labs" class="logo">
             <h1>🎉 Welcome to Footy Labs!</h1>
           </div>
 
@@ -227,7 +227,7 @@ export function userRejectedTemplate(data: UserRejectedData): string {
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://jbqljjyctbsyawijlxfa.supabase.co/storage/v1/object/public/footylabs-logo/FootyLabs_logo.svg" alt="Footy Labs" class="logo">
+            <img src="https://jbqljjyctbsyawijlxfa.supabase.co/storage/v1/object/public/footylabs-logo/logo.png" alt="Footy Labs" class="logo">
             <h1>Registration Update</h1>
           </div>
 
