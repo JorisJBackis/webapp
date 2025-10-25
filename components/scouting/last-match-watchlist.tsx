@@ -7,10 +7,7 @@ import SoccerIcon from "@/components/scouting/soccer-icon"
 import Link from "next/link"
 import {Loader2} from "lucide-react"
 
-export function LastMatchWatchlist({
-                                     playerId,
-                                     playerName
-                                   }: {
+export function LastMatchWatchlist({playerId, playerName}: {
   playerId: number | string
   playerName: string
 }) {
@@ -22,7 +19,6 @@ export function LastMatchWatchlist({
   useEffect(() => {
     const fetchLastMatch = async () => {
       try {
-        console.log(`🔍 Starting lookup for player: "${playerName}" (ID: ${playerId})`)
 
         // Step 1: Get wyscout_player_id from players table using the playerId (wyscout_player_id)
         console.log(`📖 Step 1: Looking up in 'players' table...`)
@@ -39,10 +35,7 @@ export function LastMatchWatchlist({
         }
 
         const wyscoutPlayerId = playerData.wyscout_player_id
-        console.log(`✅ Step 1 complete: Found wyscout_player_id = ${wyscoutPlayerId}`)
 
-        // Step 2: Look up in merging_players_names to get transfermarkt_player_id
-        console.log(`📖 Step 2: Looking up in 'merging_players_names' table...`)
         const {data: mergingData, error: mergingError} = await supabase
             .from("merging_players_names")
             .select("transfermarkt_player_id")
@@ -50,17 +43,12 @@ export function LastMatchWatchlist({
             .single()
 
         if (mergingError || !mergingData) {
-          console.error(`❌ Step 2 failed: Player not found in 'merging_players_names'`, mergingError)
-          console.log(`⚠️  This player from Wyscout hasn't been mapped to Transfermarkt yet`)
           setLoading(false)
           return
         }
 
         const transfermarktPlayerId = mergingData.transfermarkt_player_id
-        console.log(`✅ Step 2 complete: Found transfermarkt_player_id = ${transfermarktPlayerId}`)
 
-        // Step 3: Get latest match from transfermarkt_matches_data
-        console.log(`📖 Step 3: Fetching latest match from 'transfermarkt_matches_data'...`)
         const {data: matchResults, error: matchError} = await supabase
             .from("transfermarkt_matches_data")
             .select("*")
@@ -92,6 +80,7 @@ export function LastMatchWatchlist({
         // Transform the data
         setMatchData({
           matchId: data.match_id,
+          playerName: data.player_name,  // Get full name from transfermarkt_matches_data
           opponent: data.opponent || "Unknown",
           result: determineResult(data.match_result, data.home_or_away),
           score: data.match_result,
@@ -151,7 +140,7 @@ export function LastMatchWatchlist({
   if (!matchData) {
     return (
         <div className="p-2">
-          <span className="text-muted-foreground text-sm">No data was found</span>
+          <span className="text-muted-foreground text-sm">No Transfermarkt matches found</span>
         </div>
     )
   }
