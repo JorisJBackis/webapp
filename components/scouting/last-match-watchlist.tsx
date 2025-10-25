@@ -22,109 +22,63 @@ export function LastMatchWatchlist({
   useEffect(() => {
     const fetchLastMatch = async () => {
       try {
-        const nameParts = playerName.trim().split(' ')
+        console.log(`🔍 Starting lookup for player: "${playerName}" (ID: ${playerId})`)
 
-        if (nameParts.length < 2) {
-          console.log("Invalid name format:", playerName)
+        // Step 1: Get wyscout_player_id from players table using the playerId (wyscout_player_id)
+        console.log(`📖 Step 1: Looking up in 'players' table...`)
+        const {data: playerData, error: playerError} = await supabase
+            .from("players")
+            .select("wyscout_player_id")
+            .eq("id", playerId)
+            .single()
+
+        if (playerError || !playerData) {
+          console.error(`❌ Step 1 failed: Could not find player in 'players' table`, playerError)
           setLoading(false)
           return
         }
 
-        const lastName = nameParts[nameParts.length - 1]
-        const firstPart = nameParts[0]
-        const firstLetter = firstPart.charAt(0).toUpperCase()
+        const wyscoutPlayerId = playerData.wyscout_player_id
+        console.log(`✅ Step 1 complete: Found wyscout_player_id = ${wyscoutPlayerId}`)
 
-        // Build multiple search patterns with wildcards for fuzzy matching
-        const patterns = [
-          playerName,                           // Exact: "Ramunas Merkelis"
-          `${firstLetter}. ${lastName}`,        // Initial: "R. Merkelis"
-          `${firstLetter}.${lastName}`,         // No space: "R.Merkelis"
-          `${firstLetter} ${lastName}`,         // No dot: "R Merkelis"
-        ]
+        // Step 2: Look up in merging_players_names to get transfermarkt_player_id
+        console.log(`📖 Step 2: Looking up in 'merging_players_names' table...`)
+        const {data: mergingData, error: mergingError} = await supabase
+            .from("merging_players_names")
+            .select("transfermarkt_player_id")
+            .eq("wyscout_player_id", wyscoutPlayerId)
+            .single()
 
-        console.log(`🔍 Searching for player: "${playerName}"`)
-        console.log(`📋 Generated patterns:`, patterns)
-
-        let data = null
-        let foundPattern = null
-
-        // First, try exact patterns
-        for (const pattern of patterns) {
-          console.log(`  ➤ Trying pattern: "${pattern}"`)
-
-          const {data: result, error} = await supabase
-              .from("new_watchlist")
-              .select("*")
-              .ilike("player_name", pattern)
-              .order("match_date", {ascending: false})
-              .limit(1)
-
-          if (error) {
-            console.error(`    ❌ Error with pattern "${pattern}":`, error)
-            continue
-          }
-
-          console.log(`    ℹ️ Found ${result?.length || 0} matches`)
-
-          if (result && result.length > 0) {
-            data = result[0]
-            foundPattern = pattern
-            console.log(`    ✅ Match found!`)
-            break
-          }
-        }
-
-        // If no exact match, try with wildcards
-        if (!data) {
-          console.log(`🔄 No exact matches found, trying with wildcards...`)
-
-          for (const pattern of patterns) {
-            const wildcardPattern = `%${pattern}%`
-            console.log(`  ➤ Trying wildcard: "${wildcardPattern}"`)
-
-            const {data: result, error} = await supabase
-                .from("new_watchlist")
-                .select("*")
-                .ilike("player_name", wildcardPattern)
-                .order("match_date", {ascending: false})
-                .limit(1)
-
-            if (error) {
-              console.error(`    ❌ Error:`, error)
-              continue
-            }
-
-            console.log(`    ℹ️ Found ${result?.length || 0} matches`)
-
-            if (result && result.length > 0) {
-              data = result[0]
-              foundPattern = `${pattern} (wildcard)`
-              console.log(`    ✅ Match found with wildcard!`)
-              break
-            }
-          }
-        }
-
-        if (!data) {
-          console.log(`❌ No matches found for "${playerName}" with any pattern`)
-
-          // Debug: Check if player exists at all in the table
-          const {data: allMatches, error: debugError} = await supabase
-              .from("new_watchlist")
-              .select("player_name")
-              .limit(100)
-
-          if (!debugError && allMatches) {
-            console.log(`📊 Sample player names in watchlist:`,
-                allMatches.slice(0, 10).map(m => m.player_name))
-          }
-
+        if (mergingError || !mergingData) {
+          console.error(`❌ Step 2 failed: Player not found in 'merging_players_names'`, mergingError)
+          console.log(`⚠️  This player from Wyscout hasn't been mapped to Transfermarkt yet`)
           setLoading(false)
           return
         }
 
-        console.log(`✅ Match found using pattern "${foundPattern}":`, {
-          player: data.player_name,
+        const transfermarktPlayerId = mergingData.transfermarkt_player_id
+        console.log(`✅ Step 2 complete: Found transfermarkt_player_id = ${transfermarktPlayerId}`)
+
+        // Step 3: Get latest match from transfermarkt_matches_data
+        console.log(`📖 Step 3: Fetching latest match from 'transfermarkt_matches_data'...`)
+        const {data: matchResults, error: matchError} = await supabase
+            .from("transfermarkt_matches_data")
+            .select("*")
+            .eq("transfermarkt_player_id", transfermarktPlayerId)
+            .order("match_date", {ascending: false})
+            .limit(1)
+
+        if (matchError || !matchResults || matchResults.length === 0) {
+          console.error(`❌ Step 3 failed: No matches found for this player`, matchError)
+          setLoading(false)
+          return
+        }
+
+        const data = matchResults[0]
+        console.log(`✅ Step 3 complete: Found latest match`)
+
+        console.log(`✅ All steps complete:`, {
+          player: playerName,
           opponent: data.opponent,
           date: data.match_date
         })
@@ -157,10 +111,10 @@ export function LastMatchWatchlist({
       }
     }
 
-    if (playerName) {
+    if (playerName && playerId) {
       fetchLastMatch()
     }
-  }, [playerName])
+  }, [playerName, playerId])
 
   // Helper function to determine W/D/L
   const determineResult = (score: string, homeOrAway: string): "W" | "L" | "D" => {
@@ -197,7 +151,7 @@ export function LastMatchWatchlist({
   if (!matchData) {
     return (
         <div className="p-2">
-          <span className="text-muted-foreground text-sm">No matches found</span>
+          <span className="text-muted-foreground text-sm">No data was found</span>
         </div>
     )
   }
@@ -205,7 +159,7 @@ export function LastMatchWatchlist({
   return (
       <Link
           href={`/players/${playerId}/all-matches/${matchData.matchId}`}
-          onClick={(e) => e.stopPropagation()} // prevents opening modal onClick
+          onClick={(e) => e.stopPropagation()}
       >
         <div className="flex flex-col gap-2 cursor-pointer p-2 hover:bg-muted/50 rounded-md
          hover:bg-accent hover:text-accent-foreground pointer-events-none">
@@ -216,7 +170,6 @@ export function LastMatchWatchlist({
             vs
             <span className="text-base font-medium">{matchData.opponent}</span>
           </div>
-
 
           {matchData.minutesPlayed === 0 ? (
             <div className="text-muted-foreground italic">Sat on the bench</div>
@@ -229,23 +182,19 @@ export function LastMatchWatchlist({
 
           <div className="flex gap-4 items-center">
             <div className="flex gap-1 items-center text-muted-foreground">
-
               <SoccerIcon width={16} height={16}/>
               <div>{matchData.goals}</div>
             </div>
-
 
             <div className="flex gap-1 items-center">
               <span className="bg-red-card w-4 h-4 rounded-sm"/>
               <div>{matchData.redCards}</div>
             </div>
 
-
             <div className="flex gap-1 items-center">
               <span className="bg-yellow-card w-4 h-4 rounded-sm"/>
               <div>{matchData.yellowCards}</div>
             </div>
-
 
             <div className="text-xs text-muted-foreground text-right flex-1">
               &#8226; {matchData.daysAgo} {matchData.daysAgo === 1 ? 'day' : 'days'} ago
