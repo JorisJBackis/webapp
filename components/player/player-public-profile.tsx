@@ -4,13 +4,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { 
-  User, 
-  MapPin, 
-  Calendar, 
-  Phone, 
-  Mail, 
-  Globe, 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { useToast } from "@/hooks/use-toast"
+import {
+  User,
+  MapPin,
+  Calendar,
+  Phone,
+  Mail,
+  Globe,
   Award,
   TrendingUp,
   Target,
@@ -18,7 +26,13 @@ import {
   Star,
   Heart,
   Share2,
-  Download
+  Download,
+  Link2,
+  Twitter,
+  Linkedin,
+  Facebook,
+  MessageCircle,
+  Instagram
 } from "lucide-react"
 import { useState } from "react"
 import {ModeToggleInstant} from "@/components/mode-toggle";
@@ -31,6 +45,7 @@ interface PlayerPublicProfileProps {
 
 export default function PlayerPublicProfile({ profile, userData, wyscoutPlayer }: PlayerPublicProfileProps) {
   const [isInterested, setIsInterested] = useState(false)
+  const { toast } = useToast()
 
   // Generate consistent mock data like in dashboard
   const playerId = profile?.id || userData?.id || '123'
@@ -62,17 +77,69 @@ export default function PlayerPublicProfile({ profile, userData, wyscoutPlayer }
     setIsInterested(!isInterested)
   }
 
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: `${playerName} - FootyLabs Profile`,
-        text: `Check out ${playerName}'s professional football profile`,
-        url: window.location.href,
+  const profileUrl = typeof window !== 'undefined' ? window.location.href : ''
+  const shareText = `Check out ${playerName}'s professional football profile on FootyLabs`
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(profileUrl)
+      toast({
+        title: "Link copied!",
+        description: "Profile link has been copied to clipboard",
       })
-    } else {
-      navigator.clipboard.writeText(window.location.href)
-      alert('Profile link copied to clipboard!')
+    } catch (error) {
+      toast({
+        title: "Failed to copy",
+        description: "Please try again",
+        variant: "destructive",
+      })
     }
+  }
+
+  const handleNativeShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${playerName} - FootyLabs Profile`,
+          text: shareText,
+          url: profileUrl,
+        })
+      } catch (error) {
+        // User cancelled or error occurred
+        console.log('Share cancelled')
+      }
+    } else {
+      handleCopyLink()
+    }
+  }
+
+  const handleTwitterShare = () => {
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(profileUrl)}`
+    window.open(url, '_blank', 'width=550,height=420')
+  }
+
+  const handleLinkedInShare = () => {
+    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(profileUrl)}`
+    window.open(url, '_blank', 'width=550,height=420')
+  }
+
+  const handleFacebookShare = () => {
+    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(profileUrl)}`
+    window.open(url, '_blank', 'width=550,height=420')
+  }
+
+  const handleWhatsAppShare = () => {
+    const url = `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + profileUrl)}`
+    window.open(url, '_blank')
+  }
+
+  const handleInstagramShare = () => {
+    // Instagram doesn't have a direct share URL, so we copy link and notify user
+    handleCopyLink()
+    toast({
+      title: "Link copied for Instagram!",
+      description: "Paste it in your Instagram story or bio",
+    })
   }
 
   return (
@@ -100,11 +167,51 @@ export default function PlayerPublicProfile({ profile, userData, wyscoutPlayer }
             </div>
             <div className="flex items-center space-x-3">
               <ModeToggleInstant />
-              <Button variant="outline" onClick={handleShare}>
-                <Share2 className="h-4 w-4 mr-2" />
-                Share
-              </Button>
-              <Button 
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Share
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={handleCopyLink}>
+                    <Link2 className="h-4 w-4 mr-2" />
+                    Copy Link
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleTwitterShare}>
+                    <Twitter className="h-4 w-4 mr-2" />
+                    Share on Twitter
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLinkedInShare}>
+                    <Linkedin className="h-4 w-4 mr-2" />
+                    Share on LinkedIn
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleFacebookShare}>
+                    <Facebook className="h-4 w-4 mr-2" />
+                    Share on Facebook
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleWhatsAppShare}>
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Share on WhatsApp
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleInstagramShare}>
+                    <Instagram className="h-4 w-4 mr-2" />
+                    Share on Instagram
+                  </DropdownMenuItem>
+                  {navigator.share && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleNativeShare}>
+                        <Share2 className="h-4 w-4 mr-2" />
+                        More Options
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button
                 onClick={handleInterest}
                 className={isInterested ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"}
               >

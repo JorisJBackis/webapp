@@ -40,14 +40,43 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (
-      !user &&
-      !request.nextUrl.pathname.startsWith('/auth') && // /auth/login | /auth/register | /auth/verification ect
-      !request.nextUrl.pathname.startsWith('/error')
-  ) {
+  // Allow public access to player profiles, OG images, email API, admin routes, home, and error pages
+  const publicPaths = ["/", "/player", "/api/og", "/api/emails", "/admin", "/auth", "/error"]
+  const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path))
+
+  if (!user && !isPublicPath) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
+    return NextResponse.redirect(url)
+  }
+
+  // If user is signed in, check their approval status
+  if (user && !request.nextUrl.pathname.startsWith("/auth")) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("approval_status")
+      .eq("id", user.id)
+      .single()
+
+    // Redirect based on approval status
+    if (profile?.approval_status === "pending" && request.nextUrl.pathname !== "/auth/pending-approval") {
+      const url = request.nextUrl.clone()
+      url.pathname = '/auth/pending-approval'
+      return NextResponse.redirect(url)
+    }
+
+    if (profile?.approval_status === "rejected" && request.nextUrl.pathname !== "/auth/rejected") {
+      const url = request.nextUrl.clone()
+      url.pathname = '/auth/rejected'
+      return NextResponse.redirect(url)
+    }
+  }
+
+  // If user is approved and on /auth/login or /auth/register, redirect to /dashboard
+  if (user && (request.nextUrl.pathname === "/auth/login" || request.nextUrl.pathname === "/auth/register")) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
 
