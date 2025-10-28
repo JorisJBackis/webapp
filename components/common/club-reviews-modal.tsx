@@ -145,15 +145,15 @@ export default function ClubReviewsModal({ isOpen, onClose, clubId, clubName }: 
   }
 
   const getRatingColor = (rating: number) => {
-    if (rating >= 4) return 'text-green-600'
-    if (rating >= 3) return 'text-yellow-600' 
-    return 'text-red-600'
+    if (rating >= 4) return 'text-green-600 dark:text-green-400';
+    if (rating >= 3) return 'text-yellow-600 dark:text-yellow-400';
+    return 'text-red-600 dark:text-red-400';
   }
 
   const getRatingBadgeColor = (rating: number) => {
-    if (rating >= 4) return 'bg-green-100 text-green-800'
-    if (rating >= 3) return 'bg-yellow-100 text-yellow-800'
-    return 'bg-red-100 text-red-800'
+    if (rating >= 4) return 'bg-green-800 text-green-100 dark:bg-green-100 dark:text-green-800';
+    if (rating >= 3) return 'bg-yellow-800 text-yellow-100 dark:bg-yellow-100 dark:text-yellow-800';
+    return 'bg-red-800 text-red-100 dark:bg-red-100 dark:text-red-800';
   }
 
   return (

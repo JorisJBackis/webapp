@@ -170,9 +170,9 @@ const calculateFitScore = (opportunity: Opportunity & { club_rating?: number, re
 }
 
 const getFitScoreColor = (score: number) => {
-  if (score >= 85) return 'bg-green-500'
-  if (score >= 70) return 'bg-yellow-500'
-  return 'bg-gray-400'
+  if (score >= 85) return 'bg-success hover:bg-success/90'
+  if (score >= 70) return 'bg-yellow-500 hover:bg-yellow-500/90'
+  return 'bg-gray-400 hover:bg-gray-400/90'
 }
 
 const getFitScoreLabel = (score: number) => {
@@ -504,7 +504,7 @@ export default function OpportunitiesBrowser({ playerProfile, userClubId }: Oppo
                               </div>
                             </div>
                             <Badge 
-                              className={`${getFitScoreColor(opportunity.fit_score)} text-white`}
+                              className={`${getFitScoreColor(opportunity.fit_score)} text-primary-foreground`}
                             >
                               {opportunity.fit_score}% {getFitScoreLabel(opportunity.fit_score)}
                             </Badge>
@@ -522,7 +522,7 @@ export default function OpportunitiesBrowser({ playerProfile, userClubId }: Oppo
 
                         {/* Position and Requirements */}
                         <div className="mb-3">
-                          <p className="text-xl font-medium text-blue-600 mb-2">
+                          <p className="text-xl font-medium text-primary mb-2">
                             {opportunity.position_needed}
                           </p>
                           
@@ -553,13 +553,13 @@ export default function OpportunitiesBrowser({ playerProfile, userClubId }: Oppo
                         {/* Fit Reasons */}
                         {opportunity.fit_reasons.length > 0 && (
                           <div className="mb-3">
-                            <p className="text-sm font-medium text-green-700 mb-1">Why this is a good fit:</p>
+                            <p className="text-sm font-medium text-green-700 dark:text-green-300 mb-1">Why this is a good fit:</p>
                             <ul className="text-sm text-muted-foreground space-y-1">
                               {opportunity.fit_reasons.map((reason, index) => {
                                 const IconComponent = reason.icon
                                 return (
                                   <li key={index} className="flex items-start gap-2">
-                                    <IconComponent className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                    <IconComponent className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                                     {reason.text}
                                   </li>
                                 )
@@ -584,14 +584,14 @@ export default function OpportunitiesBrowser({ playerProfile, userClubId }: Oppo
 
                         {/* Actions */}
                         <div className="flex gap-2">
-                          <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                          <Button size="sm" className="">
                             Express Interest
                           </Button>
                           <Button 
                             variant="outline"
                             size="sm"
                             onClick={() => openReviewsModal(opportunity.created_by_club_id, opportunity.posting_club_name)}
-                            className="border-yellow-400 text-yellow-700 hover:bg-yellow-50"
+                            className="border-yellow-400 text-yellow-700 hover:bg-yellow-50 dark:border-yellow-600 dark:text-yellow-300 dark:hover:bg-yellow-800"
                           >
                             <Star className="h-4 w-4 mr-2" />
                             Player Reviews

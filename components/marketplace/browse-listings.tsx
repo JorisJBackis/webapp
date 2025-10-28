@@ -141,7 +141,7 @@ export default function BrowseListings() {
                     </Select>
                 </div>
 
-                {loading && <div className="flex justify-center items-center py-10"><Loader2 className="h-8 w-8 animate-spin text-[#31348D]" /></div>}
+                {loading && <div className="flex justify-center items-center py-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}
                 {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
                 {!loading && !error && listings.length === 0 && <p className="text-center text-muted-foreground py-10">No active player listings found from other clubs.</p>}
                 {!loading && !error && listings.length > 0 && filteredListings.length === 0 && <p className="text-center text-muted-foreground py-10">No listings match your current filters.</p>}

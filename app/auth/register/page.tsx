@@ -384,16 +384,16 @@ export default function RegisterPage() {
   // If user already exists, show the existing user message
   if (existingUser) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 py-12">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
         <div className="mb-8">
           <Logo />
         </div>
-        <Card className="w-full max-w-md border-0 shadow-lg bg-gray-50">
+        <Card className="w-full max-w-md shadow-lg bg-card">
           <CardHeader className="space-y-1">
             <div className="flex justify-center mb-4">
               <AlertCircle className="h-12 w-12 text-amber-500" />
             </div>
-            <CardTitle className="text-2xl font-bold text-center text-[#3144C3]">Account Already Exists</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center text-primary">Account Already Exists</CardTitle>
             <CardDescription className="text-center">
               An account with email <span className="font-medium">{email}</span> is already registered
             </CardDescription>
@@ -404,7 +404,7 @@ export default function RegisterPage() {
             </p>
             <div className="flex flex-col space-y-3">
               <Button
-                className="w-full bg-[#3144C3] hover:bg-[#3144C3]/90 flex items-center justify-center"
+                className="w-full bg-primary hover:bg-primary/90 flex items-center justify-center"
                 onClick={() => router.push("/auth/login")}
               >
                 <LogIn className="mr-2 h-4 w-4" />
@@ -412,7 +412,7 @@ export default function RegisterPage() {
               </Button>
               <Button
                 variant="outline"
-                className="w-full flex items-center justify-center border-[#3144C3] text-[#3144C3]"
+                className="w-full flex items-center justify-center border-[#3144C3] text-primary"
                 onClick={() => router.push("/auth/reset-password")}
               >
                 <KeyRound className="mr-2 h-4 w-4" />
@@ -443,16 +443,16 @@ export default function RegisterPage() {
   // If registration was successful, show confirmation message
   if (success) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 py-12">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
         <div className="mb-8">
           <Logo />
         </div>
-        <Card className="w-full max-w-md border-0 shadow-lg bg-gray-50">
+        <Card className="w-full max-w-md shadow-lg bg-card">
           <CardHeader className="space-y-1">
             <div className="flex justify-center mb-4">
-              <Mail className="h-12 w-12 text-[#3144C3]" />
+              <Mail className="h-12 w-12 text-primary" />
             </div>
-            <CardTitle className="text-2xl font-bold text-center text-[#3144C3]">Confirm Your Email</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center text-primary">Confirm Your Email</CardTitle>
             <CardDescription className="text-center">
               We've sent a verification link to <span className="font-medium">{email}</span>
             </CardDescription>
@@ -469,19 +469,19 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 py-12">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
       <div className="mb-8">
         <Logo />
       </div>
-      <Card className="w-full max-w-md border-0 shadow-lg bg-gray-50">
+      <Card className="w-full max-w-md shadow-lg bg-card">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-[#3144C3]">Create an account</CardTitle>
+          <CardTitle className="text-2xl font-bold text-primary">Create an account</CardTitle>
           <CardDescription>Enter your email, create a password, and select your club to get started</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleRegister} className="space-y-4">
             {error && (
-                <Alert variant={messageType === 'error' ? 'destructive' : 'default'} className={messageType === 'info' ? 'bg-blue-50 border-blue-200 text-blue-800' : ''}>
+                <Alert variant={messageType === 'error' ? 'destructive' : 'default'} className={messageType === 'info' ? 'bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 text-blue-800' : ''}>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
@@ -556,7 +556,7 @@ export default function RegisterPage() {
                                 <div className="flex items-center">
                                   <Avatar className="h-6 w-6 mr-2">
                                     <AvatarImage src={selectedClub.logo_url || ""} alt={selectedClub.name} />
-                                    <AvatarFallback className="bg-[#3144C3] text-white text-xs">
+                                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                                       {selectedClub.name.charAt(0)}
                                     </AvatarFallback>
                                   </Avatar>
@@ -585,7 +585,7 @@ export default function RegisterPage() {
                             >
                               <Avatar className="h-6 w-6 mr-2">
                                 <AvatarImage src={club.logo_url || ""} alt={club.name} />
-                                <AvatarFallback className="bg-[#3144C3] text-white text-xs">
+                                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                                   {club.name.charAt(0)}
                                 </AvatarFallback>
                               </Avatar>
@@ -626,7 +626,7 @@ export default function RegisterPage() {
                           : selectedPlayer
                               ? (
                                   <div className="flex items-center">
-                                    <div className="h-6 w-6 mr-2 bg-[#3144C3] rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                    <div className="h-6 w-6 mr-2 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">
                                       {selectedPlayer.name.charAt(0)}
                                     </div>
                                     <div className="flex flex-col items-start">
@@ -655,7 +655,7 @@ export default function RegisterPage() {
                                   }}
                                   className="flex items-center"
                               >
-                                <div className="h-6 w-6 mr-2 bg-[#3144C3] rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                <div className="h-6 w-6 mr-2 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">
                                   {player.name.charAt(0)}
                                 </div>
                                 <div className="flex flex-col items-start">
@@ -690,7 +690,7 @@ export default function RegisterPage() {
                           setSelectedPlayer(null)
                         }
                       }}
-                      className="h-4 w-4 text-[#3144C3] focus:ring-[#3144C3] border-gray-300 rounded"
+                      className="h-4 w-4 text-primary focus:ring-[#3144C3] border-gray-300 rounded"
                     />
                     <Label htmlFor="player-not-found" className="text-sm font-medium">
                       I'm not in the player list
@@ -699,8 +699,8 @@ export default function RegisterPage() {
                 </div>
 
                 {playerNotFound && (
-                  <div className="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="text-sm font-medium text-blue-900">
+                  <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <div className="text-sm font-medium text-blue-900 dark:text-blue-100">
                       FootyLabs will be notified of your registration and will add your data within 5 working days.
                     </div>
                     <div className="space-y-3">
@@ -761,7 +761,7 @@ export default function RegisterPage() {
               </div>
             )}
 
-            <Button type="submit" className="w-full bg-[#3144C3] hover:bg-[#3144C3]/90" disabled={loading}>
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
               {loading ? "Creating account..." : "Create account"}
             </Button>
           </form>
@@ -769,7 +769,7 @@ export default function RegisterPage() {
         <CardFooter className="flex flex-col">
           <div className="text-sm text-muted-foreground mt-2">
             Already have an account?{" "}
-            <Link href="/auth/login" className="text-[#3144C3] underline-offset-4 hover:underline">
+            <Link href="/auth/login" className="text-foreground underline-offset-4 hover:underline">
               Login
             </Link>
           </div>

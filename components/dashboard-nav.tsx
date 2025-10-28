@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { BarChart, Home, LogOut, Settings, User, ShoppingCart, Search } from "lucide-react"
 import { useState, useEffect } from "react"
+import {ModeToggleInstant} from "@/components/mode-toggle";
 
 export default function DashboardNav() {
   const pathname = usePathname()
@@ -46,10 +47,10 @@ export default function DashboardNav() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white text-[#31348D]">
+    <header className="sticky top-0 z-50 w-full border-b bg-background text-foreground">
       <div className="container flex h-16 items-center">
         <div className="mr-4 flex">
-          <Logo className="text-[#31348D]" />
+          <Logo className="text-foreground" />
         </div>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <nav className="flex items-center space-x-2">
@@ -57,7 +58,7 @@ export default function DashboardNav() {
               <Button
                 variant={pathname === "/dashboard" ? "default" : "ghost"}
                 size="sm"
-                className={pathname === "/dashboard" ? "bg-[#31348D] text-white" : "text-[#31348D]"}
+                className={pathname === "/dashboard" ? "bg-primary text-primary-foreground" : "text-foreground"}
               >
                 <Home className="mr-2 h-4 w-4" />
                 Dashboard
@@ -67,7 +68,7 @@ export default function DashboardNav() {
               <Button
                 variant={pathname === "/dashboard/analytics" ? "default" : "ghost"}
                 size="sm"
-                className={pathname === "/dashboard/analytics" ? "bg-[#31348D] text-white" : "text-[#31348D]"}
+                className={pathname === "/dashboard/analytics" ? "bg-primary text-primary-foreground" : "text-foreground"}
               >
                 <BarChart className="mr-2 h-4 w-4" />
                 Insights
@@ -79,7 +80,7 @@ export default function DashboardNav() {
                   <Button
                     variant={pathname.startsWith("/dashboard/marketplace") ? "default" : "ghost"}
                     size="sm"
-                    className={pathname.startsWith("/dashboard/marketplace") ? "bg-[#31348D] text-white" : "text-[#31348D]"}
+                    className={pathname.startsWith("/dashboard/marketplace") ? "bg-primary text-primary-foreground" : "text-foreground"}
                   >
                     <ShoppingCart className="mr-2 h-4 w-4" />
                     Marketplace
@@ -89,7 +90,7 @@ export default function DashboardNav() {
                   <Button
                     variant={pathname.startsWith("/dashboard/scouting") ? "default" : "ghost"}
                     size="sm"
-                    className={pathname.startsWith("/dashboard/scouting") ? "bg-[#31348D] text-white" : "text-[#31348D]"}
+                    className={pathname.startsWith("/dashboard/scouting") ? "bg-primary text-primary-foreground" : "text-foreground"}
                   >
                     <Search className="mr-2 h-4 w-4" />
                     Scouting
@@ -98,9 +99,10 @@ export default function DashboardNav() {
               </>
             )}
           </nav>
+          <ModeToggleInstant />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 rounded-full text-[#31348D]">
+              <Button variant="ghost" size="sm" className="h-8 w-8 rounded-full text-foreground">
                 <User className="h-4 w-4" />
                 <span className="sr-only">User menu</span>
               </Button>

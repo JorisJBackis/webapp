@@ -38,7 +38,7 @@ const CustomizedDot = (props: any) => {
   // Determine color based on whether this is the user's club
   const fill = payload.team_id === clubId ? "#DC2626" : "#31348D";
 
-  return <circle cx={cx} cy={cy} r={6} fill={fill} />;
+  return <circle cx={cx} cy={cy} r={8} fill={fill} />;
 };
 
 export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
@@ -231,10 +231,10 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
 
   if (loading) {
     return (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div className="bg-background rounded-lg shadow-md p-6 mb-8">
           <h2 className="text-xl font-semibold mb-4">Current Season Insights</h2>
           <div className="flex h-[200px] items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-[#31348D]" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         </div>
     )
@@ -242,7 +242,7 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
 
   if (error) {
     return (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div className="bg-background rounded-lg shadow-md p-6 mb-8">
           <h2 className="text-xl font-semibold mb-4">Current Season Insights</h2>
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -254,9 +254,9 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
 
   if (!metrics) {
     return (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div className="bg-background rounded-lg shadow-md p-6 mb-8">
           <h2 className="text-xl font-semibold mb-4">Current Season Insights</h2>
-          <p className="text-gray-500">No metrics data available</p>
+          <p className="text-muted-foreground">No metrics data available</p>
         </div>
     )
   }
@@ -270,7 +270,7 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
   const otherTeams = allTeams.filter((team) => team.team_id !== clubId)
 
   return (
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+      <div className="bg-background rounded-lg shadow-md p-6 mb-8">
         <h2 className="text-xl font-semibold mb-6">Current Season Performance</h2>
 
         {/* Metric cards */}
@@ -281,14 +281,14 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
             { label: "Average Duel Success", value: `${duelSuccess.toFixed(1)}%`, subtitle: "Success Rate" },
             { label: "Average Pass Accuracy", value: `${passAccuracy.toFixed(1)}%`, subtitle: "Completion Rate" },
           ].map((metric, i) => (
-              <Card key={i} className="border-0 shadow-sm">
+              <Card key={i} className="border-0 shadow-xs">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg text-[#31348D]">{metric.label}</CardTitle>
+                  <CardTitle className="text-lg text-primary">{metric.label}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-col items-center">
                     <div className="text-4xl font-bold">{metric.value}</div>
-                    <div className="text-sm text-gray-500 mt-2">{metric.subtitle}</div>
+                    <div className="text-sm text-muted-foreground mt-2">{metric.subtitle}</div>
                   </div>
                 </CardContent>
               </Card>
@@ -317,7 +317,7 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
           </div>
 
           {allTeams.length === 0 ? (
-              <div className="flex h-[200px] items-center justify-center text-gray-500">
+              <div className="flex h-[200px] items-center justify-center text-muted-foreground">
                 No team data available for your league
               </div>
           ) : (
@@ -335,8 +335,8 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
                         if (active && payload && payload.length) {
                           const dataPoint = payload[0].payload;
                           return (
-                              <div className="bg-white p-2 rounded shadow text-sm border border-gray-200">
-                                <div><strong>{dataPoint.Team}</strong></div>
+                              <div className="bg-background p-3 border rounded shadow-xs">
+                                <div className="font-medium"><strong>{dataPoint.Team}</strong></div>
                                 <div>{selectedMetric}: {dataPoint[selectedMetric]?.toFixed(2)}</div>
                                 <div>Points: {dataPoint["Points Earned"]}</div>
                               </div>
@@ -346,7 +346,7 @@ export default function CurrentSeasonInsights({ clubId }: { clubId?: number }) {
                       }}
                   />
                   <Scatter data={allTeams} shape={<CustomizedDot clubId={clubId} />}>
-                    <LabelList dataKey="Team" position="top" fontSize={10} />
+                    <LabelList dataKey="Team" position="top" fontSize={14} fill={"var(--color-muted-foreground)"} />
                   </Scatter>
                   {regressionData.length > 0 && (
                       <Line type="monotone" dataKey="Points Earned" data={regressionData} stroke="#31348D" strokeWidth={2} dot={false}/>

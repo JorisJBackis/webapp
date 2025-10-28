@@ -10,7 +10,7 @@ interface PlayerPageProps {
 }
 
 export async function generateMetadata({ params }: PlayerPageProps): Promise<Metadata> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { id: playerId } = await params
 
   try {
@@ -84,7 +84,7 @@ export async function generateMetadata({ params }: PlayerPageProps): Promise<Met
 }
 
 export default async function PlayerPage({ params }: PlayerPageProps) {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { id: playerId } = await params
 
   try {

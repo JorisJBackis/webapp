@@ -1,98 +1,262 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 238 47% 38%;
+@source '../*.{js,ts,jsx,tsx,mdx}';
 
-    --card: 0 0% 100%;
-    --card-foreground: 238 47% 38%;
+@custom-variant dark (&:is(.dark *));
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 238 47% 38%;
 
-    --primary: 238 47% 38%;
-    --primary-foreground: 0 0% 100%;
+@theme {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 238 47% 38%;
+    --color-footylabs-blue: #3949ab;
+    --color-footylabs-newblue: #31348d;
+    --color-footylabs-darkblue: #0d1b2a;
+    --color-footylabs-teal: #1e3a8a;
+    --color-footylabs-light: #f8fafc;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --color-chart-1: 221 83% 53%;
+    --color-chart-2: 250 95% 64%;
+    --color-chart-3: 142 76% 36%;
+    --color-chart-4: 341 79% 53%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 238 47% 38%;
+    --radius-lg: var(--radius);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-sm: calc(var(--radius) - 4px);
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 100%;
+    --animate-accordion-down: accordion-down 0.2s ease-out;
+    --animate-accordion-up: accordion-up 0.2s ease-out;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 238 47% 38%;
+    --color-red-card: hsl(var(--color-red-card));
+    --color-yellow-card: hsl(var(--color-yellow-card));
+    --color-success: hsl(var(--color-success));
 
+    @keyframes accordion-down {
+        from {
+            height: 0;
+        }
+        to {
+            height: var(--radix-accordion-content-height);
+        }
+    }
+    @keyframes accordion-up {
+        from {
+            height: var(--radix-accordion-content-height);
+        }
+        to {
+            height: 0;
+        }
+    }
+}
+
+:root {
+    /* New base colors */
+    --background: oklch(0.9843 0.0017 247.8393);
+    --foreground: oklch(0.4511 0.1570 271.6021);
+    --card: oklch(1.0000 0 0);
+    --card-foreground: oklch(0.4511 0.1570 271.6021);
+    --popover: oklch(1.0000 0 0);
+    --popover-foreground: oklch(0.4511 0.1570 271.6021);
+    --primary: oklch(0.4511 0.1570 271.6021);
+    --primary-foreground: oklch(0.9838 0.0035 247.8583);
+    --secondary: oklch(0.9684 0.0068 247.8951);
+    --secondary-foreground: oklch(0.4511 0.1570 271.6021);
+    --muted: oklch(0.9684 0.0068 247.8951);
+    --muted-foreground: oklch(0.5547 0.0407 257.4404);
+    --accent: oklch(0.8442 0.1722 84.9338);
+    --accent-foreground: oklch(0.2177 0.0356 251.2935);
+    --destructive: oklch(0.6368 0.2078 25.3259);
+    --destructive-foreground: oklch(0.9838 0.0035 247.8583);
+    --border: oklch(0.9290 0.0126 255.5317);
+    --input: oklch(0.9290 0.0126 255.5317);
+    --ring: oklch(0.4511 0.1570 271.6021);
     --radius: 0.5rem;
 
+    /* Keep old chart & success colors */
     --chart-1: 238 47% 38%;
     --chart-2: 250 95% 64%;
     --chart-3: 142 76% 36%;
     --chart-4: 341 79% 53%;
-  }
+    --color-red-card: hsl(0, 100%, 67%);
+    --color-yellow-card: hsl(51, 77%, 55%);
+    --color-success: hsl(142, 71%, 45%);
 
-  .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 238 47% 38%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 238 47% 38%;
-  }
+    /* Keep old sidebar colors */
+    --sidebar: hsl(0 0% 98%);
+    --sidebar-foreground: hsl(240 5.3% 26.1%);
+    --sidebar-primary: hsl(240 5.9% 10%);
+    --sidebar-primary-foreground: hsl(0 0% 98%);
+    --sidebar-accent: hsl(240 4.8% 95.9%);
+    --sidebar-accent-foreground: hsl(240 5.9% 10%);
+    --sidebar-border: hsl(220 13% 91%);
+    --sidebar-ring: hsl(217.2 91.2% 59.8%);
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+.dark {
+    /* Dark mode base colors */
+    --background: oklch(0.2177 0.0356 251.2935);
+    --foreground: oklch(0.9842 0.0034 247.8575);
+    /*--card: oklch(0.3805 0.1444 275.6431);*/
+    --card: oklch(0.2177 0.0356 251.2935);
+    --card-foreground: oklch(0.9842 0.0034 247.8575);
+    --popover: oklch(0.2079 0.0399 265.7275);
+    --popover-foreground: oklch(0.9842 0.0034 247.8575);
+    --primary: #7C85C7;
+    --primary-foreground: #FfF;
+    --secondary: oklch(0.4511 0.1570 271.6021);
+    --secondary-foreground: oklch(0.9842 0.0034 247.8575);
+    --muted: oklch(0.2800 0.0369 259.9740);
+    --muted-foreground: oklch(0.7107 0.0351 256.7877);
+    --accent: oklch(0.8442 0.1722 84.9338);
+    --accent-foreground: oklch(0.2177 0.0356 251.2935);
+    --destructive: oklch(0.704 0.191 22.216);
+    --destructive-foreground: oklch(0.9838 0.0035 247.8583);
+    --border: oklch(0.2800 0.0369 259.9740);
+    --input: oklch(0.2800 0.0369 259.9740);
+    --ring: oklch(0.8442 0.1722 84.9338);
+
+    /* Keep old chart & success colors */
+    --chart-1: 238 47% 38%;
+    --chart-2: 250 95% 64%;
+    --chart-3: 142 76% 36%;
+    --chart-4: 341 79% 53%;
+    --color-red-card: hsl(0, 100%, 67%);
+    --color-yellow-card: hsl(51, 77%, 55%);
+    --color-success: hsl(142, 71%, 45%);
+
+    /* Keep old sidebar colors */
+    --sidebar: hsl(240 5.9% 10%);
+    --sidebar-foreground: hsl(240 4.8% 95.9%);
+    --sidebar-primary: hsl(224.3 76.3% 48%);
+    --sidebar-primary-foreground: hsl(0 0% 100%);
+    --sidebar-accent: hsl(240 3.7% 15.9%);
+    --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
+    --sidebar-border: hsl(240 3.7% 15.9%);
+    --sidebar-ring: hsl(217.2 91.2% 59.8%);
 }
 
-.hero-section {
-  background-image: linear-gradient(rgba(49, 52, 141, 0.7), rgba(49, 52, 141, 0.8)), url("/football-field-night.jpg");
-  background-size: cover;
-  background-position: center;
-}
 
 /* Custom styles for charts */
 :root {
-  --color-wins: hsl(var(--chart-1));
-  --color-draws: hsl(var(--chart-2));
-  --color-losses: hsl(var(--chart-3));
-  --color-goalsScored: hsl(var(--chart-1));
-  --color-goalsConceded: hsl(var(--chart-4));
-  --color-yourTeam: hsl(var(--chart-1));
-  --color-leagueAverage: hsl(var(--chart-2));
+    --color-wins: hsl(var(--chart-1));
+    --color-draws: hsl(var(--chart-2));
+    --color-losses: hsl(var(--chart-3));
+    --color-goalsScored: hsl(var(--chart-1));
+    --color-goalsConceded: hsl(var(--chart-4));
+    --color-yourTeam: hsl(var(--chart-1));
+    --color-leagueAverage: hsl(var(--chart-2));
+    --sidebar: hsl(0 0% 98%);
+    --sidebar-foreground: hsl(240 5.3% 26.1%);
+    --sidebar-primary: hsl(240 5.9% 10%);
+    --sidebar-primary-foreground: hsl(0 0% 98%);
+    --sidebar-accent: hsl(240 4.8% 95.9%);
+    --sidebar-accent-foreground: hsl(240 5.9% 10%);
+    --sidebar-border: hsl(220 13% 91%);
+    --sidebar-ring: hsl(217.2 91.2% 59.8%);
+}
+
+.dark {
+    --sidebar: hsl(240 5.9% 10%);
+    --sidebar-foreground: hsl(240 4.8% 95.9%);
+    --sidebar-primary: hsl(224.3 76.3% 48%);
+    --sidebar-primary-foreground: hsl(0 0% 100%);
+    --sidebar-accent: hsl(240 3.7% 15.9%);
+    --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
+    --sidebar-border: hsl(240 3.7% 15.9%);
+    --sidebar-ring: hsl(217.2 91.2% 59.8%);
+}
+
+@theme inline {
+    --breakpoint-3xl: 1600px;
+    --breakpoint-4xl: 2000px;
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+    --animate-accordion-down: accordion-down 0.2s ease-out;
+    --animate-accordion-up: accordion-up 0.2s ease-out;
+    /*
+    ---break---
+  */
+    @keyframes accordion-down {
+        from {
+            height: 0;
+        }
+        to {
+            height: var(--radix-accordion-content-height);
+        }
+    }
+    /*
+    ---break---
+  */
+    @keyframes accordion-up {
+        from {
+            height: var(--radix-accordion-content-height);
+        }
+        to {
+            height: 0;
+        }
+    }
+}
+
+
+@utility container {
+    @apply 3xl:max-w-screen-2xl mx-auto max-w-[1400px] px-4 lg:px-8;
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+
+@layer base {
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: var(--color-gray-200, currentcolor);
+    }
+
+    * {
+        @apply border-border outline-ring/50;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+    }
+
+    html {
+        @apply scroll-smooth;
+    }
+
+    body {
+        font-synthesis-weight: none;
+        text-rendering: optimizeLegibility;
+    }
 }
