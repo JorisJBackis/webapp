@@ -1,153 +1,119 @@
--- Enable pg_net extension for HTTP requests
-CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
-
--- Grant necessary permissions
-GRANT USAGE ON SCHEMA extensions TO postgres, anon, authenticated, service_role;
-GRANT ALL ON ALL TABLES IN SCHEMA extensions TO postgres, anon, authenticated, service_role;
-GRANT ALL ON ALL ROUTINES IN SCHEMA extensions TO postgres, anon, authenticated, service_role;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA extensions TO postgres, anon, authenticated, service_role;
-
--- Function to trigger admin notification email
+-- Update notify_admins_new_registration to use tunnel and be non-blocking
 CREATE OR REPLACE FUNCTION notify_admins_new_registration()
-RETURNS TRIGGER AS $$
-DECLARE
-  user_email TEXT;
-  club_name TEXT;
-  api_url TEXT;
-  api_secret TEXT;
+  RETURNS TRIGGER AS $$
+  DECLARE
+user_email TEXT;
+    club_name TEXT;
+    api_url TEXT;
 BEGIN
-  -- Get user email from auth.users
-  SELECT email INTO user_email FROM auth.users WHERE id = NEW.id;
+    -- Wrap in exception handler so registration doesn't fail if email fails
+BEGIN
+SELECT email INTO user_email FROM auth.users WHERE id = NEW.id;
 
-  -- Get club name if exists
-  IF NEW.club_id IS NOT NULL THEN
-    SELECT name INTO club_name FROM clubs WHERE id = NEW.club_id;
-  END IF;
+IF NEW.club_id IS NOT NULL THEN
+SELECT name INTO club_name FROM clubs WHERE id = NEW.club_id;
+END IF;
 
-  -- Use production URL (change this to your actual domain)
-  api_url := 'https://app.footylabs.ai/api/emails/notify-admin';
-  api_secret := '';
+      -- Use Cloudflare tunnel for testing
+      api_url := 'https://requests-detection-stolen-surveillance.trycloudflare.com/api/emails/notify-admin';
 
-  -- Trigger email notification via API
-  PERFORM extensions.http_post(
-    url := api_url,
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || COALESCE(api_secret, '')
-    ),
-    body := jsonb_build_object(
-      'userEmail', user_email,
-      'userType', NEW.user_type,
-      'clubName', club_name,
-      'registeredAt', NEW.created_at
-    )::text
-  );
-
-  RETURN NEW;
+      PERFORM net.http_post(
+        url := api_url,
+        headers := jsonb_build_object('Content-Type', 'application/json'),
+        body := jsonb_build_object(
+          'userEmail', user_email,
+          'userType', NEW.user_type,
+          'clubName', club_name,
+          'registeredAt', NEW.created_at
+        )
+      );
+EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING 'Failed to send admin notification: %', SQLERRM;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Create trigger for new user registration
-DROP TRIGGER IF EXISTS on_profile_created_notify_admins ON profiles;
-CREATE TRIGGER on_profile_created_notify_admins
-  AFTER INSERT ON profiles
-  FOR EACH ROW
-  WHEN (NEW.approval_status = 'pending')
-  EXECUTE FUNCTION notify_admins_new_registration();
+RETURN NEW;
+END;
+  $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Update approve_user function to send email notification
-CREATE OR REPLACE FUNCTION approve_user(target_user_id UUID, admin_notes_text TEXT DEFAULT NULL)
-RETURNS void AS $$
-DECLARE
-  user_email TEXT;
-  api_url TEXT;
-  api_secret TEXT;
+  -- Update approve_user to use tunnel and be non-blocking
+  CREATE OR REPLACE FUNCTION approve_user(target_user_id UUID, admin_notes_text TEXT DEFAULT NULL)
+  RETURNS void AS $$
+  DECLARE
+user_email TEXT;
+    api_url TEXT;
 BEGIN
-  -- Check if the caller is an admin
-  IF NOT is_admin(auth.uid()) THEN
-    RAISE EXCEPTION 'Only admins can approve users';
-  END IF;
+    IF NOT is_admin(auth.uid()) THEN
+      RAISE EXCEPTION 'Only admins can approve users';
+END IF;
 
-  -- Update the user's approval status
-  UPDATE profiles
-  SET
+    -- Always update approval status (critical operation)
+UPDATE profiles
+SET
     approval_status = 'approved',
     approved_at = NOW(),
     approved_by = auth.uid(),
     admin_notes = admin_notes_text
-  WHERE id = target_user_id;
+WHERE id = target_user_id;
 
-  -- Get user email
-  SELECT email INTO user_email FROM auth.users WHERE id = target_user_id;
-
-  -- Use production URL (change this to your actual domain)
-  api_url := 'https://app.footylabs.ai/api/emails/notify-approval';
-  api_secret := '';
-
-  -- Send approval notification email
-  PERFORM extensions.http_post(
-    url := api_url,
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || COALESCE(api_secret, '')
-    ),
-    body := jsonb_build_object(
-      'userEmail', user_email,
-      'userName', user_email
-    )::text
-  );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Update reject_user function to send email notification
-CREATE OR REPLACE FUNCTION reject_user(
-  target_user_id UUID,
-  reason TEXT,
-  admin_notes_text TEXT DEFAULT NULL
-)
-RETURNS void AS $$
-DECLARE
-  user_email TEXT;
-  api_url TEXT;
-  api_secret TEXT;
+-- Try to send email (non-critical, non-blocking)
 BEGIN
-  -- Check if the caller is an admin
-  IF NOT is_admin(auth.uid()) THEN
-    RAISE EXCEPTION 'Only admins can reject users';
-  END IF;
+SELECT email INTO user_email FROM auth.users WHERE id = target_user_id;
+api_url := 'https://requests-detection-stolen-surveillance.trycloudflare.com/api/emails/notify-approval';
 
-  -- Update the user's approval status
-  UPDATE profiles
-  SET
+      PERFORM net.http_post(
+        url := api_url,
+        headers := jsonb_build_object('Content-Type', 'application/json'),
+        body := jsonb_build_object(
+          'userEmail', user_email,
+          'userName', user_email
+        )
+      );
+EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING 'Failed to send approval email: %', SQLERRM;
+END;
+END;
+  $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+  -- Update reject_user to use tunnel and be non-blocking
+  CREATE OR REPLACE FUNCTION reject_user(
+    target_user_id UUID,
+    reason TEXT,
+    admin_notes_text TEXT DEFAULT NULL
+  )
+  RETURNS void AS $$
+  DECLARE
+user_email TEXT;
+    api_url TEXT;
+BEGIN
+    IF NOT is_admin(auth.uid()) THEN
+      RAISE EXCEPTION 'Only admins can reject users';
+END IF;
+
+    -- Always update rejection status (critical operation)
+UPDATE profiles
+SET
     approval_status = 'rejected',
     approved_by = auth.uid(),
     rejection_reason = reason,
     admin_notes = admin_notes_text
-  WHERE id = target_user_id;
+WHERE id = target_user_id;
 
-  -- Get user email
-  SELECT email INTO user_email FROM auth.users WHERE id = target_user_id;
+-- Try to send email (non-critical, non-blocking)
+BEGIN
+SELECT email INTO user_email FROM auth.users WHERE id = target_user_id;
+api_url := 'https://requests-detection-stolen-surveillance.trycloudflare.com/api/emails/notify-rejection';
 
-  -- Use production URL (change this to your actual domain)
-  api_url := 'https://app.footylabs.ai/api/emails/notify-rejection';
-  api_secret := '';
-
-  -- Send rejection notification email
-  PERFORM extensions.http_post(
-    url := api_url,
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || COALESCE(api_secret, '')
-    ),
-    body := jsonb_build_object(
-      'userEmail', user_email,
-      'userName', user_email,
-      'rejectionReason', reason
-    )::text
-  );
+      PERFORM net.http_post(
+        url := api_url,
+        headers := jsonb_build_object('Content-Type', 'application/json'),
+        body := jsonb_build_object(
+          'userEmail', user_email,
+          'userName', user_email,
+          'rejectionReason', reason
+        )
+      );
+EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING 'Failed to send rejection email: %', SQLERRM;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Note: The API URLs are hardcoded to https://app.footylabs.ai
--- To test locally, temporarily change the URLs in the functions above to your ngrok/cloudflare tunnel URL
--- For production, the URLs point to https://app.footylabs.ai which is your deployed domain
+END;
+  $$ LANGUAGE plpgsql SECURITY DEFINER;
