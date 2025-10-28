@@ -39,8 +39,9 @@ export default function MyWatchlist({ userClubId }: { userClubId: number }) {
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerDataForModal | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  // Full player names from transfermarkt
+  // Full player names and club names from transfermarkt
   const [fullPlayerNames, setFullPlayerNames] = useState<Map<number, string>>(new Map())
+  const [fullClubNames, setFullClubNames] = useState<Map<number, string>>(new Map())
 
   const supabase = createClient()
   const { toast } = useToast()
@@ -104,6 +105,11 @@ export default function MyWatchlist({ userClubId }: { userClubId: number }) {
   // Handle player name update from LastMatchWatchlist
   const handlePlayerNameUpdate = (playerId: number, fullName: string) => {
     setFullPlayerNames(prev => new Map(prev).set(playerId, fullName))
+  }
+
+  // Handle club name update from LastMatchWatchlist
+  const handleClubNameUpdate = (playerId: number, clubName: string) => {
+    setFullClubNames(prev => new Map(prev).set(playerId, clubName))
   }
 
   // Remove player from watchlist
@@ -221,7 +227,7 @@ export default function MyWatchlist({ userClubId }: { userClubId: number }) {
                           <TableCell className="font-medium">
                             {fullPlayerNames.get(player.id) || player.name}
                           </TableCell>
-                          <TableCell>{player.club_name}</TableCell>
+                          <TableCell>{fullClubNames.get(player.id) || player.club_name}</TableCell>
                           <TableCell>{player.club_league}</TableCell>
                           <TableCell>
                             <Badge variant="outline">{player.position}</Badge>
@@ -231,6 +237,7 @@ export default function MyWatchlist({ userClubId }: { userClubId: number }) {
                               playerId={player.id} 
                               playerName={player.name}
                               onPlayerNameUpdate={(fullName) => handlePlayerNameUpdate(player.id, fullName)}
+                              onClubNameUpdate={(clubName) => handleClubNameUpdate(player.id, clubName)}
                             />
                           </TableCell>
                           <TableCell>
