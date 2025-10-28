@@ -39,6 +39,9 @@ export default function MyWatchlist({ userClubId }: { userClubId: number }) {
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerDataForModal | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
+  // Full player names from transfermarkt
+  const [fullPlayerNames, setFullPlayerNames] = useState<Map<number, string>>(new Map())
+
   const supabase = createClient()
   const { toast } = useToast()
 
@@ -72,6 +75,8 @@ export default function MyWatchlist({ userClubId }: { userClubId: number }) {
 
       if (error) throw error
 
+      console.log(data)
+
       // Process results
       const processedPlayers =
         data?.map((item) => ({
@@ -94,6 +99,11 @@ export default function MyWatchlist({ userClubId }: { userClubId: number }) {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Handle player name update from LastMatchWatchlist
+  const handlePlayerNameUpdate = (playerId: number, fullName: string) => {
+    setFullPlayerNames(prev => new Map(prev).set(playerId, fullName))
   }
 
   // Remove player from watchlist
@@ -133,7 +143,7 @@ export default function MyWatchlist({ userClubId }: { userClubId: number }) {
   const handlePlayerClick = (player: WatchlistPlayer) => {
     const playerForModal: PlayerDataForModal = {
       id: player.id,
-      name: player.name,
+      name: fullPlayerNames.get(player.id) || player.name,
       position: player.position,
       player_pos: player.position,
       stats: player.stats,
@@ -208,7 +218,9 @@ export default function MyWatchlist({ userClubId }: { userClubId: number }) {
                             className="hover:bg-muted/50 cursor-pointer"
                             onClick={() => handlePlayerClick(player)}
                         >
-                          <TableCell className="font-medium">{player.name}</TableCell>
+                          <TableCell className="font-medium">
+                            {fullPlayerNames.get(player.id) || player.name}
+                          </TableCell>
                           <TableCell>{player.club_name}</TableCell>
                           <TableCell>{player.club_league}</TableCell>
                           <TableCell>
@@ -217,7 +229,8 @@ export default function MyWatchlist({ userClubId }: { userClubId: number }) {
                           <TableCell>
                             <LastMatchWatchlist 
                               playerId={player.id} 
-                              playerName={player.name}  // ADD THIS
+                              playerName={player.name}
+                              onPlayerNameUpdate={(fullName) => handlePlayerNameUpdate(player.id, fullName)}
                             />
                           </TableCell>
                           <TableCell>
@@ -236,7 +249,7 @@ export default function MyWatchlist({ userClubId }: { userClubId: number }) {
                                 size="sm"
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  removeFromWatchlist(player.watchlist_id, player.name)
+                                  removeFromWatchlist(player.watchlist_id, fullPlayerNames.get(player.id) || player.name)
                                 }}
                                 disabled={removingIds.has(player.watchlist_id)}
                                 className="p-1 hover:bg-red-50 hover:text-red-600"

@@ -7,9 +7,10 @@ import SoccerIcon from "@/components/scouting/soccer-icon"
 import Link from "next/link"
 import {Loader2} from "lucide-react"
 
-export function LastMatchWatchlist({playerId, playerName}: {
+export function LastMatchWatchlist({playerId, playerName, onPlayerNameUpdate}: {
   playerId: number | string
   playerName: string
+  onPlayerNameUpdate?: (fullName: string) => void
 }) {
   const [matchData, setMatchData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -63,6 +64,12 @@ export function LastMatchWatchlist({playerId, playerName}: {
         }
 
         const data = matchResults[0]
+        const fullPlayerName = data.player_name
+
+        if (onPlayerNameUpdate) {
+          onPlayerNameUpdate(fullPlayerName)  // ADD THIS
+        }
+        
         console.log(`✅ Step 3 complete: Found latest match`)
 
         console.log(`✅ All steps complete:`, {
