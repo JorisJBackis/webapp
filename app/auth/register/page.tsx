@@ -63,10 +63,7 @@ export default function RegisterPage() {
   const [loadingPlayers, setLoadingPlayers] = useState(true)
   const [playerNotFound, setPlayerNotFound] = useState(false)
   const [playerName, setPlayerName] = useState("")
-  const [playerPosition, setPlayerPosition] = useState("")
-  const [playerClub, setPlayerClub] = useState("")
-  const [playerDOB, setPlayerDOB] = useState("")
-  const [playerNationality, setPlayerNationality] = useState("")
+  const [transfermarktLink, setTransfermarktLink] = useState("")
   const [registrationNote, setRegistrationNote] = useState("")
 
   useEffect(() => {
@@ -202,8 +199,14 @@ export default function RegisterPage() {
       return
     }
 
-    if (role === 'player' && playerNotFound && (!playerName || !playerPosition)) {
-      setError("Please provide your name and position")
+    if (role === 'player' && playerNotFound && !transfermarktLink) {
+      setError("Please provide your Transfermarkt profile link")
+      setLoading(false)
+      return
+    }
+
+    if (!registrationNote.trim()) {
+      setError("Please tell us about yourself - this field is required")
       setLoading(false)
       return
     }
@@ -221,22 +224,24 @@ export default function RegisterPage() {
 
       // If email doesn't exist, proceed with sign up
       const signUpData = role === 'club'
-        ? { club_id: selectedClub?.id, user_type: 'club_staff' }
+        ? {
+            club_id: selectedClub?.id,
+            user_type: 'club_staff',
+            registration_note: registrationNote || null
+          }
         : playerNotFound
           ? {
               user_type: 'player',
               player_not_in_database: true,
-              player_name: playerName,
-              player_position: playerPosition,
-              player_club: playerClub,
-              player_dob: playerDOB,
-              player_nationality: playerNationality
+              transfermarkt_link: transfermarktLink,
+              registration_note: registrationNote
             }
           : {
               wyscout_player_id: selectedPlayer?.wyscout_player_id || selectedPlayer?.id,
               user_type: 'player',
               player_name: selectedPlayer?.name,
-              player_position: selectedPlayer?.position
+              player_position: selectedPlayer?.position,
+              registration_note: registrationNote
             };
       if (!supabase) return;
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -266,100 +271,17 @@ export default function RegisterPage() {
       }
 
       if (authData.user) {
-        if (role === 'club' && selectedClub) {
-          // Create club staff profile
-          const { error: profileError } = await supabase.from("profiles").upsert({
-            id: authData.user.id,
-            club_id: selectedClub.id,
-            user_type: 'club_staff',
-            registration_note: registrationNote || null,
-            updated_at: new Date().toISOString(),
-          })
-
-          if (profileError) {
-            console.error("Error updating club profile:", profileError)
-          }
-        } else if (role === 'player') {
+        // Trigger handles all profile and player_profiles creation automatically
+        console.log("User created successfully. Trigger has handled profile creation.")
+        console.log("User type:", role)
+        if (role === 'player') {
           if (playerNotFound) {
-            // Player not in database - create data request
-            console.log("Creating data request for player:", playerName)
-
-            // Create player profile
-            const { error: profileError } = await supabase.from("profiles").upsert({
-              id: authData.user.id,
-              club_id: null,
-              user_type: 'player',
-              registration_note: registrationNote || null,
-              updated_at: new Date().toISOString(),
-            })
-
-            if (profileError) {
-              console.error("Error creating player profile:", profileError)
-            }
-
-            // Create data request
-            const { error: dataRequestError } = await supabase.from("player_data_requests").insert({
-              user_id: authData.user.id,
-              player_name: playerName,
-              email: email,
-              current_club: playerClub || null,
-              position: playerPosition,
-              nationality: playerNationality || null,
-              date_of_birth: playerDOB || null,
-              additional_info: `Registration request from player not in database`,
-              status: 'pending'
-            })
-
-            if (dataRequestError) {
-              console.error("Error creating data request:", dataRequestError)
-            } else {
-              console.log("Data request created successfully for:", playerName)
-            }
-
-            // Create player_profiles entry with null wyscout_player_id
-            const { error: playerProfileError } = await supabase.from("player_profiles").insert({
-              id: authData.user.id,
-              wyscout_player_id: null, // No Wyscout ID yet
-              looking_status: 'open_to_offers',
-            })
-
-            if (playerProfileError) {
-              console.error("ERROR creating player_profiles entry:", playerProfileError)
-            }
+            console.log("Player not in database - Transfermarkt link:", transfermarktLink)
           } else if (selectedPlayer) {
-            console.log("Creating player profile for:", selectedPlayer.name)
-            console.log("Selected player wyscout_player_id:", selectedPlayer.wyscout_player_id)
-
-            // Create player profile (though trigger should handle this)
-            const { error: profileError } = await supabase.from("profiles").upsert({
-              id: authData.user.id,
-              club_id: null, // Players don't belong to a specific club in profiles
-              user_type: 'player',
-              registration_note: registrationNote || null,
-              updated_at: new Date().toISOString(),
-            })
-
-            if (profileError) {
-              console.error("Error creating player profile:", profileError)
-            } else {
-              console.log("Player profile created/updated successfully")
-            }
-
-            // Create player_profiles entry
-            console.log("About to create player_profiles entry...")
-            const { error: playerProfileError } = await supabase.from("player_profiles").insert({
-              id: authData.user.id,
-              wyscout_player_id: selectedPlayer.wyscout_player_id, // Link to stable Wyscout ID
-              looking_status: 'open_to_offers',
-            })
-
-            if (playerProfileError) {
-              console.error("ERROR creating player_profiles entry:", playerProfileError)
-              console.error("Selected player data:", selectedPlayer)
-            } else {
-              console.log("SUCCESS: Created player_profiles entry for:", selectedPlayer.name)
-            }
+            console.log("Player in database:", selectedPlayer.name)
           }
+        } else if (role === 'club') {
+          console.log("Club:", selectedClub?.name)
         }
       }
 
@@ -538,77 +460,78 @@ export default function RegisterPage() {
               </Select>
             </div>
 
-            {/* Step 2: Club Selection (Conditional) */}
-            <div className="space-y-2">
-              <Label htmlFor="club" className={isClubSelectionDisabled ? 'text-muted-foreground' : ''}>
-                Your Club
-              </Label>
-              <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                      id="club"
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={open}
-                      className="w-full justify-between"
-                      // <<< APPLY THE DISABLED STATE HERE >>>
-                      disabled={isClubSelectionDisabled || loadingClubs}
-                  >
-                    {loadingClubs
-                        ? "Loading clubs..."
-                        : selectedClub
-                            ? (
-                                <div className="flex items-center">
-                                  <Avatar className="h-6 w-6 mr-2">
-                                    <AvatarImage src={selectedClub.logo_url || ""} alt={selectedClub.name} />
-                                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                                      {selectedClub.name.charAt(0)}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  {selectedClub.name}
-                                </div>
-                            )
-                            : "Select your club..."}
-                    <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[300px] p-0">
-                  <Command>
-                    <CommandInput placeholder="Search clubs..." value={search} onValueChange={setSearch} />
-                    <CommandList>
-                      <CommandEmpty>No clubs found.</CommandEmpty>
-                      <CommandGroup>
-                        {filteredClubs.map((club) => (
-                            <CommandItem
-                                key={club.id}
-                                value={club.name}
-                                onSelect={() => {
-                                  setSelectedClub(club)
-                                  setOpen(false)
-                                }}
-                                className="flex items-center"
-                            >
-                              <Avatar className="h-6 w-6 mr-2">
-                                <AvatarImage src={club.logo_url || ""} alt={club.name} />
-                                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                                  {club.name.charAt(0)}
-                                </AvatarFallback>
-                              </Avatar>
-                              {club.name}
-                              <Check
-                                  className={cn(
-                                      "ml-auto h-4 w-4",
-                                      selectedClub?.id === club.id ? "opacity-100" : "opacity-0",
-                                  )}
-                              />
-                            </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
+            {/* Step 2: Club Selection (Only show when role is "club") */}
+            {role === "club" && (
+              <div className="space-y-2">
+                <Label htmlFor="club">
+                  Your Club
+                </Label>
+                <Popover open={open} onOpenChange={setOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                        id="club"
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={open}
+                        className="w-full justify-between"
+                        disabled={loadingClubs}
+                    >
+                      {loadingClubs
+                          ? "Loading clubs..."
+                          : selectedClub
+                              ? (
+                                  <div className="flex items-center">
+                                    <Avatar className="h-6 w-6 mr-2">
+                                      <AvatarImage src={selectedClub.logo_url || ""} alt={selectedClub.name} />
+                                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                                        {selectedClub.name.charAt(0)}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    {selectedClub.name}
+                                  </div>
+                              )
+                              : "Select your club..."}
+                      <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0">
+                    <Command>
+                      <CommandInput placeholder="Search clubs..." value={search} onValueChange={setSearch} />
+                      <CommandList>
+                        <CommandEmpty>No clubs found.</CommandEmpty>
+                        <CommandGroup>
+                          {filteredClubs.map((club) => (
+                              <CommandItem
+                                  key={club.id}
+                                  value={club.name}
+                                  onSelect={() => {
+                                    setSelectedClub(club)
+                                    setOpen(false)
+                                  }}
+                                  className="flex items-center"
+                              >
+                                <Avatar className="h-6 w-6 mr-2">
+                                  <AvatarImage src={club.logo_url || ""} alt={club.name} />
+                                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                                    {club.name.charAt(0)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                {club.name}
+                                <Check
+                                    className={cn(
+                                        "ml-auto h-4 w-4",
+                                        selectedClub?.id === club.id ? "opacity-100" : "opacity-0",
+                                    )}
+                                />
+                              </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
 
             {/* Player Selection (Conditional) */}
             {role === "player" && (
@@ -708,58 +631,16 @@ export default function RegisterPage() {
                     <div className="text-sm font-medium text-blue-900 dark:text-blue-100">
                       FootyLabs will be notified of your registration and will add your data within 5 working days.
                     </div>
-                    <div className="space-y-3">
-                      <div className="space-y-2">
-                        <Label htmlFor="player-name" className="text-sm">Full Name *</Label>
-                        <Input
-                          id="player-name"
-                          type="text"
-                          placeholder="Your full name"
-                          value={playerName}
-                          onChange={(e) => setPlayerName(e.target.value)}
-                          required={playerNotFound}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="player-position" className="text-sm">Position *</Label>
-                        <Input
-                          id="player-position"
-                          type="text"
-                          placeholder="e.g. Center Forward, Left Winger"
-                          value={playerPosition}
-                          onChange={(e) => setPlayerPosition(e.target.value)}
-                          required={playerNotFound}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="player-club" className="text-sm">Current Club</Label>
-                        <Input
-                          id="player-club"
-                          type="text"
-                          placeholder="Your current club (optional)"
-                          value={playerClub}
-                          onChange={(e) => setPlayerClub(e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="player-dob" className="text-sm">Date of Birth</Label>
-                        <Input
-                          id="player-dob"
-                          type="date"
-                          value={playerDOB}
-                          onChange={(e) => setPlayerDOB(e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="player-nationality" className="text-sm">Nationality</Label>
-                        <Input
-                          id="player-nationality"
-                          type="text"
-                          placeholder="Your nationality (optional)"
-                          value={playerNationality}
-                          onChange={(e) => setPlayerNationality(e.target.value)}
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="transfermarkt-link" className="text-sm">Transfermarkt Profile Link *</Label>
+                      <Input
+                        id="transfermarkt-link"
+                        type="url"
+                        placeholder="https://www.transfermarkt.com/..."
+                        value={transfermarktLink}
+                        onChange={(e) => setTransfermarktLink(e.target.value)}
+                        required={playerNotFound}
+                      />
                     </div>
                   </div>
                 )}
@@ -769,11 +650,11 @@ export default function RegisterPage() {
             {/* Registration Note */}
             <div className="space-y-2">
               <Label htmlFor="registration-note">
-                Tell us about yourself (Optional)
-                <span className="text-xs text-muted-foreground block mt-1">
-                  Help admins verify your account by introducing yourself, your role, and why you're joining FootyLabs
-                </span>
+                Tell us about yourself *
               </Label>
+              <span className="text-xs text-muted-foreground block mt-2 mb-2">
+                Help admins verify your account by introducing yourself, your role, and why you're joining FootyLabs
+              </span>
               <Textarea
                 id="registration-note"
                 placeholder="e.g., I'm the sporting director at [Club Name], looking to use FootyLabs for scouting and recruitment..."
@@ -781,6 +662,7 @@ export default function RegisterPage() {
                 onChange={(e) => setRegistrationNote(e.target.value)}
                 rows={4}
                 className="resize-none"
+                required
               />
             </div>
 
