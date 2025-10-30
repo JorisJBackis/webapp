@@ -55,57 +55,6 @@ export default async function AdminDashboard() {
     .select("*", { count: "exact", head: true })
     .eq("approval_status", "rejected")
 
-  async function approveUser(formData: FormData) {
-    "use server"
-    const supabase = await createClient()
-    const userId = formData.get("userId") as string
-    const adminNotes = formData.get("adminNotes") as string
-
-    await supabase.rpc("approve_user", {
-      target_user_id: userId,
-      admin_notes_text: adminNotes || null,
-    })
-
-    redirect("/admin")
-  }
-
-  async function rejectUser(formData: FormData) {
-    "use server"
-    const supabase = await createClient()
-    const userId = formData.get("userId") as string
-    const reason = formData.get("reason") as string
-    const adminNotes = formData.get("adminNotes") as string
-
-    if (!reason) {
-      throw new Error("Rejection reason is required")
-    }
-
-    await supabase.rpc("reject_user", {
-      target_user_id: userId,
-      reason: reason,
-      admin_notes_text: adminNotes || null,
-    })
-
-    redirect("/admin")
-  }
-
-  async function changeUserStatus(formData: FormData) {
-    "use server"
-    const supabase = await createClient()
-    const userId = formData.get("userId") as string
-    const newStatus = formData.get("newStatus") as string
-    const reason = formData.get("reason") as string
-    const adminNotes = formData.get("adminNotes") as string
-
-    await supabase.rpc("change_user_status", {
-      target_user_id: userId,
-      new_status: newStatus,
-      reason_text: reason || null,
-      admin_notes_text: adminNotes || null,
-    })
-
-    redirect("/admin")
-  }
 
   async function handleSignOut() {
     "use server"
@@ -185,9 +134,6 @@ export default async function AdminDashboard() {
               pendingUsers={pendingUsers || []}
               approvedUsers={approvedUsers || []}
               rejectedUsers={rejectedUsers || []}
-              onApprove={approveUser}
-              onReject={rejectUser}
-              onChangeStatus={changeUserStatus}
             />
           </CardContent>
         </Card>

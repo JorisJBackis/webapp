@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select"
 import { UserCheck, UserX, Clock, RefreshCw, MessageSquare, Mail, MailWarning } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
 
 type User = {
   id: string
@@ -36,19 +37,17 @@ type Props = {
   pendingUsers: User[]
   approvedUsers: User[]
   rejectedUsers: User[]
-  onApprove: (formData: FormData) => Promise<void>
-  onReject: (formData: FormData) => Promise<void>
-  onChangeStatus: (formData: FormData) => Promise<void>
 }
 
 export function UserManagementTabs({
-  pendingUsers,
-  approvedUsers,
-  rejectedUsers,
-  onApprove,
-  onReject,
-  onChangeStatus,
+  pendingUsers: initialPending,
+  approvedUsers: initialApproved,
+  rejectedUsers: initialRejected,
 }: Props) {
+  const [pendingUsers, setPendingUsers] = useState(initialPending)
+  const [approvedUsers, setApprovedUsers] = useState(initialApproved)
+  const [rejectedUsers, setRejectedUsers] = useState(initialRejected)
+
   return (
     <Tabs defaultValue="pending" className="w-full">
       <TabsList className="grid w-full grid-cols-3 mb-6">
@@ -70,9 +69,17 @@ export function UserManagementTabs({
         <UserList
           users={pendingUsers}
           status="pending"
-          onApprove={onApprove}
-          onReject={onReject}
-          onChangeStatus={onChangeStatus}
+          onUserUpdate={(userId, newStatus) => {
+            setPendingUsers(prev => prev.filter(u => u.id !== userId))
+            const user = pendingUsers.find(u => u.id === userId)
+            if (!user) return
+
+            if (newStatus === 'approved') {
+              setApprovedUsers(prev => [...prev, { ...user, approved_at: new Date().toISOString() }])
+            } else if (newStatus === 'rejected') {
+              setRejectedUsers(prev => [...prev, { ...user, approved_at: new Date().toISOString() }])
+            }
+          }}
         />
       </TabsContent>
 
@@ -80,9 +87,17 @@ export function UserManagementTabs({
         <UserList
           users={approvedUsers}
           status="approved"
-          onApprove={onApprove}
-          onReject={onReject}
-          onChangeStatus={onChangeStatus}
+          onUserUpdate={(userId, newStatus) => {
+            setApprovedUsers(prev => prev.filter(u => u.id !== userId))
+            const user = approvedUsers.find(u => u.id === userId)
+            if (!user) return
+
+            if (newStatus === 'pending') {
+              setPendingUsers(prev => [...prev, user])
+            } else if (newStatus === 'rejected') {
+              setRejectedUsers(prev => [...prev, user])
+            }
+          }}
         />
       </TabsContent>
 
@@ -90,9 +105,17 @@ export function UserManagementTabs({
         <UserList
           users={rejectedUsers}
           status="rejected"
-          onApprove={onApprove}
-          onReject={onReject}
-          onChangeStatus={onChangeStatus}
+          onUserUpdate={(userId, newStatus) => {
+            setRejectedUsers(prev => prev.filter(u => u.id !== userId))
+            const user = rejectedUsers.find(u => u.id === userId)
+            if (!user) return
+
+            if (newStatus === 'pending') {
+              setPendingUsers(prev => [...prev, user])
+            } else if (newStatus === 'approved') {
+              setApprovedUsers(prev => [...prev, user])
+            }
+          }}
         />
       </TabsContent>
     </Tabs>
@@ -102,52 +125,99 @@ export function UserManagementTabs({
 function UserList({
   users,
   status,
-  onApprove,
-  onReject,
-  onChangeStatus,
+  onUserUpdate,
 }: {
   users: User[]
   status: string
-  onApprove: (formData: FormData) => Promise<void>
-  onReject: (formData: FormData) => Promise<void>
-  onChangeStatus: (formData: FormData) => Promise<void>
+  onUserUpdate: (userId: string, newStatus: string) => void
 }) {
   const { toast } = useToast()
-  const [isPending, startTransition] = useTransition()
+  const [loadingUserId, setLoadingUserId] = useState<string | null>(null)
+  const router = useRouter()
 
-  const handleApprove = async (formData: FormData) => {
-    const email = users.find(u => u.id === formData.get("userId"))?.email
-    startTransition(async () => {
-      await onApprove(formData)
+  const handleApprove = async (userId: string, adminNotes: string, email: string) => {
+    setLoadingUserId(userId)
+    try {
+      const response = await fetch('/api/admin/approve-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, adminNotes }),
+      })
+
+      if (!response.ok) throw new Error('Failed to approve user')
+
+      onUserUpdate(userId, 'approved')
       toast({
         title: "✅ User Approved",
         description: `${email} has been approved and can now access the platform.`,
       })
-    })
+      router.refresh()
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to approve user. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoadingUserId(null)
+    }
   }
 
-  const handleReject = async (formData: FormData) => {
-    const email = users.find(u => u.id === formData.get("userId"))?.email
-    startTransition(async () => {
-      await onReject(formData)
+  const handleReject = async (userId: string, reason: string, adminNotes: string, email: string) => {
+    setLoadingUserId(userId)
+    try {
+      const response = await fetch('/api/admin/reject-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, reason, adminNotes }),
+      })
+
+      if (!response.ok) throw new Error('Failed to reject user')
+
+      onUserUpdate(userId, 'rejected')
       toast({
         title: "❌ User Rejected",
         description: `${email} has been rejected and notified.`,
         variant: "destructive",
       })
-    })
+      router.refresh()
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to reject user. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoadingUserId(null)
+    }
   }
 
-  const handleStatusChange = async (formData: FormData) => {
-    const email = users.find(u => u.id === formData.get("userId"))?.email
-    const newStatus = formData.get("newStatus") as string
-    startTransition(async () => {
-      await onChangeStatus(formData)
+  const handleStatusChange = async (userId: string, newStatus: string, reason: string, adminNotes: string, email: string) => {
+    setLoadingUserId(userId)
+    try {
+      const response = await fetch('/api/admin/change-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, newStatus, reason, adminNotes }),
+      })
+
+      if (!response.ok) throw new Error('Failed to change status')
+
+      onUserUpdate(userId, newStatus)
       toast({
         title: "🔄 Status Changed",
         description: `${email} status changed to ${newStatus}.`,
       })
-    })
+      router.refresh()
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to change status. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoadingUserId(null)
+    }
   }
 
   if (users.length === 0) {
@@ -226,77 +296,147 @@ function UserList({
 
               {/* Actions */}
               {status === "pending" && (
-                <div className="flex gap-3 pt-3 border-t">
-                  <form action={handleApprove} className="flex-1">
-                    <input type="hidden" name="userId" value={user.id} />
-                    <Textarea
-                      name="adminNotes"
-                      placeholder="Admin notes (optional)..."
-                      className="text-sm h-20 mb-2"
-                    />
-                    <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={isPending}>
-                      <UserCheck className="h-4 w-4 mr-2" />
-                      {isPending ? "Approving..." : "Approve"}
-                    </Button>
-                  </form>
-
-                  <form action={handleReject} className="flex-1">
-                    <input type="hidden" name="userId" value={user.id} />
-                    <Textarea
-                      name="reason"
-                      placeholder="Rejection reason (required)..."
-                      className="text-sm h-20 mb-2"
-                      required
-                    />
-                    <Button type="submit" variant="destructive" className="w-full" disabled={isPending}>
-                      <UserX className="h-4 w-4 mr-2" />
-                      {isPending ? "Rejecting..." : "Reject"}
-                    </Button>
-                  </form>
-                </div>
+                <PendingUserActions
+                  user={user}
+                  onApprove={handleApprove}
+                  onReject={handleReject}
+                  isLoading={loadingUserId === user.id}
+                />
               )}
 
               {status !== "pending" && (
-                <form action={handleStatusChange} className="pt-3 border-t">
-                  <input type="hidden" name="userId" value={user.id} />
-                  <div className="flex gap-3 items-end">
-                    <div className="flex-1">
-                      <Label className="text-xs mb-2 block">Change Status:</Label>
-                      <Select name="newStatus" defaultValue={status}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="approved">Approved</SelectItem>
-                          <SelectItem value="rejected">Rejected</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex-1">
-                      <Textarea
-                        name="adminNotes"
-                        placeholder="Notes about status change..."
-                        className="text-sm h-10"
-                      />
-                    </div>
-                    <Button type="submit" variant="outline" size="icon" disabled={isPending}>
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  {status === "rejected" && (
-                    <Textarea
-                      name="reason"
-                      placeholder="Rejection reason (if changing back to rejected)..."
-                      className="text-sm h-10 mt-2"
-                    />
-                  )}
-                </form>
+                <ApprovedRejectedActions
+                  user={user}
+                  currentStatus={status}
+                  onStatusChange={handleStatusChange}
+                  isLoading={loadingUserId === user.id}
+                />
               )}
             </div>
           </CardContent>
         </Card>
       ))}
+    </div>
+  )
+}
+
+function PendingUserActions({
+  user,
+  onApprove,
+  onReject,
+  isLoading,
+}: {
+  user: User
+  onApprove: (userId: string, adminNotes: string, email: string) => void
+  onReject: (userId: string, reason: string, adminNotes: string, email: string) => void
+  isLoading: boolean
+}) {
+  const [approveNotes, setApproveNotes] = useState("")
+  const [rejectReason, setRejectReason] = useState("")
+  const [rejectNotes, setRejectNotes] = useState("")
+
+  return (
+    <div className="flex gap-3 pt-3 border-t">
+      <div className="flex-1">
+        <Textarea
+          value={approveNotes}
+          onChange={(e) => setApproveNotes(e.target.value)}
+          placeholder="Admin notes (optional)..."
+          className="text-sm h-20 mb-2"
+        />
+        <Button
+          onClick={() => onApprove(user.id, approveNotes, user.email)}
+          disabled={isLoading}
+          className="w-full bg-green-600 hover:bg-green-700"
+        >
+          <UserCheck className="h-4 w-4 mr-2" />
+          {isLoading ? "Approving..." : "Approve"}
+        </Button>
+      </div>
+
+      <div className="flex-1">
+        <Textarea
+          value={rejectReason}
+          onChange={(e) => setRejectReason(e.target.value)}
+          placeholder="Rejection reason (required)..."
+          className="text-sm h-20 mb-2"
+        />
+        <Button
+          onClick={() => {
+            if (!rejectReason.trim()) {
+              alert("Rejection reason is required")
+              return
+            }
+            onReject(user.id, rejectReason, rejectNotes, user.email)
+          }}
+          disabled={isLoading}
+          variant="destructive"
+          className="w-full"
+        >
+          <UserX className="h-4 w-4 mr-2" />
+          {isLoading ? "Rejecting..." : "Reject"}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function ApprovedRejectedActions({
+  user,
+  currentStatus,
+  onStatusChange,
+  isLoading,
+}: {
+  user: User
+  currentStatus: string
+  onStatusChange: (userId: string, newStatus: string, reason: string, adminNotes: string, email: string) => void
+  isLoading: boolean
+}) {
+  const [newStatus, setNewStatus] = useState(currentStatus)
+  const [adminNotes, setAdminNotes] = useState("")
+  const [reason, setReason] = useState("")
+
+  return (
+    <div className="pt-3 border-t">
+      <div className="flex gap-3 items-end">
+        <div className="flex-1">
+          <Label className="text-xs mb-2 block">Change Status:</Label>
+          <Select value={newStatus} onValueChange={setNewStatus}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="approved">Approved</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex-1">
+          <Textarea
+            value={adminNotes}
+            onChange={(e) => setAdminNotes(e.target.value)}
+            placeholder="Notes about status change..."
+            className="text-sm h-10"
+          />
+        </div>
+        <Button
+          onClick={() => onStatusChange(user.id, newStatus, reason, adminNotes, user.email)}
+          disabled={isLoading}
+          variant="outline"
+          size="icon"
+        >
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+      </div>
+      {newStatus === "rejected" && (
+        <Textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="Rejection reason (if changing to rejected)..."
+          className="text-sm h-10 mt-2"
+        />
+      )}
     </div>
   )
 }
