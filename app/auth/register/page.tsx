@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertCircle, Search, Check, Mail, LogIn, KeyRound } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -66,6 +67,7 @@ export default function RegisterPage() {
   const [playerClub, setPlayerClub] = useState("")
   const [playerDOB, setPlayerDOB] = useState("")
   const [playerNationality, setPlayerNationality] = useState("")
+  const [registrationNote, setRegistrationNote] = useState("")
 
   useEffect(() => {
     const fetchClubs = async () => {
@@ -270,6 +272,7 @@ export default function RegisterPage() {
             id: authData.user.id,
             club_id: selectedClub.id,
             user_type: 'club_staff',
+            registration_note: registrationNote || null,
             updated_at: new Date().toISOString(),
           })
 
@@ -286,6 +289,7 @@ export default function RegisterPage() {
               id: authData.user.id,
               club_id: null,
               user_type: 'player',
+              registration_note: registrationNote || null,
               updated_at: new Date().toISOString(),
             })
 
@@ -331,6 +335,7 @@ export default function RegisterPage() {
               id: authData.user.id,
               club_id: null, // Players don't belong to a specific club in profiles
               user_type: 'player',
+              registration_note: registrationNote || null,
               updated_at: new Date().toISOString(),
             })
 
@@ -760,6 +765,24 @@ export default function RegisterPage() {
                 )}
               </div>
             )}
+
+            {/* Registration Note */}
+            <div className="space-y-2">
+              <Label htmlFor="registration-note">
+                Tell us about yourself (Optional)
+                <span className="text-xs text-muted-foreground block mt-1">
+                  Help admins verify your account by introducing yourself, your role, and why you're joining FootyLabs
+                </span>
+              </Label>
+              <Textarea
+                id="registration-note"
+                placeholder="e.g., I'm the sporting director at [Club Name], looking to use FootyLabs for scouting and recruitment..."
+                value={registrationNote}
+                onChange={(e) => setRegistrationNote(e.target.value)}
+                rows={4}
+                className="resize-none"
+              />
+            </div>
 
             <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
               {loading ? "Creating account..." : "Create account"}
