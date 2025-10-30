@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -14,7 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { UserCheck, UserX, Clock, RefreshCw, MessageSquare } from "lucide-react"
+import { UserCheck, UserX, Clock, RefreshCw, MessageSquare, Mail, MailWarning } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 
 type User = {
   id: string
@@ -111,6 +112,44 @@ function UserList({
   onReject: (formData: FormData) => Promise<void>
   onChangeStatus: (formData: FormData) => Promise<void>
 }) {
+  const { toast } = useToast()
+  const [isPending, startTransition] = useTransition()
+
+  const handleApprove = async (formData: FormData) => {
+    const email = users.find(u => u.id === formData.get("userId"))?.email
+    startTransition(async () => {
+      await onApprove(formData)
+      toast({
+        title: "✅ User Approved",
+        description: `${email} has been approved and can now access the platform.`,
+      })
+    })
+  }
+
+  const handleReject = async (formData: FormData) => {
+    const email = users.find(u => u.id === formData.get("userId"))?.email
+    startTransition(async () => {
+      await onReject(formData)
+      toast({
+        title: "❌ User Rejected",
+        description: `${email} has been rejected and notified.`,
+        variant: "destructive",
+      })
+    })
+  }
+
+  const handleStatusChange = async (formData: FormData) => {
+    const email = users.find(u => u.id === formData.get("userId"))?.email
+    const newStatus = formData.get("newStatus") as string
+    startTransition(async () => {
+      await onChangeStatus(formData)
+      toast({
+        title: "🔄 Status Changed",
+        description: `${email} status changed to ${newStatus}.`,
+      })
+    })
+  }
+
   if (users.length === 0) {
     return (
       <div className="text-center py-12 text-slate-500">
@@ -129,12 +168,18 @@ function UserList({
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold text-lg">{user.email}</h3>
-                  {user.email_confirmed_at && (
-                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
-                      ✓ Verified
+                  {user.email_confirmed_at ? (
+                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                      <Mail className="h-3 w-3 mr-1" />
+                      Email Verified
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
+                      <MailWarning className="h-3 w-3 mr-1" />
+                      Email Not Verified
                     </Badge>
                   )}
-                  <Badge>{status}</Badge>
+                  <Badge className="capitalize">{status}</Badge>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-sm text-slate-600">
@@ -182,20 +227,20 @@ function UserList({
               {/* Actions */}
               {status === "pending" && (
                 <div className="flex gap-3 pt-3 border-t">
-                  <form action={onApprove} className="flex-1">
+                  <form action={handleApprove} className="flex-1">
                     <input type="hidden" name="userId" value={user.id} />
                     <Textarea
                       name="adminNotes"
                       placeholder="Admin notes (optional)..."
                       className="text-sm h-20 mb-2"
                     />
-                    <Button type="submit" className="w-full bg-green-600 hover:bg-green-700">
+                    <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={isPending}>
                       <UserCheck className="h-4 w-4 mr-2" />
-                      Approve
+                      {isPending ? "Approving..." : "Approve"}
                     </Button>
                   </form>
 
-                  <form action={onReject} className="flex-1">
+                  <form action={handleReject} className="flex-1">
                     <input type="hidden" name="userId" value={user.id} />
                     <Textarea
                       name="reason"
@@ -203,16 +248,16 @@ function UserList({
                       className="text-sm h-20 mb-2"
                       required
                     />
-                    <Button type="submit" variant="destructive" className="w-full">
+                    <Button type="submit" variant="destructive" className="w-full" disabled={isPending}>
                       <UserX className="h-4 w-4 mr-2" />
-                      Reject
+                      {isPending ? "Rejecting..." : "Reject"}
                     </Button>
                   </form>
                 </div>
               )}
 
               {status !== "pending" && (
-                <form action={onChangeStatus} className="pt-3 border-t">
+                <form action={handleStatusChange} className="pt-3 border-t">
                   <input type="hidden" name="userId" value={user.id} />
                   <div className="flex gap-3 items-end">
                     <div className="flex-1">
@@ -235,7 +280,7 @@ function UserList({
                         className="text-sm h-10"
                       />
                     </div>
-                    <Button type="submit" variant="outline" size="icon">
+                    <Button type="submit" variant="outline" size="icon" disabled={isPending}>
                       <RefreshCw className="h-4 w-4" />
                     </Button>
                   </div>
