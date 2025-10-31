@@ -122,6 +122,44 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_rosters: {
+        Row: {
+          added_at: string | null
+          agent_id: string
+          created_at: string | null
+          id: number
+          notes: string | null
+          player_id: number
+          updated_at: string | null
+        }
+        Insert: {
+          added_at?: string | null
+          agent_id: string
+          created_at?: string | null
+          id?: number
+          notes?: string | null
+          player_id: number
+          updated_at?: string | null
+        }
+        Update: {
+          added_at?: string | null
+          agent_id?: string
+          created_at?: string | null
+          id?: number
+          notes?: string | null
+          player_id?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_rosters_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_transfermarkt"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       club_reviews: {
         Row: {
           category_ratings: Json | null
@@ -191,6 +229,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      clubs_transfermarkt: {
+        Row: {
+          competition_id: string | null
+          competition_name: string | null
+          country: string | null
+          created_at: string | null
+          id: number
+          name: string
+        }
+        Insert: {
+          competition_id?: string | null
+          competition_name?: string | null
+          country?: string | null
+          created_at?: string | null
+          id: number
+          name: string
+        }
+        Update: {
+          competition_id?: string | null
+          competition_name?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: number
+          name?: string
+        }
+        Relationships: []
       }
       final_position_averages: {
         Row: {
@@ -264,6 +329,123 @@ export type Database = {
           number_of_teams?: number | null
           tier?: number | null
           total_games_per_season?: number | null
+        }
+        Relationships: []
+      }
+      merging_players_names: {
+        Row: {
+          contract_expires_date: string | null
+          id: number
+          joined_team_date: string | null
+          player_image_url: string | null
+          player_profile_url: string | null
+          transfermarkt_club_name: string | null
+          transfermarkt_player_id: string
+          transfermarkt_player_name: string
+          wyscout_club_name: string | null
+          wyscout_player_id: string
+          wyscout_player_name: string
+        }
+        Insert: {
+          contract_expires_date?: string | null
+          id?: number
+          joined_team_date?: string | null
+          player_image_url?: string | null
+          player_profile_url?: string | null
+          transfermarkt_club_name?: string | null
+          transfermarkt_player_id: string
+          transfermarkt_player_name: string
+          wyscout_club_name?: string | null
+          wyscout_player_id: string
+          wyscout_player_name: string
+        }
+        Update: {
+          contract_expires_date?: string | null
+          id?: number
+          joined_team_date?: string | null
+          player_image_url?: string | null
+          player_profile_url?: string | null
+          transfermarkt_club_name?: string | null
+          transfermarkt_player_id?: string
+          transfermarkt_player_name?: string
+          wyscout_club_name?: string | null
+          wyscout_player_id?: string
+          wyscout_player_name?: string
+        }
+        Relationships: []
+      }
+      new_watchlist: {
+        Row: {
+          assists: number | null
+          came_on_as_sub: boolean | null
+          foreign_key_id: number | null
+          goals: number | null
+          home_or_away: string | null
+          id: number
+          match_date: string
+          match_id: string
+          match_result: string | null
+          minutes_played: number
+          opponent: string | null
+          player_id: string
+          player_name: string
+          position_played: string | null
+          red_cards: number | null
+          shots: number | null
+          shots_on_target: number | null
+          started: boolean | null
+          subbed_off: boolean | null
+          substitution_minute: number | null
+          team_name: string | null
+          yellow_cards: number | null
+        }
+        Insert: {
+          assists?: number | null
+          came_on_as_sub?: boolean | null
+          foreign_key_id?: number | null
+          goals?: number | null
+          home_or_away?: string | null
+          id?: number
+          match_date: string
+          match_id: string
+          match_result?: string | null
+          minutes_played?: number
+          opponent?: string | null
+          player_id: string
+          player_name: string
+          position_played?: string | null
+          red_cards?: number | null
+          shots?: number | null
+          shots_on_target?: number | null
+          started?: boolean | null
+          subbed_off?: boolean | null
+          substitution_minute?: number | null
+          team_name?: string | null
+          yellow_cards?: number | null
+        }
+        Update: {
+          assists?: number | null
+          came_on_as_sub?: boolean | null
+          foreign_key_id?: number | null
+          goals?: number | null
+          home_or_away?: string | null
+          id?: number
+          match_date?: string
+          match_id?: string
+          match_result?: string | null
+          minutes_played?: number
+          opponent?: string | null
+          player_id?: string
+          player_name?: string
+          position_played?: string | null
+          red_cards?: number | null
+          shots?: number | null
+          shots_on_target?: number | null
+          started?: boolean | null
+          subbed_off?: boolean | null
+          substitution_minute?: number | null
+          team_name?: string | null
+          yellow_cards?: number | null
         }
         Relationships: []
       }
@@ -437,7 +619,9 @@ export type Database = {
           created_at: string | null
           current_salary_range: string | null
           desired_salary_range: string | null
+          email: string | null
           family_status: string | null
+          full_name: string | null
           id: string
           instagram_url: string | null
           languages: string[] | null
@@ -451,6 +635,7 @@ export type Database = {
           profile_photo_url: string | null
           profile_views: number | null
           relocation_preference: string | null
+          transfermarkt_link: string | null
           updated_at: string | null
           verified: boolean | null
           wyscout_player_id: number | null
@@ -464,7 +649,9 @@ export type Database = {
           created_at?: string | null
           current_salary_range?: string | null
           desired_salary_range?: string | null
+          email?: string | null
           family_status?: string | null
+          full_name?: string | null
           id: string
           instagram_url?: string | null
           languages?: string[] | null
@@ -478,6 +665,7 @@ export type Database = {
           profile_photo_url?: string | null
           profile_views?: number | null
           relocation_preference?: string | null
+          transfermarkt_link?: string | null
           updated_at?: string | null
           verified?: boolean | null
           wyscout_player_id?: number | null
@@ -491,7 +679,9 @@ export type Database = {
           created_at?: string | null
           current_salary_range?: string | null
           desired_salary_range?: string | null
+          email?: string | null
           family_status?: string | null
+          full_name?: string | null
           id?: string
           instagram_url?: string | null
           languages?: string[] | null
@@ -505,6 +695,7 @@ export type Database = {
           profile_photo_url?: string | null
           profile_views?: number | null
           relocation_preference?: string | null
+          transfermarkt_link?: string | null
           updated_at?: string | null
           verified?: boolean | null
           wyscout_player_id?: number | null
@@ -549,6 +740,80 @@ export type Database = {
             columns: ["club_id"]
             isOneToOne: false
             referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      players_transfermarkt: {
+        Row: {
+          age: number | null
+          agent_notes: string | null
+          club_id: number | null
+          contract_expires: string | null
+          created_at: string | null
+          foot: string | null
+          height: number | null
+          id: number
+          is_eu_passport: boolean | null
+          main_position: string | null
+          market_value_eur: number | null
+          name: string
+          nationality: string | null
+          player_agent: string | null
+          sf_data: Json | null
+          sofascore_id: number | null
+          source: string | null
+          tm_data: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          age?: number | null
+          agent_notes?: string | null
+          club_id?: number | null
+          contract_expires?: string | null
+          created_at?: string | null
+          foot?: string | null
+          height?: number | null
+          id: number
+          is_eu_passport?: boolean | null
+          main_position?: string | null
+          market_value_eur?: number | null
+          name: string
+          nationality?: string | null
+          player_agent?: string | null
+          sf_data?: Json | null
+          sofascore_id?: number | null
+          source?: string | null
+          tm_data?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          age?: number | null
+          agent_notes?: string | null
+          club_id?: number | null
+          contract_expires?: string | null
+          created_at?: string | null
+          foot?: string | null
+          height?: number | null
+          id?: number
+          is_eu_passport?: boolean | null
+          main_position?: string | null
+          market_value_eur?: number | null
+          name?: string
+          nationality?: string | null
+          player_agent?: string | null
+          sf_data?: Json | null
+          sofascore_id?: number | null
+          source?: string | null
+          tm_data?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "players_transfermarkt_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_transfermarkt"
             referencedColumns: ["id"]
           },
         ]
@@ -647,7 +912,9 @@ export type Database = {
           approved_by: string | null
           club_id: number | null
           created_at: string
+          email: string | null
           id: string
+          registration_note: string | null
           rejection_reason: string | null
           updated_at: string
           user_type: string | null
@@ -659,7 +926,9 @@ export type Database = {
           approved_by?: string | null
           club_id?: number | null
           created_at?: string
+          email?: string | null
           id: string
+          registration_note?: string | null
           rejection_reason?: string | null
           updated_at?: string
           user_type?: string | null
@@ -671,7 +940,9 @@ export type Database = {
           approved_by?: string | null
           club_id?: number | null
           created_at?: string
+          email?: string | null
           id?: string
+          registration_note?: string | null
           rejection_reason?: string | null
           updated_at?: string
           user_type?: string | null
@@ -1198,6 +1469,81 @@ export type Database = {
         }
         Relationships: []
       }
+      transfermarkt_matches_data: {
+        Row: {
+          assists: number | null
+          came_on_as_substitute: boolean | null
+          goals: number | null
+          home_or_away: string | null
+          id: number
+          match_date: string | null
+          match_id: string | null
+          match_result: string | null
+          match_total_time: number | null
+          minutes_played: number | null
+          opponent: string | null
+          player_name: string | null
+          position_played: string | null
+          red_cards: number | null
+          shots: number | null
+          shots_on_target: number | null
+          started: boolean | null
+          subbed_off: boolean | null
+          substitution_minute: number | null
+          team_name: string | null
+          transfermarkt_player_id: string | null
+          yellow_cards: number | null
+        }
+        Insert: {
+          assists?: number | null
+          came_on_as_substitute?: boolean | null
+          goals?: number | null
+          home_or_away?: string | null
+          id?: number
+          match_date?: string | null
+          match_id?: string | null
+          match_result?: string | null
+          match_total_time?: number | null
+          minutes_played?: number | null
+          opponent?: string | null
+          player_name?: string | null
+          position_played?: string | null
+          red_cards?: number | null
+          shots?: number | null
+          shots_on_target?: number | null
+          started?: boolean | null
+          subbed_off?: boolean | null
+          substitution_minute?: number | null
+          team_name?: string | null
+          transfermarkt_player_id?: string | null
+          yellow_cards?: number | null
+        }
+        Update: {
+          assists?: number | null
+          came_on_as_substitute?: boolean | null
+          goals?: number | null
+          home_or_away?: string | null
+          id?: number
+          match_date?: string | null
+          match_id?: string | null
+          match_result?: string | null
+          match_total_time?: number | null
+          minutes_played?: number | null
+          opponent?: string | null
+          player_name?: string | null
+          position_played?: string | null
+          red_cards?: number | null
+          shots?: number | null
+          shots_on_target?: number | null
+          started?: boolean | null
+          subbed_off?: boolean | null
+          substitution_minute?: number | null
+          team_name?: string | null
+          transfermarkt_player_id?: string | null
+          yellow_cards?: number | null
+        }
+        Relationships: []
+      }
       watchlist: {
         Row: {
           club_id: number
@@ -1236,6 +1582,34 @@ export type Database = {
       }
     }
     Views: {
+      approved_users: {
+        Row: {
+          admin_notes: string | null
+          approved_at: string | null
+          approved_by: string | null
+          approved_by_email: string | null
+          club_id: number | null
+          club_name: string | null
+          email: string | null
+          email_confirmed_at: string | null
+          id: string | null
+          player_name: string | null
+          registered_at: string | null
+          registration_note: string | null
+          transfermarkt_link: string | null
+          user_type: string | null
+          wyscout_player_id: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pending_user_approvals: {
         Row: {
           approval_status: string | null
@@ -1244,8 +1618,41 @@ export type Database = {
           email: string | null
           email_confirmed_at: string | null
           id: string | null
+          player_name: string | null
           registered_at: string | null
+          registration_note: string | null
+          transfermarkt_link: string | null
           user_type: string | null
+          wyscout_player_id: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rejected_users: {
+        Row: {
+          admin_notes: string | null
+          club_id: number | null
+          club_name: string | null
+          email: string | null
+          email_confirmed_at: string | null
+          id: string | null
+          player_name: string | null
+          registered_at: string | null
+          registration_note: string | null
+          rejected_at: string | null
+          rejected_by: string | null
+          rejected_by_email: string | null
+          rejection_reason: string | null
+          transfermarkt_link: string | null
+          user_type: string | null
+          wyscout_player_id: number | null
         }
         Relationships: [
           {
@@ -1259,9 +1666,43 @@ export type Database = {
       }
     }
     Functions: {
+      add_player_to_roster: {
+        Args: { p_agent_id: string; p_notes?: string; p_player_id: number }
+        Returns: Json
+      }
       approve_user: {
         Args: { admin_notes_text?: string; target_user_id: string }
         Returns: undefined
+      }
+      change_user_status: {
+        Args: {
+          admin_notes_text?: string
+          new_status: string
+          reason_text?: string
+          target_user_id: string
+        }
+        Returns: undefined
+      }
+      get_agent_roster: {
+        Args: { p_agent_id: string }
+        Returns: {
+          added_at: string
+          age: number
+          agent_notes: string
+          club_id: number
+          club_name: string
+          contract_expires: string
+          foot: string
+          height: number
+          is_eu_passport: boolean
+          market_value_eur: number
+          nationality: string
+          player_id: number
+          player_name: string
+          position: string
+          roster_id: number
+          updated_at: string
+        }[]
       }
       get_latest_players_for_club: {
         Args: { p_club_id: number }
@@ -1287,6 +1728,12 @@ export type Database = {
           metric_name: string
           position: string
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "league_position_metric_averages"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_my_player_listings: {
         Args: { requesting_club_id: number }
@@ -1394,9 +1841,26 @@ export type Database = {
           wyscout_player_id: number
         }[]
       }
-      is_admin: {
-        Args: { user_id: string }
+      is_admin: { Args: { user_id: string }; Returns: boolean }
+      match_player_name: {
+        Args: { player_name: string; watchlist_name: string }
         Returns: boolean
+      }
+      match_roster_with_needs: {
+        Args: { p_agent_id: string }
+        Returns: {
+          club_name: string
+          match_reasons: Json
+          matched_player_id: number
+          matched_player_name: string
+          max_age: number
+          max_height: number
+          min_age: number
+          min_height: number
+          need_id: number
+          position_needed: string
+          preferred_foot: string
+        }[]
       }
       reject_user: {
         Args: {
@@ -1406,13 +1870,15 @@ export type Database = {
         }
         Returns: undefined
       }
-      try_cast_to_date: {
-        Args: { p_text: string }
-        Returns: string
+      remove_player_from_roster: {
+        Args: { p_agent_id: string; p_player_id: number }
+        Returns: boolean
       }
-      update_league_position_averages: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
+      try_cast_to_date: { Args: { p_text: string }; Returns: string }
+      update_league_position_averages: { Args: never; Returns: undefined }
+      update_roster_notes: {
+        Args: { p_agent_id: string; p_notes: string; p_player_id: number }
+        Returns: boolean
       }
     }
     Enums: {

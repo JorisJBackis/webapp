@@ -174,12 +174,8 @@ export default function RegisterPage() {
     setError(null)
     setExistingUser(false)
 
-    if (role === 'agent') {
-      setError(`Registration for ${role}s is coming soon! Please check back later.`);
-      setMessageType('info'); // Set the message type to 'info'
-      setLoading(false);
-      return;
-    }
+    // Agent registration is now enabled
+    // Removed the "coming soon" block for agents
 
     if (password !== confirmPassword) {
       setError("Passwords do not match")
@@ -229,20 +225,25 @@ export default function RegisterPage() {
             user_type: 'club_staff',
             registration_note: registrationNote || null
           }
-        : playerNotFound
+        : role === 'agent'
           ? {
-              user_type: 'player',
-              player_not_in_database: true,
-              transfermarkt_link: transfermarktLink,
+              user_type: 'agent',
               registration_note: registrationNote
             }
-          : {
-              wyscout_player_id: selectedPlayer?.wyscout_player_id || selectedPlayer?.id,
-              user_type: 'player',
-              player_name: selectedPlayer?.name,
-              player_position: selectedPlayer?.position,
-              registration_note: registrationNote
-            };
+          : playerNotFound
+            ? {
+                user_type: 'player',
+                player_not_in_database: true,
+                transfermarkt_link: transfermarktLink,
+                registration_note: registrationNote
+              }
+            : {
+                wyscout_player_id: selectedPlayer?.wyscout_player_id || selectedPlayer?.id,
+                user_type: 'player',
+                player_name: selectedPlayer?.name,
+                player_position: selectedPlayer?.position,
+                registration_note: registrationNote
+              };
       if (!supabase) return;
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
@@ -282,6 +283,8 @@ export default function RegisterPage() {
           }
         } else if (role === 'club') {
           console.log("Club:", selectedClub?.name)
+        } else if (role === 'agent') {
+          console.log("Agent registration completed")
         }
       }
 

@@ -26,6 +26,11 @@ export default async function DashboardPage() {
   // Get the user's profile with club information
   const { data: profile } = await supabase.from("profiles").select("*, clubs(*)").eq("id", user.id).single()
 
+  // If user is an agent, redirect to roster
+  if (profile?.user_type === 'agent') {
+    redirect('/dashboard/agents/roster')
+  }
+
   // If user is a player, check if they need onboarding
   if (profile?.user_type === 'player') {
     // Check if player has completed onboarding

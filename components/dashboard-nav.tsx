@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { BarChart, Home, LogOut, Settings, User, ShoppingCart, Search } from "lucide-react"
+import { BarChart, Home, LogOut, Settings, User, ShoppingCart, Search, Users, Briefcase } from "lucide-react"
 import { useState, useEffect } from "react"
 import {ModeToggleInstant} from "@/components/mode-toggle";
 
@@ -54,27 +54,54 @@ export default function DashboardNav() {
         </div>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <nav className="flex items-center space-x-2">
-            <Link href="/dashboard">
-              <Button
-                variant={pathname === "/dashboard" ? "default" : "ghost"}
-                size="sm"
-                className={pathname === "/dashboard" ? "bg-primary text-primary-foreground" : "text-foreground"}
-              >
-                <Home className="mr-2 h-4 w-4" />
-                Dashboard
-              </Button>
-            </Link>
-            <Link href="/dashboard/analytics">
-              <Button
-                variant={pathname === "/dashboard/analytics" ? "default" : "ghost"}
-                size="sm"
-                className={pathname === "/dashboard/analytics" ? "bg-primary text-primary-foreground" : "text-foreground"}
-              >
-                <BarChart className="mr-2 h-4 w-4" />
-                Insights
-              </Button>
-            </Link>
-            {userType !== 'player' && (
+            {userType !== 'agent' && (
+              <>
+                <Link href="/dashboard">
+                  <Button
+                    variant={pathname === "/dashboard" ? "default" : "ghost"}
+                    size="sm"
+                    className={pathname === "/dashboard" ? "bg-primary text-primary-foreground" : "text-foreground"}
+                  >
+                    <Home className="mr-2 h-4 w-4" />
+                    Dashboard
+                  </Button>
+                </Link>
+                <Link href="/dashboard/analytics">
+                  <Button
+                    variant={pathname === "/dashboard/analytics" ? "default" : "ghost"}
+                    size="sm"
+                    className={pathname === "/dashboard/analytics" ? "bg-primary text-primary-foreground" : "text-foreground"}
+                  >
+                    <BarChart className="mr-2 h-4 w-4" />
+                    Insights
+                  </Button>
+                </Link>
+              </>
+            )}
+            {userType === 'agent' ? (
+              <>
+                <Link href="/dashboard/agents/roster">
+                  <Button
+                    variant={pathname.startsWith("/dashboard/agents/roster") ? "default" : "ghost"}
+                    size="sm"
+                    className={pathname.startsWith("/dashboard/agents/roster") ? "bg-primary text-primary-foreground" : "text-foreground"}
+                  >
+                    <Users className="mr-2 h-4 w-4" />
+                    My Roster
+                  </Button>
+                </Link>
+                <Link href="/dashboard/agents/opportunities">
+                  <Button
+                    variant={pathname.startsWith("/dashboard/agents/opportunities") ? "default" : "ghost"}
+                    size="sm"
+                    className={pathname.startsWith("/dashboard/agents/opportunities") ? "bg-primary text-primary-foreground" : "text-foreground"}
+                  >
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    Opportunities
+                  </Button>
+                </Link>
+              </>
+            ) : userType !== 'player' && (
               <>
                 <Link href="/dashboard/marketplace">
                   <Button
