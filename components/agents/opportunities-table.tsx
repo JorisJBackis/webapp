@@ -169,16 +169,25 @@ export default function OpportunitiesTable({ opportunities }: OpportunitiesTable
   const renderMatchBadges = (reasons: any) => {
     const badges = []
 
-    // Position badge - green if match, red if no match
+    // Position badge - green if exact, orange if semi, red if no match
+    const positionMatchType = reasons.position_match_type || 'none'
     badges.push(
       <Tooltip key="position">
         <TooltipTrigger asChild>
           <Badge
             variant="default"
-            className={`text-xs cursor-help ${reasons.position_match ? 'bg-green-600' : 'bg-red-600'}`}
+            className={`text-xs cursor-help ${
+              positionMatchType === 'exact'
+                ? 'bg-green-600'
+                : positionMatchType === 'semi'
+                ? 'bg-orange-500'
+                : 'bg-red-600'
+            }`}
           >
-            {reasons.position_match ? (
+            {positionMatchType === 'exact' ? (
               <CheckCircle2 className="h-3 w-3 mr-1" />
+            ) : positionMatchType === 'semi' ? (
+              <CheckCircle2 className="h-3 w-3 mr-1 opacity-75" />
             ) : (
               <X className="h-3 w-3 mr-1" />
             )}
@@ -186,7 +195,12 @@ export default function OpportunitiesTable({ opportunities }: OpportunitiesTable
           </Badge>
         </TooltipTrigger>
         <TooltipContent>
-          <p>{reasons.player_position || 'Unknown'}</p>
+          <p className="font-medium">{reasons.player_position || 'Unknown'}</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {positionMatchType === 'exact' && '🎯 Exact match'}
+            {positionMatchType === 'semi' && '✨ Versatile fit'}
+            {positionMatchType === 'none' && '❌ Not a match'}
+          </p>
         </TooltipContent>
       </Tooltip>
     )

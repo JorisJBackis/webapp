@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Loader2, AlertCircle, UserPlus } from 'lucide-react'
-import RosterTable from '@/components/agents/roster-table'
+import RosterCards from '@/components/agents/roster-cards'
 import AddPlayerModal from '@/components/agents/add-player-modal'
 
 export type RosterPlayer = {
@@ -26,6 +26,17 @@ export type RosterPlayer = {
   agent_notes: string | null
   added_at: string
   updated_at: string
+  // New fields
+  picture_url: string | null
+  player_transfermarkt_url: string | null
+  club_logo_url: string | null
+  club_transfermarkt_url: string | null
+  club_country: string | null
+  league_id: string | null
+  league_name: string | null
+  league_tier: number | null
+  league_country: string | null
+  league_transfermarkt_url: string | null
   // Original values
   original_age: number | null
   original_position: string | null
@@ -204,34 +215,32 @@ export default function AgentRosterPage() {
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Players ({roster.length})</CardTitle>
-          <CardDescription>
-            All players in your roster with their key information
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {roster.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <UserPlus className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-lg mb-2">No players in your roster yet</p>
-              <p className="mb-4">Start building your roster by adding players</p>
-              <Button onClick={() => setIsAddModalOpen(true)} variant="outline">
-                <UserPlus className="mr-2 h-4 w-4" />
-                Add Your First Player
-              </Button>
-            </div>
-          ) : (
-            <RosterTable
-              roster={roster}
-              onPlayerRemoved={handlePlayerRemoved}
-              onNotesUpdated={handleNotesUpdated}
-              onRosterRefresh={handleRosterRefresh}
-            />
-          )}
-        </CardContent>
-      </Card>
+      {roster.length === 0 ? (
+        <Card>
+          <CardContent className="text-center py-12 text-muted-foreground">
+            <UserPlus className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p className="text-lg mb-2">No players in your roster yet</p>
+            <p className="mb-4">Start building your roster by adding players</p>
+            <Button onClick={() => setIsAddModalOpen(true)} variant="outline">
+              <UserPlus className="mr-2 h-4 w-4" />
+              Add Your First Player
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div>
+          <div className="mb-4 flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              {roster.length} {roster.length === 1 ? 'player' : 'players'} in your roster
+            </p>
+          </div>
+          <RosterCards
+            roster={roster}
+            onPlayerRemoved={handlePlayerRemoved}
+            onNotesUpdated={handleNotesUpdated}
+          />
+        </div>
+      )}
 
       {agentId && (
         <AddPlayerModal

@@ -7,7 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Loader2, AlertCircle, TrendingUp, Building2 } from 'lucide-react'
 import SmartRecommendationsCards from '@/components/agents/smart-recommendations-cards'
 
-export interface SmartRecommendation {
+interface SmartRecommendation {
   recommendation_id: string
   player_id: number
   player_name: string
@@ -50,7 +50,7 @@ export interface SmartRecommendation {
   }
 }
 
-export default function AgentOpportunitiesPage() {
+export default function SmartRecommendationsPage() {
   const [recommendations, setRecommendations] = useState<SmartRecommendation[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -106,7 +106,10 @@ export default function AgentOpportunitiesPage() {
         console.log('[Smart Recommendations] Response:', { data, error: rpcError })
 
         if (rpcError) {
-          console.error('[Smart Recommendations] Error:', rpcError)
+          console.error('[Smart Recommendations] Full Error:', JSON.stringify(rpcError, null, 2))
+          console.error('[Smart Recommendations] Error message:', rpcError.message)
+          console.error('[Smart Recommendations] Error details:', rpcError.details)
+          console.error('[Smart Recommendations] Error hint:', rpcError.hint)
           throw rpcError
         }
 
@@ -122,7 +125,7 @@ export default function AgentOpportunitiesPage() {
     fetchRecommendations()
   }, [agentId, supabase])
 
-  // Calculate stats
+  // Calculate stats (must be before early returns)
   const stats = useMemo(() => {
     const uniquePlayers = new Set(recommendations.map(r => r.player_id)).size
     const uniqueClubs = new Set(recommendations.map(r => r.club_id)).size
@@ -160,7 +163,7 @@ export default function AgentOpportunitiesPage() {
   return (
     <div className="container mx-auto py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-primary">Smart Opportunities</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-primary">Smart Recommendations</h1>
         <p className="text-muted-foreground">
           High-quality matches between your roster players and club needs
         </p>
@@ -220,7 +223,7 @@ export default function AgentOpportunitiesPage() {
         <Card>
           <CardContent className="text-center py-12 text-muted-foreground">
             <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="text-lg mb-2">No opportunities found</p>
+            <p className="text-lg mb-2">No recommendations found</p>
             <p className="mb-4">
               Make sure you have:
             </p>

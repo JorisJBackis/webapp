@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { BarChart, Home, LogOut, Settings, User, ShoppingCart, Search, Users, Briefcase } from "lucide-react"
+import { BarChart, Home, LogOut, Settings, User, ShoppingCart, Search, Users, Briefcase, Building2, Lightbulb } from "lucide-react"
 import { useState, useEffect } from "react"
 import {ModeToggleInstant} from "@/components/mode-toggle";
 
@@ -90,6 +90,16 @@ export default function DashboardNav() {
                     My Roster
                   </Button>
                 </Link>
+                <Link href="/dashboard/agents/clubs">
+                  <Button
+                    variant={pathname.startsWith("/dashboard/agents/clubs") ? "default" : "ghost"}
+                    size="sm"
+                    className={pathname.startsWith("/dashboard/agents/clubs") ? "bg-primary text-primary-foreground" : "text-foreground"}
+                  >
+                    <Building2 className="mr-2 h-4 w-4" />
+                    My Clubs
+                  </Button>
+                </Link>
                 <Link href="/dashboard/agents/opportunities">
                   <Button
                     variant={pathname.startsWith("/dashboard/agents/opportunities") ? "default" : "ghost"}
@@ -98,6 +108,16 @@ export default function DashboardNav() {
                   >
                     <Briefcase className="mr-2 h-4 w-4" />
                     Opportunities
+                  </Button>
+                </Link>
+                <Link href="/dashboard/agents/recommendations">
+                  <Button
+                    variant={pathname.startsWith("/dashboard/agents/recommendations") ? "default" : "ghost"}
+                    size="sm"
+                    className={pathname.startsWith("/dashboard/agents/recommendations") ? "bg-primary text-primary-foreground" : "text-foreground"}
+                  >
+                    <Lightbulb className="mr-2 h-4 w-4" />
+                    Recommendations
                   </Button>
                 </Link>
               </>
