@@ -150,12 +150,19 @@ export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdate
         {clubs.map((club) => (
           <Card
             key={club.favorite_id}
-            className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col cursor-pointer"
+            className="overflow-hidden hover:shadow-lg hover:border-primary/50 transition-all flex flex-col cursor-pointer group"
             onClick={() => handleViewPlayers(club)}
           >
             <CardContent className="p-0 flex flex-col flex-1">
               {/* Header with club logo */}
               <div className="relative bg-gradient-to-br from-primary/10 to-primary/5 p-6">
+                {/* Hover hint */}
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                    <Users className="h-3 w-3" />
+                    Click to view squad
+                  </Badge>
+                </div>
                 <div className="flex items-start gap-4">
                   {/* Club Logo - Clickable */}
                   <div className="flex-shrink-0">
@@ -165,6 +172,7 @@ export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdate
                         target="_blank"
                         rel="noopener noreferrer"
                         className="block hover:opacity-80 transition-opacity"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         {club.club_logo_url ? (
                           <img
@@ -204,6 +212,7 @@ export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdate
                         target="_blank"
                         rel="noopener noreferrer"
                         className="hover:underline"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <h3 className="font-bold text-lg truncate mb-1">{club.club_name}</h3>
                       </a>
@@ -228,6 +237,7 @@ export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdate
                             target="_blank"
                             rel="noopener noreferrer"
                             className="hover:underline"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             <Badge variant="secondary" className="text-xs">
                               {club.league_name}
@@ -338,15 +348,33 @@ export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdate
                     ) : (
                       <div>
                         <p className="text-xs text-muted-foreground mb-1">Notes:</p>
-                        <p className="text-sm min-h-[3rem] p-2 bg-muted/30 rounded border">
-                          {club.notes || 'No notes yet'}
-                        </p>
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleStartEditNotes(club)
+                          }}
+                          className="text-sm min-h-[3rem] p-2 bg-muted/30 rounded border cursor-text hover:bg-muted/50 transition-colors"
+                        >
+                          {club.notes || <span className="text-muted-foreground italic">Click to add notes...</span>}
+                        </div>
                       </div>
                     )}
                   </div>
 
                   {/* Actions */}
                   <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleViewPlayers(club)
+                      }}
+                      className="flex-1"
+                    >
+                      <Users className="h-3 w-3 mr-1" />
+                      View Squad
+                    </Button>
                     {editingNotes !== club.club_id && (
                       <Button
                         size="sm"
@@ -355,10 +383,8 @@ export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdate
                           e.stopPropagation()
                           handleStartEditNotes(club)
                         }}
-                        className="flex-1"
                       >
-                        <Edit className="h-3 w-3 mr-1" />
-                        Edit Notes
+                        <Edit className="h-3 w-3" />
                       </Button>
                     )}
                     <Button

@@ -374,14 +374,14 @@ export default function RosterCards({ roster, onPlayerRemoved, onNotesUpdated }:
                             <img
                               src={player.club_logo_url}
                               alt={player.club_name}
-                              className="w-6 h-6 object-contain cursor-pointer"
+                              className="w-8 h-8 object-contain cursor-pointer"
                             />
                           </a>
                         ) : (
                           <img
                             src={player.club_logo_url}
                             alt={player.club_name}
-                            className="w-6 h-6 object-contain"
+                            className="w-8 h-8 object-contain"
                           />
                         )}
                       </>
@@ -395,10 +395,10 @@ export default function RosterCards({ roster, onPlayerRemoved, onNotesUpdated }:
                           rel="noopener noreferrer"
                           className="hover:underline"
                         >
-                          <p className="font-medium text-sm truncate">{player.club_name}</p>
+                          <p className="font-semibold text-base truncate">{player.club_name}</p>
                         </a>
                       ) : (
-                        <p className="font-medium text-sm truncate">{player.club_name}</p>
+                        <p className="font-semibold text-base truncate">{player.club_name}</p>
                       )}
                       {/* League Name - Clickable */}
                       {player.league_name && (
@@ -410,13 +410,13 @@ export default function RosterCards({ roster, onPlayerRemoved, onNotesUpdated }:
                               rel="noopener noreferrer"
                               className="hover:underline"
                             >
-                              <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                              <p className="text-sm text-muted-foreground truncate flex items-center gap-1">
                                 <span>{getCountryFlag(player.league_country || player.club_country)}</span>
                                 <span>{player.league_name}</span>
                               </p>
                             </a>
                           ) : (
-                            <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                            <p className="text-sm text-muted-foreground truncate flex items-center gap-1">
                               <span>{getCountryFlag(player.league_country || player.club_country)}</span>
                               <span>{player.league_name}</span>
                             </p>

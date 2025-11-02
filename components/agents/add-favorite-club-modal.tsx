@@ -24,7 +24,13 @@ interface Club {
   name: string
   logo_url: string | null
   league_name: string | null
+  league_tier: number | null
   country: string | null
+}
+
+interface LeagueOption {
+  name: string
+  tier: number
 }
 
 interface AddFavoriteClubModalProps {
@@ -40,7 +46,7 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
   const [clubs, setClubs] = useState<Club[]>([])
   const [filteredClubs, setFilteredClubs] = useState<Club[]>([])
   const [favoritedClubIds, setFavoritedClubIds] = useState<Set<number>>(new Set())
-  const [competitions, setCompetitions] = useState<string[]>([])
+  const [leagueOptions, setLeagueOptions] = useState<LeagueOption[]>([])
   const [countries, setCountries] = useState<string[]>([])
   const [expandedClubId, setExpandedClubId] = useState<number | null>(null)
   const [notes, setNotes] = useState<Record<number, string>>({})
@@ -71,7 +77,7 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
             logo_url,
             country,
             league_id,
-            leagues_transfermarkt!inner(name)
+            leagues_transfermarkt!inner(name, tier)
           `)
           .order('name')
 
@@ -94,18 +100,24 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
           name: club.name,
           logo_url: club.logo_url,
           league_name: club.leagues_transfermarkt?.name || null,
+          league_tier: club.leagues_transfermarkt?.tier || null,
           country: club.country
         }))
 
         const availableClubs = transformedClubs.filter(club => !favoritedIds.has(club.id))
         setClubs(availableClubs)
 
-        // Extract unique leagues and countries
-        const uniqueLeagues = [...new Set(
-          availableClubs
-            .map(c => c.league_name)
-            .filter(Boolean) as string[]
-        )].sort()
+        // Extract unique leagues with their tiers, sorted by tier
+        const leaguesMap = new Map<string, number>()
+        availableClubs.forEach(club => {
+          if (club.league_name && club.league_tier) {
+            leaguesMap.set(club.league_name, club.league_tier)
+          }
+        })
+
+        const uniqueLeagues = Array.from(leaguesMap.entries())
+          .map(([name, tier]) => ({ name, tier }))
+          .sort((a, b) => a.tier - b.tier || a.name.localeCompare(b.name))
 
         const uniqueCountries = [...new Set(
           availableClubs
@@ -113,7 +125,7 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
             .filter(Boolean) as string[]
         )].sort()
 
-        setCompetitions(uniqueLeagues)
+        setLeagueOptions(uniqueLeagues)
         setCountries(uniqueCountries)
       } catch (err) {
         console.error('Error fetching data:', err)
@@ -125,18 +137,40 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
     fetchData()
   }, [isOpen, supabase])
 
+  // Reset league filter when country changes
+  useEffect(() => {
+    setCompetitionFilter('all')
+  }, [countryFilter])
+
+  // Get filtered leagues based on selected country
+  const filteredLeagues = countryFilter === 'all'
+    ? leagueOptions
+    : (() => {
+        const leaguesMap = new Map<string, number>()
+        clubs
+          .filter(club => club.country === countryFilter)
+          .forEach(club => {
+            if (club.league_name && club.league_tier) {
+              leaguesMap.set(club.league_name, club.league_tier)
+            }
+          })
+        return Array.from(leaguesMap.entries())
+          .map(([name, tier]) => ({ name, tier }))
+          .sort((a, b) => a.tier - b.tier || a.name.localeCompare(b.name))
+      })()
+
   // Apply filters
   useEffect(() => {
     let filtered = clubs
 
+    // Country filter (apply first)
+    if (countryFilter !== 'all') {
+      filtered = filtered.filter(club => club.country === countryFilter)
+    }
+
     // League filter
     if (competitionFilter !== 'all') {
       filtered = filtered.filter(club => club.league_name === competitionFilter)
-    }
-
-    // Country filter
-    if (countryFilter !== 'all') {
-      filtered = filtered.filter(club => club.country === countryFilter)
     }
 
     // Search filter
@@ -180,8 +214,8 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
       // Notify parent to refresh
       onClubAdded()
 
-      // Show success toast (if you have sonner installed)
-      // toast.success(`${club.name} added to favorites!`)
+      // Show success toast
+      toast.success(`${club.name} added to favorites!`)
     } catch (err: any) {
       console.error('Error adding club:', err)
       alert('Failed to add club: ' + err.message)
@@ -209,7 +243,7 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
         <DialogHeader>
           <DialogTitle>Add Club to Favorites</DialogTitle>
           <DialogDescription>
-            Search for clubs and filter by competition or country. Click "+ Note" to add optional notes.
+            Filter by country first, then narrow down by league. Click "+ Note" to add optional notes.
           </DialogDescription>
         </DialogHeader>
 
@@ -230,16 +264,16 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
           </div>
 
           <div>
-            <Label htmlFor="league">League</Label>
-            <Select value={competitionFilter} onValueChange={setCompetitionFilter}>
-              <SelectTrigger id="league">
-                <SelectValue placeholder="All leagues" />
+            <Label htmlFor="country">Country</Label>
+            <Select value={countryFilter} onValueChange={setCountryFilter}>
+              <SelectTrigger id="country">
+                <SelectValue placeholder="All countries" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Leagues</SelectItem>
-                {competitions.map(league => (
-                  <SelectItem key={league} value={league}>
-                    {league}
+              <SelectContent className="max-h-[300px]">
+                <SelectItem value="all">All Countries</SelectItem>
+                {countries.map(country => (
+                  <SelectItem key={country} value={country}>
+                    {country}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -247,16 +281,20 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
           </div>
 
           <div>
-            <Label htmlFor="country">Country</Label>
-            <Select value={countryFilter} onValueChange={setCountryFilter}>
-              <SelectTrigger id="country">
-                <SelectValue placeholder="All countries" />
+            <Label htmlFor="league">League</Label>
+            <Select value={competitionFilter} onValueChange={setCompetitionFilter}>
+              <SelectTrigger id="league">
+                <SelectValue placeholder="All leagues" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Countries</SelectItem>
-                {countries.map(country => (
-                  <SelectItem key={country} value={country}>
-                    {country}
+              <SelectContent className="max-h-[300px]">
+                <SelectItem value="all">All Leagues</SelectItem>
+                {filteredLeagues.map(league => (
+                  <SelectItem key={league.name} value={league.name}>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-xs text-muted-foreground">Tier {league.tier}</span>
+                      <span>·</span>
+                      <span>{league.name}</span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
