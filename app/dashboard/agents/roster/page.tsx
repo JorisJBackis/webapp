@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Loader2, AlertCircle, UserPlus } from 'lucide-react'
 import RosterCards from '@/components/agents/roster-cards'
-import AddPlayerModal from '@/components/agents/add-player-modal'
+import AddRosterPlayerModal from '@/components/agents/add-roster-player-modal'
 
 export type RosterPlayer = {
   roster_id: number
@@ -138,9 +138,9 @@ export default function AgentRosterPage() {
     fetchRoster()
   }, [agentId, supabase])
 
-  const handlePlayerAdded = (newPlayer: RosterPlayer) => {
-    setRoster(prev => [newPlayer, ...prev])
-    // Don't close modal - let user add multiple players
+  const handlePlayerAdded = () => {
+    // Refresh roster to get the newly added player
+    handleRosterRefresh()
   }
 
   const handlePlayerRemoved = (playerId: number) => {
@@ -242,15 +242,11 @@ export default function AgentRosterPage() {
         </div>
       )}
 
-      {agentId && (
-        <AddPlayerModal
-          isOpen={isAddModalOpen}
-          onClose={() => setIsAddModalOpen(false)}
-          onPlayerAdded={handlePlayerAdded}
-          agentId={agentId}
-          existingPlayerIds={roster.map(p => p.player_id)}
-        />
-      )}
+      <AddRosterPlayerModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onPlayerAdded={handlePlayerAdded}
+      />
     </div>
   )
 }

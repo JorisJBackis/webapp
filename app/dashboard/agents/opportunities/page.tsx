@@ -1,57 +1,36 @@
 "use client"
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Loader2, AlertCircle, TrendingUp, Building2 } from 'lucide-react'
-import SmartRecommendationsCards from '@/components/agents/smart-recommendations-cards'
+import { Loader2, AlertCircle } from 'lucide-react'
+import OpportunitiesTable from '@/components/agents/opportunities-table'
+import type { Database } from '@/lib/supabase/database.types'
 
-export interface SmartRecommendation {
-  recommendation_id: string
+type RecruitmentNeed = Database['public']['Functions']['get_recruitment_needs']['Returns'][number]
+
+export type OpportunityWithMatches = RecruitmentNeed & {
+  matched_players: MatchedPlayer[]
+}
+
+export type MatchedPlayer = {
   player_id: number
   player_name: string
-  player_age: number
-  player_position: string
-  player_nationality: string | null
-  player_contract_expires: string
-  player_market_value: number | null
-  player_picture_url: string | null
-  player_transfermarkt_url: string | null
-  club_id: number
-  club_name: string
-  club_logo_url: string | null
-  club_transfermarkt_url: string | null
-  league_name: string | null
-  league_tier: number | null
-  match_score: number
   match_reasons: {
-    same_league: boolean
-    same_tier: boolean
-    same_country: boolean
-    exact_position: boolean
-    contract_expiring_soon: boolean
-    has_squad_need: boolean
-    same_nationality: boolean
-    age_fits_profile: boolean
-    position_shortage: number
-    expiring_contracts_in_position: number
-    squad_avg_age_in_position: number | null
-    expiring_players: Array<{
-      name: string
-      age: number
-      contract_expires: string
-      market_value: number | null
-    }>
-    details: {
-      player_contract_expires: string
-      months_until_free: number
-    }
+    position_match: boolean
+    age_match: boolean
+    height_match: boolean
+    foot_match: boolean
+    player_position: string | null
+    player_age: number | null
+    player_height: number | null
+    player_foot: string | null
   }
 }
 
 export default function AgentOpportunitiesPage() {
-  const [recommendations, setRecommendations] = useState<SmartRecommendation[]>([])
+  const [opportunities, setOpportunities] = useState<OpportunityWithMatches[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [agentId, setAgentId] = useState<string | null>(null)
@@ -86,52 +65,85 @@ export default function AgentOpportunitiesPage() {
     getAgentId()
   }, [supabase])
 
-  // Fetch smart recommendations
+  // Fetch opportunities and matches
   useEffect(() => {
     if (!agentId) return
 
-    const fetchRecommendations = async () => {
+    const fetchOpportunities = async () => {
       try {
         setLoading(true)
         setError(null)
 
         if (!supabase) return
 
-        console.log('[Smart Recommendations] Fetching for agent:', agentId)
+        console.log('[Opportunities] Fetching for agent:', agentId)
 
-        const { data, error: rpcError } = await supabase.rpc('get_smart_recommendations', {
+        // Fetch all recruitment needs
+        const { data: needs, error: needsError } = await supabase.rpc('get_recruitment_needs', {
+          p_requesting_club_id: 1 // Dummy value, agents see all needs
+        })
+
+        console.log('[Opportunities] Needs response:', { data: needs, error: needsError })
+
+        if (needsError) {
+          console.error('[Opportunities] Needs error:', needsError)
+          throw needsError
+        }
+
+        // Fetch matches for agent's roster
+        const { data: matches, error: matchesError } = await supabase.rpc('match_roster_with_needs', {
           p_agent_id: agentId
         })
 
-        console.log('[Smart Recommendations] Response:', { data, error: rpcError })
+        console.log('[Opportunities] Matches response:', { data: matches, error: matchesError })
 
-        if (rpcError) {
-          console.error('[Smart Recommendations] Error:', rpcError)
-          throw rpcError
+        if (matchesError) {
+          console.error('[Opportunities] Matches error:', matchesError)
+          throw matchesError
         }
 
-        setRecommendations(data || [])
+        // Group matches by need_id
+        const matchesByNeed: Record<number, MatchedPlayer[]> = {}
+        if (matches) {
+          matches.forEach((match: any) => {
+            if (!matchesByNeed[match.need_id]) {
+              matchesByNeed[match.need_id] = []
+            }
+            matchesByNeed[match.need_id].push({
+              player_id: match.matched_player_id,
+              player_name: match.matched_player_name,
+              match_reasons: match.match_reasons
+            })
+          })
+        }
+
+        // Combine needs with their matches
+        const opportunitiesWithMatches: OpportunityWithMatches[] = (needs || []).map(need => ({
+          ...need,
+          matched_players: matchesByNeed[need.need_id] || []
+        }))
+
+        // Sort by: 1) Most matches first, 2) Most recent first
+        opportunitiesWithMatches.sort((a, b) => {
+          // First sort by number of matches (descending)
+          const matchDiff = b.matched_players.length - a.matched_players.length
+          if (matchDiff !== 0) return matchDiff
+
+          // If same number of matches, sort by date (most recent first)
+          return new Date(b.need_created_at).getTime() - new Date(a.need_created_at).getTime()
+        })
+
+        setOpportunities(opportunitiesWithMatches)
       } catch (err: any) {
-        console.error('Error fetching recommendations:', err)
-        setError('Failed to load recommendations')
+        console.error('Error fetching opportunities:', err)
+        setError('Failed to load opportunities')
       } finally {
         setLoading(false)
       }
     }
 
-    fetchRecommendations()
+    fetchOpportunities()
   }, [agentId, supabase])
-
-  // Calculate stats
-  const stats = useMemo(() => {
-    const uniquePlayers = new Set(recommendations.map(r => r.player_id)).size
-    const uniqueClubs = new Set(recommendations.map(r => r.club_id)).size
-    const avgScore = recommendations.length > 0
-      ? Math.round(recommendations.reduce((sum, r) => sum + r.match_score, 0) / recommendations.length)
-      : 0
-
-    return { uniquePlayers, uniqueClubs, avgScore, totalMatches: recommendations.length }
-  }, [recommendations])
 
   if (loading) {
     return (
@@ -160,80 +172,30 @@ export default function AgentOpportunitiesPage() {
   return (
     <div className="container mx-auto py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-primary">Smart Opportunities</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-primary">Opportunities</h1>
         <p className="text-muted-foreground">
-          High-quality matches between your roster players and club needs
+          Browse club recruitment needs and see which of your roster players are a match
         </p>
       </div>
 
-      {/* Stats Cards */}
-      {recommendations.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Matches</p>
-                  <p className="text-2xl font-bold">{stats.totalMatches}</p>
-                </div>
-                <TrendingUp className="h-8 w-8 text-primary opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Players Matched</p>
-                  <p className="text-2xl font-bold">{stats.uniquePlayers}</p>
-                </div>
-                <Building2 className="h-8 w-8 text-primary opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Clubs Interested</p>
-                  <p className="text-2xl font-bold">{stats.uniqueClubs}</p>
-                </div>
-                <Building2 className="h-8 w-8 text-primary opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Avg Match Score</p>
-                  <p className="text-2xl font-bold">{stats.avgScore}</p>
-                </div>
-                <TrendingUp className="h-8 w-8 text-primary opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {recommendations.length === 0 ? (
-        <Card>
-          <CardContent className="text-center py-12 text-muted-foreground">
-            <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="text-lg mb-2">No opportunities found</p>
-            <p className="mb-4">
-              Make sure you have:
-            </p>
-            <ul className="text-sm space-y-1">
-              <li>✓ Players in your roster with contracts expiring within 6 months</li>
-              <li>✓ Favorite clubs added</li>
-              <li>✓ Clubs in the same league/tier as your players</li>
-            </ul>
-          </CardContent>
-        </Card>
-      ) : (
-        <SmartRecommendationsCards recommendations={recommendations} />
-      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recruitment Needs ({opportunities.length})</CardTitle>
+          <CardDescription>
+            Clubs looking for players - your matching roster players are highlighted
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {opportunities.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="text-lg mb-2">No active recruitment needs found</p>
+              <p>Check back later for new opportunities</p>
+            </div>
+          ) : (
+            <OpportunitiesTable opportunities={opportunities} />
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

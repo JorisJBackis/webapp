@@ -183,6 +183,15 @@ export default function RosterCards({ roster, onPlayerRemoved, onNotesUpdated }:
     })
   }
 
+  const formatFoot = (foot: string | null) => {
+    if (!foot) return 'N/A'
+    const footLower = foot.toLowerCase()
+    if (footLower === 'right') return 'Right'
+    if (footLower === 'left') return 'Left'
+    if (footLower === 'both') return 'Both'
+    return foot.charAt(0).toUpperCase() + foot.slice(1)
+  }
+
   const isContractExpiringSoon = (contractExpires: string | null): boolean => {
     if (!contractExpires) return false
     const expiryDate = new Date(contractExpires)
@@ -434,21 +443,21 @@ export default function RosterCards({ roster, onPlayerRemoved, onNotesUpdated }:
 
                   {/* Player Stats Grid */}
                   <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="flex items-center gap-1 text-muted-foreground">
+                    <div className="flex items-center gap-1 text-muted-foreground" title="Height">
                       <Ruler className="h-3 w-3" />
                       <span>{player.height ? `${player.height} cm` : 'N/A'}</span>
                     </div>
-                    <div className="flex items-center gap-1 text-muted-foreground">
+                    <div className="flex items-center gap-1 text-muted-foreground" title="Preferred Foot">
                       <span className="text-xs">⚽</span>
-                      <span>{player.foot || 'N/A'} foot</span>
+                      <span>{formatFoot(player.foot)} Foot</span>
                     </div>
-                    <div className="flex items-center gap-1 text-muted-foreground">
+                    <div className="flex items-center gap-1 text-muted-foreground" title="Market Value">
                       <Euro className="h-3 w-3" />
                       <span>{formatMarketValue(player.market_value_eur)}</span>
                     </div>
-                    <div className="flex items-center gap-1 text-muted-foreground">
+                    <div className="flex items-center gap-1 text-muted-foreground" title="Contract Expires">
                       <Calendar className="h-3 w-3" />
-                      <span className="text-xs">{formatDate(player.contract_expires)}</span>
+                      <span>{formatDate(player.contract_expires)}</span>
                     </div>
                   </div>
 

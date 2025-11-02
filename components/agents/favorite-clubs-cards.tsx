@@ -15,8 +15,7 @@ import {
   Building2,
   Users,
   TrendingUp,
-  Euro,
-  Calendar
+  Euro
 } from 'lucide-react'
 import {
   AlertDialog,
@@ -129,14 +128,6 @@ export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdate
     if (value >= 1000000) return `€${(value / 1000000).toFixed(1)}M`
     if (value >= 1000) return `€${(value / 1000).toFixed(0)}K`
     return `€${value}`
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    })
   }
 
   const handleViewPlayers = (club: FavoriteClub) => {
@@ -280,28 +271,22 @@ export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdate
                 <div className="space-y-3 pb-3">
                   {/* Squad Stats Grid */}
                   <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="flex items-center gap-1 text-muted-foreground">
+                    <div className="flex items-center gap-1 text-muted-foreground" title="Squad Size">
                       <Users className="h-3 w-3" />
                       <span>{club.squad_size} players</span>
                     </div>
-                    <div className="flex items-center gap-1 text-muted-foreground">
+                    <div className="flex items-center gap-1 text-muted-foreground" title="Average Squad Age">
                       <TrendingUp className="h-3 w-3" />
                       <span>{club.squad_avg_age ? `${club.squad_avg_age.toFixed(1)} yrs` : 'N/A'}</span>
                     </div>
-                    <div className="flex items-center gap-1 text-muted-foreground">
+                    <div className="flex items-center gap-1 text-muted-foreground" title="Total Market Value">
                       <Euro className="h-3 w-3" />
-                      <span title="Total Market Value">{formatMarketValue(club.total_market_value_eur)}</span>
+                      <span>{formatMarketValue(club.total_market_value_eur)}</span>
                     </div>
-                    <div className="flex items-center gap-1 text-muted-foreground">
+                    <div className="flex items-center gap-1 text-muted-foreground" title="Average Market Value per Player">
                       <Euro className="h-3 w-3 opacity-50" />
-                      <span title="Avg Market Value" className="text-xs">{formatMarketValue(club.avg_market_value_eur)}/p</span>
+                      <span>{formatMarketValue(club.avg_market_value_eur)}/p</span>
                     </div>
-                  </div>
-
-                  {/* Added Date */}
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Calendar className="h-3 w-3" />
-                    <span>Added {formatDate(club.added_at)}</span>
                   </div>
                 </div>
 

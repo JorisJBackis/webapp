@@ -17,6 +17,108 @@ interface OpportunitiesTableProps {
   opportunities: OpportunityWithMatches[]
 }
 
+// Mini Player Card Component for Matched Players
+function OpportunityMatchCard({ player, renderMatchBadges }: { player: any, renderMatchBadges: (reasons: any) => JSX.Element[] }) {
+  const [playerData, setPlayerData] = useState<any>(null)
+  const supabase = createClient()
+
+  useEffect(() => {
+    const fetchPlayerData = async () => {
+      if (!supabase) return
+
+      const { data } = await supabase
+        .from('players_transfermarkt')
+        .select('picture_url, transfermarkt_url')
+        .eq('id', player.player_id)
+        .single()
+
+      setPlayerData(data)
+    }
+
+    fetchPlayerData()
+  }, [player.player_id, supabase])
+
+  return (
+    <Card className="overflow-hidden hover:shadow-md transition-all border-l-4 border-l-green-500">
+      <CardContent className="p-3">
+        <div className="flex items-start gap-3">
+          {/* Player Photo */}
+          <div className="flex-shrink-0">
+            {playerData?.transfermarkt_url ? (
+              <a
+                href={playerData.transfermarkt_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block hover:opacity-80 transition-opacity"
+              >
+                {playerData?.picture_url ? (
+                  <img
+                    src={playerData.picture_url}
+                    alt={player.player_name}
+                    className="w-16 h-16 rounded-lg object-cover border-2 border-background shadow cursor-pointer"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center border-2 border-background shadow cursor-pointer">
+                    <Users className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                )}
+              </a>
+            ) : (
+              <>
+                {playerData?.picture_url ? (
+                  <img
+                    src={playerData.picture_url}
+                    alt={player.player_name}
+                    className="w-16 h-16 rounded-lg object-cover border-2 border-background shadow"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center border-2 border-background shadow">
+                    <Users className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Player Info */}
+          <div className="flex-1 min-w-0">
+            {playerData?.transfermarkt_url ? (
+              <a
+                href={playerData.transfermarkt_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:underline"
+              >
+                <h4 className="font-bold text-sm mb-2 truncate">{player.player_name}</h4>
+              </a>
+            ) : (
+              <h4 className="font-bold text-sm mb-2 truncate">{player.player_name}</h4>
+            )}
+
+            {/* Match Badges */}
+            <div className="flex flex-wrap gap-1">
+              {renderMatchBadges(player.match_reasons)}
+            </div>
+
+            {/* Quick Stats */}
+            <div className="mt-2 text-xs text-muted-foreground space-y-0.5">
+              {player.match_reasons.player_position && (
+                <div>Position: {player.match_reasons.player_position}</div>
+              )}
+              {player.match_reasons.player_age && (
+                <div>Age: {player.match_reasons.player_age}</div>
+              )}
+              {player.match_reasons.player_height && (
+                <div>Height: {player.match_reasons.player_height} cm</div>
+              )}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export default function OpportunitiesTable({ opportunities }: OpportunitiesTableProps) {
   const [positionFilter, setPositionFilter] = useState('all')
   const [matchFilter, setMatchFilter] = useState('all')
@@ -461,22 +563,18 @@ export default function OpportunitiesTable({ opportunities }: OpportunitiesTable
 
                     {/* Matched Players from Roster */}
                     {opportunity.matched_players.length > 0 && (
-                      <div className="mb-4 p-4 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
-                        <p className="text-sm font-medium text-green-900 dark:text-green-100 mb-3 flex items-center gap-2">
-                          <Users className="h-4 w-4" />
-                          Players from your roster that match:
+                      <div className="mb-4">
+                        <p className="text-sm font-medium mb-3 flex items-center gap-2">
+                          <Users className="h-4 w-4 text-primary" />
+                          Your Roster Matches ({opportunity.matched_players.length})
                         </p>
-                        <div className="space-y-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           {opportunity.matched_players.map(player => (
-                            <div
+                            <OpportunityMatchCard
                               key={player.player_id}
-                              className="flex items-center justify-between p-3 bg-background rounded border"
-                            >
-                              <span className="font-medium">{player.player_name}</span>
-                              <div className="flex flex-wrap gap-1">
-                                {renderMatchBadges(player.match_reasons)}
-                              </div>
-                            </div>
+                              player={player}
+                              renderMatchBadges={renderMatchBadges}
+                            />
                           ))}
                         </div>
                       </div>

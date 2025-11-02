@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
   Dialog,
@@ -13,11 +13,15 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Search, Loader2, Building2, Plus, Check } from 'lucide-react'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { Search, Loader2, Building2, Plus, Check, ChevronsUpDown } from 'lucide-react'
 import { toast } from 'sonner'
+import { getCountryFlag } from '@/lib/utils/country-flags'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 
 interface Club {
   id: number
@@ -44,7 +48,6 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
   const [competitionFilter, setCompetitionFilter] = useState('all')
   const [countryFilter, setCountryFilter] = useState('all')
   const [clubs, setClubs] = useState<Club[]>([])
-  const [filteredClubs, setFilteredClubs] = useState<Club[]>([])
   const [favoritedClubIds, setFavoritedClubIds] = useState<Set<number>>(new Set())
   const [leagueOptions, setLeagueOptions] = useState<LeagueOption[]>([])
   const [countries, setCountries] = useState<string[]>([])
@@ -52,6 +55,19 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
   const [notes, setNotes] = useState<Record<number, string>>({})
   const [loading, setLoading] = useState(false)
   const [addingClubId, setAddingClubId] = useState<number | null>(null)
+
+  // Infinite scroll state
+  const [displayCount, setDisplayCount] = useState(50)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+
+  // Combobox states
+  const [openCountry, setOpenCountry] = useState(false)
+  const [openLeague, setOpenLeague] = useState(false)
+
+  // Dropdown search states
+  const [countrySearch, setCountrySearch] = useState('')
+  const [leagueSearch, setLeagueSearch] = useState('')
 
   const supabase = createClient()
 
@@ -159,8 +175,8 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
           .sort((a, b) => a.tier - b.tier || a.name.localeCompare(b.name))
       })()
 
-  // Apply filters
-  useEffect(() => {
+  // Apply filters with useMemo for performance
+  const filteredClubs = useMemo(() => {
     let filtered = clubs
 
     // Country filter (apply first)
@@ -175,14 +191,56 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
 
     // Search filter
     if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase()
       filtered = filtered.filter(club =>
-        club.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        club.league_name?.toLowerCase().includes(searchTerm.toLowerCase())
+        club.name.toLowerCase().includes(searchLower) ||
+        club.league_name?.toLowerCase().includes(searchLower)
       )
     }
 
-    setFilteredClubs(filtered)
+    return filtered
   }, [clubs, competitionFilter, countryFilter, searchTerm])
+
+  // Display only a subset of filtered clubs for performance
+  const displayedClubs = useMemo(() => {
+    return filteredClubs.slice(0, displayCount)
+  }, [filteredClubs, displayCount])
+
+  // Reset display count when filters change
+  useEffect(() => {
+    setDisplayCount(50)
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0
+    }
+  }, [competitionFilter, countryFilter, searchTerm])
+
+  // Infinite scroll handler
+  const handleScroll = useCallback(() => {
+    const container = scrollContainerRef.current
+    if (!container || loadingMore) return
+
+    const { scrollTop, scrollHeight, clientHeight } = container
+    const scrollPercentage = (scrollTop + clientHeight) / scrollHeight
+
+    // Load more when scrolled 80% down
+    if (scrollPercentage > 0.8 && displayCount < filteredClubs.length) {
+      setLoadingMore(true)
+      // Simulate a small delay for smooth UX
+      setTimeout(() => {
+        setDisplayCount(prev => Math.min(prev + 50, filteredClubs.length))
+        setLoadingMore(false)
+      }, 300)
+    }
+  }, [displayCount, filteredClubs.length, loadingMore])
+
+  // Attach scroll listener
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    container.addEventListener('scroll', handleScroll)
+    return () => container.removeEventListener('scroll', handleScroll)
+  }, [handleScroll])
 
   const handleAddClub = async (club: Club) => {
     try {
@@ -234,13 +292,14 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
     setCountryFilter('all')
     setExpandedClubId(null)
     setNotes({})
+    setDisplayCount(50)
     onClose()
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl max-h-[80vh]">
-        <DialogHeader>
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Add Club to Favorites</DialogTitle>
           <DialogDescription>
             Filter by country first, then narrow down by league. Click "+ Note" to add optional notes.
@@ -248,14 +307,14 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
         </DialogHeader>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-shrink-0">
           <div>
             <Label htmlFor="search">Search clubs</Label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 id="search"
-                placeholder="Search by name..."
+                placeholder="Search by name, league..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9"
@@ -264,50 +323,139 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
           </div>
 
           <div>
-            <Label htmlFor="country">Country</Label>
-            <Select value={countryFilter} onValueChange={setCountryFilter}>
-              <SelectTrigger id="country">
-                <SelectValue placeholder="All countries" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                <SelectItem value="all">All Countries</SelectItem>
-                {countries.map(country => (
-                  <SelectItem key={country} value={country}>
-                    {country}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Country</Label>
+            <Popover modal={true} open={openCountry} onOpenChange={(open) => {
+              setOpenCountry(open)
+              if (!open) setCountrySearch('')
+            }}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openCountry}
+                  className="w-full justify-between"
+                >
+                  {countryFilter === 'all' ? 'All Countries' : countryFilter}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[250px] p-0">
+                <div className="flex items-center border-b px-3 py-2">
+                  <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                  <Input
+                    placeholder="Search country..."
+                    className="h-9 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none p-0 bg-transparent"
+                    value={countrySearch}
+                    onChange={(e) => setCountrySearch(e.target.value)}
+                  />
+                </div>
+                <div className="max-h-[200px] overflow-y-auto p-1">
+                  <div
+                    className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                    onClick={() => {
+                      setCountryFilter('all')
+                      setOpenCountry(false)
+                      setCountrySearch('')
+                    }}
+                  >
+                    All Countries
+                  </div>
+                  {countries
+                    .filter(country => country.toLowerCase().includes(countrySearch.toLowerCase()))
+                    .map((country) => (
+                      <div
+                        key={country}
+                        className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                        onClick={() => {
+                          setCountryFilter(country)
+                          setOpenCountry(false)
+                          setCountrySearch('')
+                        }}
+                      >
+                        <span className="mr-2">{getCountryFlag(country) || '🌍'}</span>
+                        {country}
+                      </div>
+                    ))}
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div>
-            <Label htmlFor="league">League</Label>
-            <Select value={competitionFilter} onValueChange={setCompetitionFilter}>
-              <SelectTrigger id="league">
-                <SelectValue placeholder="All leagues" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                <SelectItem value="all">All Leagues</SelectItem>
-                {filteredLeagues.map(league => (
-                  <SelectItem key={league.name} value={league.name}>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-xs text-muted-foreground">Tier {league.tier}</span>
-                      <span>·</span>
-                      <span>{league.name}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>League</Label>
+            <Popover modal={true} open={openLeague} onOpenChange={(open) => {
+              setOpenLeague(open)
+              if (!open) setLeagueSearch('')
+            }}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openLeague}
+                  className="w-full justify-between"
+                >
+                  {competitionFilter === 'all' ? 'All Leagues' : competitionFilter}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] p-0">
+                <div className="flex items-center border-b px-3 py-2">
+                  <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                  <Input
+                    placeholder="Search league..."
+                    className="h-9 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none p-0 bg-transparent"
+                    value={leagueSearch}
+                    onChange={(e) => setLeagueSearch(e.target.value)}
+                  />
+                </div>
+                <div className="max-h-[200px] overflow-y-auto p-1">
+                  <div
+                    className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                    onClick={() => {
+                      setCompetitionFilter('all')
+                      setOpenLeague(false)
+                      setLeagueSearch('')
+                    }}
+                  >
+                    All Leagues
+                  </div>
+                  {filteredLeagues
+                    .filter(league => league.name.toLowerCase().includes(leagueSearch.toLowerCase()))
+                    .map((league) => (
+                      <div
+                        key={league.name}
+                        className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                        onClick={() => {
+                          setCompetitionFilter(league.name)
+                          setOpenLeague(false)
+                          setLeagueSearch('')
+                        }}
+                      >
+                        <span className="font-medium text-xs text-muted-foreground mr-2">Tier {league.tier}</span>
+                        <span className="mr-2">·</span>
+                        {league.name}
+                      </div>
+                    ))}
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
         {/* Results */}
-        <div className="text-sm text-muted-foreground mb-2">
-          {loading ? 'Loading...' : `${filteredClubs.length} clubs found`}
+        <div className="text-sm text-muted-foreground mb-2 flex-shrink-0">
+          {loading ? 'Loading...' : (
+            filteredClubs.length > 0
+              ? `Showing ${displayedClubs.length} of ${filteredClubs.length} clubs${displayedClubs.length < filteredClubs.length ? ' (scroll for more)' : ''}`
+              : 'No clubs found'
+          )}
         </div>
 
-        <ScrollArea className="h-[400px] border rounded-md">
+        <div
+          ref={scrollContainerRef}
+          className="flex-1 border rounded-md overflow-y-auto"
+          style={{ minHeight: 0 }}
+        >
           {loading ? (
             <div className="flex justify-center items-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -324,7 +472,7 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
             </div>
           ) : (
             <div className="p-4 space-y-2">
-              {filteredClubs.map(club => (
+              {displayedClubs.map(club => (
                 <div key={club.id} className="border rounded-lg overflow-hidden">
                   <div className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors">
                     <div className="flex items-center gap-3 flex-1">
@@ -349,6 +497,7 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
                           )}
                           {club.country && (
                             <Badge variant="outline" className="text-xs">
+                              <span className="mr-1">{getCountryFlag(club.country) || '🌍'}</span>
                               {club.country}
                             </Badge>
                           )}
@@ -401,11 +550,26 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
                   )}
                 </div>
               ))}
+
+              {/* Loading more indicator */}
+              {loadingMore && (
+                <div className="flex justify-center items-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
+                  <span className="text-sm text-muted-foreground">Loading more clubs...</span>
+                </div>
+              )}
+
+              {/* End of results indicator */}
+              {!loadingMore && displayedClubs.length >= filteredClubs.length && filteredClubs.length > 50 && (
+                <div className="flex justify-center items-center py-4">
+                  <span className="text-sm text-muted-foreground">All {filteredClubs.length} clubs loaded</span>
+                </div>
+              )}
             </div>
           )}
-        </ScrollArea>
+        </div>
 
-        <div className="text-xs text-muted-foreground">
+        <div className="text-xs text-muted-foreground flex-shrink-0 mt-2">
           <p>💡 Tip: Click "+ Note" to add notes before adding, or edit them later in My Clubs</p>
         </div>
       </DialogContent>
