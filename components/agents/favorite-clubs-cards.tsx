@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import {
   Trash2,
   Edit,
@@ -15,7 +16,12 @@ import {
   Building2,
   Users,
   TrendingUp,
-  Euro
+  Euro,
+  Phone,
+  Mail,
+  User,
+  Briefcase,
+  Plus
 } from 'lucide-react'
 import {
   AlertDialog,
@@ -27,7 +33,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import type { FavoriteClub } from '@/app/dashboard/agents/clubs/page'
+import type { FavoriteClub, ClubContact } from '@/app/dashboard/agents/clubs/page'
 import { getCountryFlag } from '@/lib/utils/country-flags'
 import ClubPlayersModal from './club-players-modal'
 
@@ -35,9 +41,10 @@ interface FavoriteClubsCardsProps {
   clubs: FavoriteClub[]
   onClubRemoved: (clubId: number) => void
   onNotesUpdated?: (clubId: number, newNotes: string) => void
+  onContactsUpdated?: (clubId: number, contacts: ClubContact[]) => void
 }
 
-export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdated }: FavoriteClubsCardsProps) {
+export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdated, onContactsUpdated }: FavoriteClubsCardsProps) {
   const [editingNotes, setEditingNotes] = useState<number | null>(null)
   const [notesValue, setNotesValue] = useState('')
   const [savingNotes, setSavingNotes] = useState(false)
@@ -45,6 +52,12 @@ export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdate
   const [clubToRemove, setClubToRemove] = useState<FavoriteClub | null>(null)
   const [selectedClub, setSelectedClub] = useState<FavoriteClub | null>(null)
   const [showPlayersModal, setShowPlayersModal] = useState(false)
+
+  // Contact editing state - now manages array of contacts
+  const [editingContactsForClub, setEditingContactsForClub] = useState<number | null>(null)
+  const [contactsBeingEdited, setContactsBeingEdited] = useState<ClubContact[]>([])
+  const [savingContacts, setSavingContacts] = useState(false)
+  const [editingContactIndex, setEditingContactIndex] = useState<number | null>(null)
 
   const supabase = createClient()
 
@@ -88,6 +101,73 @@ export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdate
       alert('Failed to save notes: ' + err.message)
     } finally {
       setSavingNotes(false)
+    }
+  }
+
+  const handleStartEditContacts = (club: FavoriteClub) => {
+    setEditingContactsForClub(club.club_id)
+    setContactsBeingEdited([...club.contacts])
+  }
+
+  const handleCancelEditContacts = () => {
+    setEditingContactsForClub(null)
+    setContactsBeingEdited([])
+    setEditingContactIndex(null)
+  }
+
+  const handleAddContact = () => {
+    setContactsBeingEdited(prev => [...prev, { name: '', email: '', phone: '', role: '' }])
+    setEditingContactIndex(contactsBeingEdited.length)
+  }
+
+  const handleEditContact = (index: number) => {
+    setEditingContactIndex(index)
+  }
+
+  const handleUpdateContact = (index: number, field: keyof ClubContact, value: string) => {
+    setContactsBeingEdited(prev => prev.map((contact, i) =>
+      i === index ? { ...contact, [field]: value || null } : contact
+    ))
+  }
+
+  const handleDeleteContact = (index: number) => {
+    setContactsBeingEdited(prev => prev.filter((_, i) => i !== index))
+    if (editingContactIndex === index) {
+      setEditingContactIndex(null)
+    }
+  }
+
+  const handleSaveContacts = async (clubId: number) => {
+    try {
+      setSavingContacts(true)
+
+      if (!supabase) return
+
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+
+      // Update contacts array (pass as object, not stringified - Supabase handles JSONB conversion)
+      const { error } = await supabase.rpc('update_club_contacts', {
+        p_agent_id: user.id,
+        p_club_id: clubId,
+        p_contacts: contactsBeingEdited
+      })
+
+      if (error) throw error
+
+      // Notify parent if callback provided
+      if (onContactsUpdated) {
+        onContactsUpdated(clubId, contactsBeingEdited)
+      }
+
+      setEditingContactsForClub(null)
+      setContactsBeingEdited([])
+      setEditingContactIndex(null)
+    } catch (err: any) {
+      console.error('Error saving contacts:', err)
+      alert('Failed to save contact details: ' + err.message)
+    } finally {
+      setSavingContacts(false)
     }
   }
 
@@ -230,12 +310,12 @@ export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdate
                             className="hover:underline"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <Badge variant="secondary" className="text-xs">
+                            <Badge variant="outline" className="text-xs border-2">
                               {club.league_name}
                             </Badge>
                           </a>
                         ) : (
-                          <Badge variant="secondary" className="text-xs">
+                          <Badge variant="outline" className="text-xs border-2">
                             {club.league_name}
                           </Badge>
                         )}
@@ -290,8 +370,184 @@ export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdate
                   </div>
                 </div>
 
-                {/* Bottom Section - Notes and Actions - Always at bottom */}
-                <div className="mt-auto pt-4 space-y-2 border-t" onClick={(e) => e.stopPropagation()}>
+                {/* Bottom Section - Contact Details, Notes and Actions - Always at bottom */}
+                <div className="mt-auto pt-4 space-y-3 border-t" onClick={(e) => e.stopPropagation()}>
+                  {/* Contact Details Section */}
+                  <div>
+                    {editingContactsForClub === club.club_id ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-semibold text-muted-foreground">Contacts ({contactsBeingEdited.length}):</p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleAddContact()
+                            }}
+                            className="h-6 px-2 text-xs"
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Add Contact
+                          </Button>
+                        </div>
+
+                        {/* Contact Cards Grid - 2 per row */}
+                        <div className="grid grid-cols-2 gap-2">
+                          {contactsBeingEdited.map((contact, index) => (
+                            <div
+                              key={index}
+                              className="p-2 bg-muted/30 rounded border space-y-1.5"
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-xs font-medium text-muted-foreground">Contact {index + 1}</span>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleDeleteContact(index)
+                                  }}
+                                  className="h-5 w-5 p-0"
+                                >
+                                  <Trash2 className="h-3 w-3 text-destructive" />
+                                </Button>
+                              </div>
+                              <Input
+                                value={contact.name || ''}
+                                onChange={(e) => handleUpdateContact(index, 'name', e.target.value)}
+                                placeholder="Name"
+                                className="h-7 text-xs"
+                              />
+                              <Input
+                                value={contact.role || ''}
+                                onChange={(e) => handleUpdateContact(index, 'role', e.target.value)}
+                                placeholder="Role"
+                                className="h-7 text-xs"
+                              />
+                              <Input
+                                value={contact.email || ''}
+                                onChange={(e) => handleUpdateContact(index, 'email', e.target.value)}
+                                placeholder="Email"
+                                type="email"
+                                className="h-7 text-xs"
+                              />
+                              <Input
+                                value={contact.phone || ''}
+                                onChange={(e) => handleUpdateContact(index, 'phone', e.target.value)}
+                                placeholder="Phone"
+                                type="tel"
+                                className="h-7 text-xs"
+                              />
+                            </div>
+                          ))}
+                        </div>
+
+                        {contactsBeingEdited.length === 0 && (
+                          <p className="text-xs text-muted-foreground text-center py-4">
+                            No contacts yet. Click "Add Contact" to get started.
+                          </p>
+                        )}
+
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleSaveContacts(club.club_id)
+                            }}
+                            disabled={savingContacts}
+                            className="flex-1"
+                          >
+                            <Save className="h-3 w-3 mr-1" />
+                            Save All
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleCancelEditContacts()
+                            }}
+                            disabled={savingContacts}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs text-muted-foreground">Contacts ({club.contacts.length}):</p>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleStartEditContacts(club)
+                            }}
+                            className="h-6 px-2"
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                        </div>
+
+                        {/* Contact Cards Grid - 2 per row (View Mode) */}
+                        {club.contacts.length > 0 ? (
+                          <div className="grid grid-cols-2 gap-2">
+                            {club.contacts.map((contact, index) => (
+                              <div
+                                key={index}
+                                className="text-xs p-2 bg-muted/30 rounded border space-y-1"
+                              >
+                                {contact.name && (
+                                  <div className="flex items-center gap-1.5">
+                                    <User className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                    <span className="font-medium truncate">{contact.name}</span>
+                                  </div>
+                                )}
+                                {contact.role && (
+                                  <div className="flex items-center gap-1.5">
+                                    <Briefcase className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                    <span className="text-muted-foreground truncate">{contact.role}</span>
+                                  </div>
+                                )}
+                                {contact.email && (
+                                  <div className="flex items-center gap-1.5">
+                                    <Mail className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                    <a
+                                      href={`mailto:${contact.email}`}
+                                      className="text-primary hover:underline truncate"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {contact.email}
+                                    </a>
+                                  </div>
+                                )}
+                                {contact.phone && (
+                                  <div className="flex items-center gap-1.5">
+                                    <Phone className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                    <a
+                                      href={`tel:${contact.phone}`}
+                                      className="text-primary hover:underline truncate"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {contact.phone}
+                                    </a>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-xs p-3 bg-muted/30 rounded border text-center text-muted-foreground italic">
+                            No contacts added yet
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   {/* Notes Section */}
                   <div>
                     {editingNotes === club.club_id ? (

@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { Search, Loader2, User, Plus, Check, Calendar, Euro, ChevronsUpDown } from 'lucide-react'
+import { Search, Loader2, User, Plus, Check, Calendar, Euro, ChevronsUpDown, Save, FileText, Eye } from 'lucide-react'
 import { toast } from 'sonner'
 import { getCountryFlag } from '@/lib/utils/country-flags'
 import {
@@ -62,8 +62,10 @@ export default function AddRosterPlayerModal({ isOpen, onClose, onPlayerAdded }:
   const [nationalities, setNationalities] = useState<string[]>([])
   const [expandedPlayerId, setExpandedPlayerId] = useState<number | null>(null)
   const [notes, setNotes] = useState<Record<number, string>>({})
+  const [savedNotes, setSavedNotes] = useState<Set<number>>(new Set()) // Track which players have saved notes
   const [loading, setLoading] = useState(false)
   const [addingPlayerId, setAddingPlayerId] = useState<number | null>(null)
+  const [savingNotePlayerId, setSavingNotePlayerId] = useState<number | null>(null)
 
   // Infinite scroll state
   const [displayCount, setDisplayCount] = useState(50)
@@ -135,9 +137,29 @@ export default function AddRosterPlayerModal({ isOpen, onClose, onPlayerAdded }:
 
         if (rosteredError) throw rosteredError
 
+        // Fetch saved player notes
+        const { data: notesData, error: notesError } = await supabase
+          .from('agent_player_notes')
+          .select('player_id, notes')
+          .eq('agent_id', user.id)
+
+        if (notesError) throw notesError
+
         // Create a set of rostered player IDs
         const rosteredIds = new Set((rosteredData || []).map((r: any) => r.player_id))
         setRosterPlayerIds(rosteredIds)
+
+        // Load saved notes into state
+        const notesMap: Record<number, string> = {}
+        const savedNotesSet = new Set<number>()
+        ;(notesData || []).forEach((note: any) => {
+          if (note.notes) {
+            notesMap[note.player_id] = note.notes
+            savedNotesSet.add(note.player_id)
+          }
+        })
+        setNotes(notesMap)
+        setSavedNotes(savedNotesSet)
 
         // Transform and filter out already rostered players
         const transformedPlayers = (playersData || []).map((player: any) => ({
@@ -231,8 +253,21 @@ export default function AddRosterPlayerModal({ isOpen, onClose, onPlayerAdded }:
       )
     }
 
+    // Sort: Players with saved notes first, then alphabetically
+    filtered.sort((a, b) => {
+      const aHasNote = savedNotes.has(a.id)
+      const bHasNote = savedNotes.has(b.id)
+
+      // If one has notes and the other doesn't, prioritize the one with notes
+      if (aHasNote && !bHasNote) return -1
+      if (!aHasNote && bHasNote) return 1
+
+      // Otherwise, sort alphabetically by name
+      return a.name.localeCompare(b.name)
+    })
+
     return filtered
-  }, [players, agencyFilter, positionFilter, nationalityFilter, searchTerm])
+  }, [players, agencyFilter, positionFilter, nationalityFilter, searchTerm, savedNotes])
 
   // Display only a subset of filtered players for performance
   const displayedPlayers = useMemo(() => {
@@ -321,6 +356,63 @@ export default function AddRosterPlayerModal({ isOpen, onClose, onPlayerAdded }:
     setExpandedPlayerId(expandedPlayerId === playerId ? null : playerId)
   }
 
+  const handleSaveNote = async (player: Player) => {
+    try {
+      setSavingNotePlayerId(player.id)
+
+      if (!supabase) return
+
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+
+      const noteText = notes[player.id]?.trim()
+
+      if (!noteText) {
+        // If note is empty, delete it from database
+        const { error } = await supabase
+          .from('agent_player_notes')
+          .delete()
+          .eq('agent_id', user.id)
+          .eq('player_id', player.id)
+
+        if (error) throw error
+
+        // Remove from saved notes set
+        setSavedNotes(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(player.id)
+          return newSet
+        })
+
+        toast.success('Note removed')
+      } else {
+        // Upsert the note
+        const { error } = await supabase
+          .from('agent_player_notes')
+          .upsert({
+            agent_id: user.id,
+            player_id: player.id,
+            notes: noteText,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'agent_id,player_id'
+          })
+
+        if (error) throw error
+
+        // Add to saved notes set
+        setSavedNotes(prev => new Set([...prev, player.id]))
+
+        toast.success(`Note saved for ${player.name}`)
+      }
+    } catch (err: any) {
+      console.error('Error saving note:', err)
+      alert('Failed to save note: ' + err.message)
+    } finally {
+      setSavingNotePlayerId(null)
+    }
+  }
+
   const formatMarketValue = (value: number | null) => {
     if (!value) return 'N/A'
     if (value >= 1000000) return `€${(value / 1000000).toFixed(1)}M`
@@ -354,7 +446,7 @@ export default function AddRosterPlayerModal({ isOpen, onClose, onPlayerAdded }:
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>Add Player to Roster</DialogTitle>
           <DialogDescription>
-            Search by agency, position, or name. Click "+ Note" to add optional notes.
+            Search by agency, position, or name. Save notes for players (without adding to roster) or add them directly. Players with saved notes appear first.
           </DialogDescription>
         </DialogHeader>
 
@@ -623,18 +715,26 @@ export default function AddRosterPlayerModal({ isOpen, onClose, onPlayerAdded }:
                       {/* Player Info */}
                       <div className="flex-1 min-w-0">
                         {/* Player Name */}
-                        {player.transfermarkt_url ? (
-                          <a
-                            href={player.transfermarkt_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="hover:underline"
-                          >
+                        <div className="flex items-center gap-2">
+                          {player.transfermarkt_url ? (
+                            <a
+                              href={player.transfermarkt_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:underline"
+                            >
+                              <p className="font-bold truncate">{player.name}</p>
+                            </a>
+                          ) : (
                             <p className="font-bold truncate">{player.name}</p>
-                          </a>
-                        ) : (
-                          <p className="font-bold truncate">{player.name}</p>
-                        )}
+                          )}
+                          {savedNotes.has(player.id) && (
+                            <Badge variant="secondary" className="text-xs h-5 flex items-center gap-1">
+                              <FileText className="h-3 w-3" />
+                              Note saved
+                            </Badge>
+                          )}
+                        </div>
 
                         {/* Stats Row */}
                         <div className="flex flex-wrap gap-2 mt-1 text-xs text-muted-foreground">
@@ -710,10 +810,19 @@ export default function AddRosterPlayerModal({ isOpen, onClose, onPlayerAdded }:
                         variant={expandedPlayerId === player.id ? "secondary" : "outline"}
                         onClick={() => handleToggleNotes(player.id)}
                         disabled={addingPlayerId === player.id}
-                        title="Add notes about this player"
+                        title={savedNotes.has(player.id) ? "View/edit saved note" : "Add notes about this player"}
                       >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Note
+                        {savedNotes.has(player.id) ? (
+                          <>
+                            <Eye className="h-4 w-4 mr-1" />
+                            See note
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="h-4 w-4 mr-1" />
+                            Note
+                          </>
+                        )}
                       </Button>
                       <Button
                         size="sm"
@@ -734,9 +843,9 @@ export default function AddRosterPlayerModal({ isOpen, onClose, onPlayerAdded }:
 
                   {/* Expandable notes section */}
                   {expandedPlayerId === player.id && (
-                    <div className="p-3 bg-muted/30 border-t">
+                    <div className="p-3 bg-muted/30 border-t space-y-2">
                       <Label htmlFor={`notes-${player.id}`} className="text-xs">
-                        Notes (Optional)
+                        Notes {savedNotes.has(player.id) ? '(Previously saved)' : '(Optional)'}
                       </Label>
                       <Textarea
                         id={`notes-${player.id}`}
@@ -744,8 +853,39 @@ export default function AddRosterPlayerModal({ isOpen, onClose, onPlayerAdded }:
                         value={notes[player.id] || ''}
                         onChange={(e) => setNotes(prev => ({ ...prev, [player.id]: e.target.value }))}
                         rows={2}
-                        className="mt-1 text-sm resize-none"
+                        className="text-sm resize-none"
                       />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleSaveNote(player)}
+                          disabled={savingNotePlayerId === player.id || addingPlayerId === player.id}
+                          className="flex-1"
+                        >
+                          {savingNotePlayerId === player.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                          ) : (
+                            <Save className="h-3 w-3 mr-1" />
+                          )}
+                          Save Note Only
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleAddPlayer(player)}
+                          disabled={addingPlayerId === player.id || savingNotePlayerId === player.id}
+                          className="flex-1"
+                        >
+                          {addingPlayerId === player.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <>
+                              <Check className="h-4 w-4 mr-1" />
+                              Add to Roster
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -770,7 +910,7 @@ export default function AddRosterPlayerModal({ isOpen, onClose, onPlayerAdded }:
         </div>
 
         <div className="text-xs text-muted-foreground flex-shrink-0">
-          <p>💡 Tip: Use agency filter to quickly find players from specific agencies</p>
+          <p>💡 Tip: Save notes for players you're interested in - they'll appear first in the list. Add notes without adding to roster to track prospects.</p>
         </div>
       </DialogContent>
     </Dialog>

@@ -55,6 +55,7 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
   const [notes, setNotes] = useState<Record<number, string>>({})
   const [loading, setLoading] = useState(false)
   const [addingClubId, setAddingClubId] = useState<number | null>(null)
+  const [clubsAddedInSession, setClubsAddedInSession] = useState(false)
 
   // Infinite scroll state
   const [displayCount, setDisplayCount] = useState(50)
@@ -74,6 +75,9 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
   // Fetch all clubs and favorited clubs
   useEffect(() => {
     if (!isOpen) return
+
+    // Reset session tracking when modal opens
+    setClubsAddedInSession(false)
 
     const fetchData = async () => {
       try {
@@ -269,8 +273,10 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
         return newNotes
       })
 
-      // Notify parent to refresh
-      onClubAdded()
+      // Mark that clubs were added in this session
+      setClubsAddedInSession(true)
+
+      // Don't notify parent yet - wait until modal closes to batch refresh
 
       // Show success toast
       toast.success(`${club.name} added to favorites!`)
@@ -287,17 +293,28 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
   }
 
   const handleClose = () => {
+    // Only refresh parent's list if clubs were added in this session
+    const shouldRefresh = clubsAddedInSession
+
+    // Reset all state
     setSearchTerm('')
     setCompetitionFilter('all')
     setCountryFilter('all')
     setExpandedClubId(null)
     setNotes({})
     setDisplayCount(50)
+    setClubsAddedInSession(false)
+
+    // Notify parent to refresh if needed
+    if (shouldRefresh) {
+      onClubAdded()
+    }
+
     onClose()
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>Add Club to Favorites</DialogTitle>

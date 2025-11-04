@@ -6,7 +6,7 @@ const COUNTRY_FLAGS: Record<string, string> = {
   'Norway': '🇳🇴',
   'Denmark': '🇩🇰',
   'Iceland': '🇮🇸',
-  'England': '🏴󐁧󐁢󐁥󐁮󐁧󐁿',
+  'England': '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
   'Scotland': '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
   'Wales': '🏴󠁧󠁢󠁷󠁬󠁳󠁿',
   'Ireland': '🇮🇪',
@@ -317,4 +317,28 @@ export function getTierLabel(tier: number | null | undefined): string {
     default:
       return `Tier ${tier}`
   }
+}
+
+/**
+ * Check if a country is in the European Union
+ * @param country Country name
+ * @returns true if country is in the EU
+ */
+export function isEUCountry(country: string | null | undefined): boolean {
+  if (!country) return false
+
+  const euCountries = [
+    'Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czech Republic', 'Czechia',
+    'Denmark', 'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Hungary',
+    'Ireland', 'Italy', 'Latvia', 'Lithuania', 'Luxembourg', 'Malta', 'Netherlands',
+    'Poland', 'Portugal', 'Romania', 'Slovakia', 'Slovenia', 'Spain', 'Sweden'
+  ]
+
+  // Handle dual citizenship by checking if either country is in EU
+  if (country.includes(' / ')) {
+    const countries = country.split(' / ').map(c => c.trim())
+    return countries.some(c => euCountries.includes(c))
+  }
+
+  return euCountries.includes(country)
 }

@@ -127,6 +127,7 @@ export type Database = {
           added_at: string | null
           agent_id: string
           club_id: number
+          contacts: Json | null
           created_at: string | null
           id: number
           notes: string | null
@@ -136,6 +137,7 @@ export type Database = {
           added_at?: string | null
           agent_id: string
           club_id: number
+          contacts?: Json | null
           created_at?: string | null
           id?: number
           notes?: string | null
@@ -145,6 +147,7 @@ export type Database = {
           added_at?: string | null
           agent_id?: string
           club_id?: number
+          contacts?: Json | null
           created_at?: string | null
           id?: number
           notes?: string | null
@@ -156,6 +159,41 @@ export type Database = {
             columns: ["club_id"]
             isOneToOne: false
             referencedRelation: "clubs_transfermarkt"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_player_notes: {
+        Row: {
+          agent_id: string
+          created_at: string | null
+          id: number
+          notes: string | null
+          player_id: number
+          updated_at: string | null
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string | null
+          id?: number
+          notes?: string | null
+          player_id: number
+          updated_at?: string | null
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string | null
+          id?: number
+          notes?: string | null
+          player_id?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_player_notes_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_transfermarkt"
             referencedColumns: ["id"]
           },
         ]
@@ -656,6 +694,21 @@ export type Database = {
           substitution_minute?: number | null
           team_name?: string | null
           yellow_cards?: number | null
+        }
+        Relationships: []
+      }
+      nordic_neighbors: {
+        Row: {
+          country: string
+          neighbors: string[] | null
+        }
+        Insert: {
+          country: string
+          neighbors?: string[] | null
+        }
+        Update: {
+          country?: string
+          neighbors?: string[] | null
         }
         Relationships: []
       }
@@ -1999,6 +2052,7 @@ export type Database = {
           club_logo_url: string
           club_name: string
           club_transfermarkt_url: string
+          contacts: Json
           country: string
           favorite_id: number
           league_name: string
@@ -2215,6 +2269,30 @@ export type Database = {
           recommendation_id: string
         }[]
       }
+      get_smart_recommendations_nordic: {
+        Args: { p_agent_id: string }
+        Returns: {
+          club_id: number
+          club_logo_url: string
+          club_name: string
+          club_transfermarkt_url: string
+          league_avg_market_value: number
+          league_name: string
+          league_tier: number
+          match_reasons: Json
+          match_score: number
+          player_age: number
+          player_contract_expires: string
+          player_id: number
+          player_market_value: number
+          player_name: string
+          player_nationality: string
+          player_picture_url: string
+          player_position: string
+          player_transfermarkt_url: string
+          recommendation_id: string
+        }[]
+      }
       is_admin: { Args: { user_id: string }; Returns: boolean }
       match_player_name: {
         Args: { player_name: string; watchlist_name: string }
@@ -2257,6 +2335,10 @@ export type Database = {
         Returns: boolean
       }
       try_cast_to_date: { Args: { p_text: string }; Returns: string }
+      update_club_contacts: {
+        Args: { p_agent_id: string; p_club_id: number; p_contacts: Json }
+        Returns: undefined
+      }
       update_league_position_averages: { Args: never; Returns: undefined }
       update_roster_notes: {
         Args: { p_agent_id: string; p_notes: string; p_player_id: number }

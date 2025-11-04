@@ -11,7 +11,7 @@ import {
   Ruler,
   AlertCircle
 } from 'lucide-react'
-import { getCountryFlag } from '@/lib/utils/country-flags'
+import { getCountryFlag, isEUCountry } from '@/lib/utils/country-flags'
 
 export interface PlayerCardData {
   player_id?: number
@@ -24,6 +24,7 @@ export interface PlayerCardData {
   club_name?: string | null
   club_logo_url?: string | null
   club_transfermarkt_url?: string | null
+  club_avg_market_value?: number | null
   league_name?: string | null
   league_tier?: number | null
   league_country?: string | null
@@ -52,7 +53,8 @@ export default function PlayerComparisonCard({ player, variant = 'your-player', 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A'
     return new Date(dateString).toLocaleDateString('en-GB', {
-      month: 'short',
+      day: '2-digit',
+      month: '2-digit',
       year: 'numeric'
     })
   }
@@ -60,10 +62,10 @@ export default function PlayerComparisonCard({ player, variant = 'your-player', 
   const formatFoot = (foot: string | null) => {
     if (!foot) return 'N/A'
     const footLower = foot.toLowerCase()
-    if (footLower === 'right') return 'Right'
-    if (footLower === 'left') return 'Left'
-    if (footLower === 'both') return 'Both'
-    return foot.charAt(0).toUpperCase() + foot.slice(1)
+    if (footLower === 'right') return 'Right Foot'
+    if (footLower === 'left') return 'Left Foot'
+    if (footLower === 'both') return 'Both Feet'
+    return foot.charAt(0).toUpperCase() + foot.slice(1) + ' Foot'
   }
 
   const isContractExpiringSoon = (contractExpires: string | null): boolean => {
@@ -168,6 +170,11 @@ export default function PlayerComparisonCard({ player, variant = 'your-player', 
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <span>{getCountryFlag(player.nationality)}</span>
                   <span className="truncate">{player.nationality}</span>
+                  {isEUCountry(player.nationality) && (
+                    <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
+                      🇪🇺 EU
+                    </Badge>
+                  )}
                 </div>
               )}
             </div>
@@ -256,11 +263,18 @@ export default function PlayerComparisonCard({ player, variant = 'your-player', 
                   </>
                 )}
               </div>
-              {player.league_tier && (
-                <Badge variant="secondary" className="text-xs">
-                  Tier {player.league_tier}
-                </Badge>
-              )}
+              <div className="flex items-center gap-1.5">
+                {player.league_tier && (
+                  <Badge variant="secondary" className="text-xs">
+                    Tier {player.league_tier}
+                  </Badge>
+                )}
+                {player.club_avg_market_value && (
+                  <Badge variant="outline" className="text-xs">
+                    {formatMarketValue(player.club_avg_market_value)}/p
+                  </Badge>
+                )}
+              </div>
             </div>
           )}
 
@@ -279,24 +293,18 @@ export default function PlayerComparisonCard({ player, variant = 'your-player', 
               <span>{formatMarketValue(player.market_value)}</span>
             </div>
             <div className="flex items-center gap-1 text-muted-foreground" title="Contract Expires">
-              <Calendar className="h-3 w-3" />
-              <span>{formatDate(player.contract_expires)}</span>
+              {isContractExpiringSoon(player.contract_expires) ? (
+                <Badge variant="destructive" className="flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5">
+                  <Calendar className="h-3 w-3" />
+                  <span>{formatDate(player.contract_expires)}</span>
+                </Badge>
+              ) : (
+                <>
+                  <Calendar className="h-3 w-3" />
+                  <span>{formatDate(player.contract_expires)}</span>
+                </>
+              )}
             </div>
-          </div>
-
-          {/* Badges */}
-          <div className="flex flex-wrap gap-1.5">
-            {player.is_eu_passport && (
-              <Badge variant="outline" className="text-xs w-fit">
-                🇪🇺 EU
-              </Badge>
-            )}
-            {isContractExpiringSoon(player.contract_expires) && (
-              <Badge variant="destructive" className="text-xs w-fit flex items-center gap-1">
-                <AlertCircle className="h-2 w-2" />
-                Expiring Soon
-              </Badge>
-            )}
           </div>
         </div>
       </CardContent>

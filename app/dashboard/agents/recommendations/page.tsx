@@ -7,7 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Loader2, AlertCircle, TrendingUp, Building2 } from 'lucide-react'
 import SmartRecommendationsCards from '@/components/agents/smart-recommendations-cards'
 
-interface SmartRecommendation {
+export interface SmartRecommendation {
   recommendation_id: string
   player_id: number
   player_name: string
@@ -22,27 +22,44 @@ interface SmartRecommendation {
   club_name: string
   club_logo_url: string | null
   club_transfermarkt_url: string | null
+  club_country: string | null
+  club_avg_market_value: number | null
   league_name: string | null
   league_tier: number | null
+  league_avg_market_value: number | null
   match_score: number
   match_reasons: {
     same_league: boolean
-    same_tier: boolean
     same_country: boolean
-    exact_position: boolean
-    contract_expiring_soon: boolean
-    has_squad_need: boolean
-    same_nationality: boolean
-    age_fits_profile: boolean
-    position_shortage: number
+    nordic_neighbor: boolean
+    position_match: boolean
+    position_count: number
     expiring_contracts_in_position: number
-    squad_avg_age_in_position: number | null
+    turnover_percentage: number
+    urgency_total_replacement: boolean
+    urgency_most_leaving: boolean
+    urgency_half_leaving: boolean
+    multiple_openings_massive: boolean
+    multiple_openings_great: boolean
+    multiple_openings_good: boolean
     expiring_players: Array<{
       name: string
       age: number
       contract_expires: string
       market_value: number | null
+      months_diff: number
     }>
+    contract_timing_perfect: boolean
+    contract_timing_good: boolean
+    market_fit_perfect: boolean
+    age_prime: boolean
+    age_prospect: boolean
+    age_fits_profile: boolean
+    squad_avg_age_in_position: number | null
+    imminent_free: boolean
+    club_avg_market_value: number | null
+    league_avg_market_value: number | null
+    player_current_league_value: number | null
     details: {
       player_contract_expires: string
       months_until_free: number
@@ -99,7 +116,7 @@ export default function SmartRecommendationsPage() {
 
         console.log('[Smart Recommendations] Fetching for agent:', agentId)
 
-        const { data, error: rpcError } = await supabase.rpc('get_smart_recommendations', {
+        const { data, error: rpcError } = await supabase.rpc('get_smart_recommendations_nordic', {
           p_agent_id: agentId
         })
 
@@ -229,8 +246,9 @@ export default function SmartRecommendationsPage() {
             </p>
             <ul className="text-sm space-y-1">
               <li>✓ Players in your roster with contracts expiring within 6 months</li>
-              <li>✓ Favorite clubs added</li>
-              <li>✓ Clubs in the same league/tier as your players</li>
+              <li>✓ Favorite clubs added (Nordic leagues: FIN, NOR, SWE top 2 tiers)</li>
+              <li>✓ Players valued ≤€150k (Fortis Nova range)</li>
+              <li>✓ Clubs must have expiring contracts in same position (contract timing match)</li>
             </ul>
           </CardContent>
         </Card>

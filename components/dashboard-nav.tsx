@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { BarChart, Home, LogOut, Settings, User, ShoppingCart, Search, Users, Briefcase, Building2, Lightbulb } from "lucide-react"
+import { BarChart, Home, LogOut, Settings, User, ShoppingCart, Search, Users, Briefcase, Building2, Lightbulb, FileText } from "lucide-react"
 import { useState, useEffect } from "react"
 import {ModeToggleInstant} from "@/components/mode-toggle";
 
@@ -88,6 +88,16 @@ export default function DashboardNav() {
                   >
                     <Users className="mr-2 h-4 w-4" />
                     My Roster
+                  </Button>
+                </Link>
+                <Link href="/dashboard/agents/prospects">
+                  <Button
+                    variant={pathname.startsWith("/dashboard/agents/prospects") ? "default" : "ghost"}
+                    size="sm"
+                    className={pathname.startsWith("/dashboard/agents/prospects") ? "bg-primary text-primary-foreground" : "text-foreground"}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Prospects
                   </Button>
                 </Link>
                 <Link href="/dashboard/agents/clubs">

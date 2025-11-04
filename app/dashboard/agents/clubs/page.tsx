@@ -9,6 +9,13 @@ import { Loader2, AlertCircle, Plus, Building2 } from 'lucide-react'
 import FavoriteClubsCards from '@/components/agents/favorite-clubs-cards'
 import AddFavoriteClubModal from '@/components/agents/add-favorite-club-modal'
 
+export interface ClubContact {
+  name: string | null
+  email: string | null
+  phone: string | null
+  role: string | null
+}
+
 export interface FavoriteClub {
   favorite_id: number
   club_id: number
@@ -24,6 +31,7 @@ export interface FavoriteClub {
   squad_avg_age: number | null
   squad_size: number
   notes: string | null
+  contacts: ClubContact[]
   added_at: string
 }
 
@@ -87,7 +95,17 @@ export default function AgentClubsPage() {
         throw fetchError
       }
 
-      setClubs(data || [])
+      // Ensure contacts is always an array
+      const normalizedData = (data || []).map(club => ({
+        ...club,
+        contacts: Array.isArray(club.contacts)
+          ? club.contacts
+          : typeof club.contacts === 'string'
+            ? JSON.parse(club.contacts)
+            : []
+      }))
+
+      setClubs(normalizedData)
     } catch (err: any) {
       console.error('Error fetching favorite clubs:', err)
       setError('Failed to load favorite clubs')
@@ -103,9 +121,8 @@ export default function AgentClubsPage() {
   }, [agentId, supabase])
 
   const handleClubAdded = () => {
-    // Refresh the list
+    // Refresh the list after modal closes with all additions
     fetchFavoriteClubs()
-    setShowAddModal(false)
   }
 
   const handleClubRemoved = (clubId: number) => {
@@ -118,6 +135,15 @@ export default function AgentClubsPage() {
     setClubs(prev => prev.map(club =>
       club.club_id === clubId
         ? { ...club, notes: newNotes }
+        : club
+    ))
+  }
+
+  const handleContactsUpdated = (clubId: number, contacts: ClubContact[]) => {
+    // Update local state with new contacts array
+    setClubs(prev => prev.map(club =>
+      club.club_id === clubId
+        ? { ...club, contacts }
         : club
     ))
   }
@@ -184,6 +210,7 @@ export default function AgentClubsPage() {
             clubs={clubs}
             onClubRemoved={handleClubRemoved}
             onNotesUpdated={handleNotesUpdated}
+            onContactsUpdated={handleContactsUpdated}
           />
         </div>
       )}

@@ -117,13 +117,44 @@ export default function AgentOpportunitiesPage() {
           })
         }
 
-        // Combine needs with their matches
-        const opportunitiesWithMatches: OpportunityWithMatches[] = (needs || []).map(need => ({
-          ...need,
-          matched_players: matchesByNeed[need.need_id] || []
-        }))
+        // Helper function to calculate match quality score
+        const calculateMatchScore = (matchReasons: any): number => {
+          let score = 0
 
-        // Sort by: 1) Most matches first, 2) Most recent first
+          // Position: exact = 1.0, semi = 0.5, none = 0
+          if (matchReasons.position_match_type === 'exact') score += 1.0
+          else if (matchReasons.position_match_type === 'semi') score += 0.5
+
+          // Age: exact = 1.0, none = 0
+          if (matchReasons.age_match_type === 'exact') score += 1.0
+
+          // Height: exact = 1.0, none = 0
+          if (matchReasons.height_match_type === 'exact') score += 1.0
+
+          // Foot: exact = 1.0, none = 0
+          if (matchReasons.foot_match_type === 'exact') score += 1.0
+
+          return score
+        }
+
+        // Combine needs with their matches and sort players within each opportunity
+        const opportunitiesWithMatches: OpportunityWithMatches[] = (needs || []).map(need => {
+          const players = matchesByNeed[need.need_id] || []
+
+          // Sort players by match quality (best first: 4.0, 3.5, 3.0, etc.)
+          players.sort((a, b) => {
+            const scoreA = calculateMatchScore(a.match_reasons)
+            const scoreB = calculateMatchScore(b.match_reasons)
+            return scoreB - scoreA // Higher scores first
+          })
+
+          return {
+            ...need,
+            matched_players: players
+          }
+        })
+
+        // Sort opportunities by: 1) Number of matches, 2) Most recent
         opportunitiesWithMatches.sort((a, b) => {
           // First sort by number of matches (descending)
           const matchDiff = b.matched_players.length - a.matched_players.length

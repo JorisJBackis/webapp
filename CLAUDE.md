@@ -76,10 +76,31 @@ Required environment variables for the Next.js app:
 
 For Python ETL scripts (in ../webapp-backend/.env):
 - `SUPABASE_DB_USER`: Database user
-- `SUPABASE_DB_PASSWORD`: Database password  
+- `SUPABASE_DB_PASSWORD`: Database password
 - `SUPABASE_DB_HOST`: Database host
 - `SUPABASE_DB_NAME`: Database name
 - `SUPABASE_DB_PORT`: Database port
+
+## Database Queries
+
+**IMPORTANT**: Always use `psql` directly for database queries. Do NOT attempt to use Python, Node.js, or other methods.
+
+The database credentials are located in `../webapp-backend/.env` (not in the main webapp directory).
+
+```bash
+# ALWAYS use this pattern for database queries:
+cd /Users/test/Documents/webapp-backend && source .env && psql "postgresql://${SUPABASE_DB_USER}:${SUPABASE_DB_PASSWORD}@${SUPABASE_DB_HOST}:${SUPABASE_DB_PORT}/${SUPABASE_DB_NAME}" -c "YOUR SQL QUERY HERE"
+
+# Example: Check distinct foot values
+cd /Users/test/Documents/webapp-backend && source .env && psql "postgresql://${SUPABASE_DB_USER}:${SUPABASE_DB_PASSWORD}@${SUPABASE_DB_HOST}:${SUPABASE_DB_PORT}/${SUPABASE_DB_NAME}" -c "SELECT DISTINCT foot FROM players_transfermarkt;"
+```
+
+Key points:
+- Database credentials are in `../webapp-backend/.env`
+- ALWAYS `cd` to webapp-backend directory first
+- Use `source .env` to load environment variables
+- Use psql with the connection string pattern shown above
+- DO NOT try Python/Node.js/other methods - psql is simpler and always works
 
 ## Architecture & Key Patterns
 

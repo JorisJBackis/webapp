@@ -32,6 +32,7 @@ export type RosterPlayer = {
   club_logo_url: string | null
   club_transfermarkt_url: string | null
   club_country: string | null
+  club_avg_market_value_eur: number | null
   league_id: string | null
   league_name: string | null
   league_tier: number | null
@@ -238,6 +239,7 @@ export default function AgentRosterPage() {
             roster={roster}
             onPlayerRemoved={handlePlayerRemoved}
             onNotesUpdated={handleNotesUpdated}
+            onRosterRefresh={handleRosterRefresh}
           />
         </div>
       )}
