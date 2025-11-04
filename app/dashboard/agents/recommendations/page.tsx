@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Loader2, AlertCircle, TrendingUp, Building2 } from 'lucide-react'
 import SmartRecommendationsCards from '@/components/agents/smart-recommendations-cards'
+import AlgorithmSettingsModal from '@/components/agents/algorithm-settings-modal'
 
 export interface SmartRecommendation {
   recommendation_id: string
@@ -179,11 +180,14 @@ export default function SmartRecommendationsPage() {
 
   return (
     <div className="container mx-auto py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-primary">Smart Recommendations</h1>
-        <p className="text-muted-foreground">
-          High-quality matches between your roster players and club needs
-        </p>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-primary">Smart Recommendations</h1>
+          <p className="text-muted-foreground">
+            High-quality matches between your roster players and club needs
+          </p>
+        </div>
+        <AlgorithmSettingsModal />
       </div>
 
       {/* Stats Cards */}
