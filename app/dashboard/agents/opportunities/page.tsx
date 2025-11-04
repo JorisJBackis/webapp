@@ -121,9 +121,9 @@ export default function AgentOpportunitiesPage() {
         const calculateMatchScore = (matchReasons: any): number => {
           let score = 0
 
-          // Position: exact = 1.0, semi = 0.5, none = 0
+          // Position: ONLY exact matches accepted, semi matches are excluded
           if (matchReasons.position_match_type === 'exact') score += 1.0
-          else if (matchReasons.position_match_type === 'semi') score += 0.5
+          // Semi matches no longer count - they will be filtered out
 
           // Age: exact = 1.0, none = 0
           if (matchReasons.age_match_type === 'exact') score += 1.0
@@ -141,8 +141,13 @@ export default function AgentOpportunitiesPage() {
         const opportunitiesWithMatches: OpportunityWithMatches[] = (needs || []).map(need => {
           const players = matchesByNeed[need.need_id] || []
 
-          // Sort players by match quality (best first: 4.0, 3.5, 3.0, etc.)
-          players.sort((a, b) => {
+          // FILTER: Only include players with EXACT position match
+          const exactPositionPlayers = players.filter(player =>
+            player.match_reasons.position_match_type === 'exact'
+          )
+
+          // Sort players by match quality (best first: 4.0, 3.0, 2.0, etc.)
+          exactPositionPlayers.sort((a, b) => {
             const scoreA = calculateMatchScore(a.match_reasons)
             const scoreB = calculateMatchScore(b.match_reasons)
             return scoreB - scoreA // Higher scores first
@@ -150,7 +155,7 @@ export default function AgentOpportunitiesPage() {
 
           return {
             ...need,
-            matched_players: players
+            matched_players: exactPositionPlayers
           }
         })
 
