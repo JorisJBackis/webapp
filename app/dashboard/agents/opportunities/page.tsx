@@ -203,7 +203,7 @@ export default function AgentOpportunitiesPage() {
   return (
     <div className="container mx-auto py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-primary">Opportunities</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-primary">Ads</h1>
         <p className="text-muted-foreground">
           Browse club recruitment needs and see which of your roster players are a match
         </p>

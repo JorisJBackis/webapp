@@ -117,7 +117,7 @@ export default function DashboardNav() {
                     className={pathname.startsWith("/dashboard/agents/opportunities") ? "bg-primary text-primary-foreground" : "text-foreground"}
                   >
                     <Briefcase className="mr-2 h-4 w-4" />
-                    Opportunities
+                    Ads
                   </Button>
                 </Link>
                 <Link href="/dashboard/agents/recommendations">
