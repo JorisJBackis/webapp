@@ -865,7 +865,7 @@ export default function RosterCards({ roster, onPlayerRemoved, onNotesUpdated, o
     <>
       {/* Filters */}
       <div className="mb-6 flex flex-col md:flex-row gap-3 p-4 bg-muted/30 rounded-lg border">
-        <div className="w-full md:w-[200px] md:flex-shrink-0">
+        <div className="w-full md:flex-1">
           <Label htmlFor="search" className="text-xs">Search</Label>
           <Input
             id="search"
