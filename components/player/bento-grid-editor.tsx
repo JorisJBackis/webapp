@@ -1,73 +1,24 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { BentoBlock, BentoBlockData } from './bento-block'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Plus, User, Link2, Image, FileText, Share2, Eye, Edit3, Square, RectangleHorizontal, RectangleVertical } from 'lucide-react'
+import {useState, useRef, useEffect} from 'react'
+import {BentoBlock, BentoBlockData} from './bento-block'
+import {Button} from '@/components/ui/button'
+import {Card} from '@/components/ui/card'
+import {
+  Plus,
+  User,
+  Link2,
+  Image,
+  FileText,
+  Share2,
+  Eye,
+  Edit3,
+  Square,
+  RectangleHorizontal,
+  RectangleVertical
+} from 'lucide-react'
+import {GridLayout, initialBlocks, initialLayouts} from "@/components/player/init-data";
 
-interface GridLayout {
-  id: string
-  x: number
-  y: number
-  w: number
-  h: number
-}
-
-const initialBlocks: BentoBlockData[] = [
-  {
-    id: '1',
-    type: 'bio',
-    title: 'Alex Chen',
-    content: 'Product designer & developer crafting delightful digital experiences. Currently building the future of web design tools.',
-  },
-  {
-    id: '2',
-    type: 'social',
-    title: 'GitHub',
-    content: '@alexchen',
-    icon: 'github',
-    url: 'https://github.com',
-    color: 'bg-gray-100 dark:bg-gray-800',
-  },
-  {
-    id: '3',
-    type: 'social',
-    title: 'Twitter',
-    content: '@alexchen',
-    icon: 'twitter',
-    url: 'https://twitter.com',
-    color: 'bg-sky-100 dark:bg-sky-950',
-  },
-  {
-    id: '4',
-    type: 'link',
-    title: 'Portfolio',
-    content: 'Check out my latest design projects and case studies',
-    url: 'https://example.com',
-  },
-  {
-    id: '5',
-    type: 'image',
-    title: 'Featured Work',
-    url: '/modern-abstract-design-artwork.jpg',
-  },
-  {
-    id: '6',
-    type: 'text',
-    title: 'What I Do',
-    content: 'I specialize in creating beautiful, functional user interfaces with a focus on typography, color, and motion design.',
-  },
-]
-
-const initialLayouts: GridLayout[] = [
-  { id: '1', x: 0, y: 0, w: 2, h: 2 },
-  { id: '2', x: 2, y: 0, w: 1, h: 1 },
-  { id: '3', x: 3, y: 0, w: 1, h: 1 },
-  { id: '4', x: 2, y: 1, w: 1, h: 2 },
-  { id: '5', x: 0, y: 2, w: 2, h: 2 },
-  { id: '6', x: 3, y: 1, w: 1, h: 2 },
-]
 
 export function BentoGridEditor() {
   const [blocks, setBlocks] = useState<BentoBlockData[]>(initialBlocks)
@@ -124,10 +75,10 @@ export function BentoGridEditor() {
       if (draggedIndex === -1 || targetIndex === -1) return
 
       const newLayouts = [...layouts]
-      const draggedLayout = { ...newLayouts[draggedIndex] }
-      const targetLayout = { ...newLayouts[targetIndex] }
+      const draggedLayout = {...newLayouts[draggedIndex]}
+      const targetLayout = {...newLayouts[targetIndex]}
 
-      const tempPos = { x: draggedLayout.x, y: draggedLayout.y }
+      const tempPos = {x: draggedLayout.x, y: draggedLayout.y}
       draggedLayout.x = targetLayout.x
       draggedLayout.y = targetLayout.y
       targetLayout.x = tempPos.x
@@ -160,13 +111,14 @@ export function BentoGridEditor() {
   const handleResizeBlock = (id: string, w: number, h: number) => {
     setLayouts(prev => prev.map(layout =>
         layout.id === id
-            ? { ...layout, w, h }
+            ? {...layout, w, h}
             : layout
     ))
   }
 
   return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background relative">
+        <EditingBar isEditing={isEditing} handleAddBlock={handleAddBlock}/>
         <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
           <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -188,18 +140,18 @@ export function BentoGridEditor() {
               >
                 {isEditing ? (
                     <>
-                      <Eye className="h-4 w-4" />
+                      <Eye className="h-4 w-4"/>
                       Preview
                     </>
                 ) : (
                     <>
-                      <Edit3 className="h-4 w-4" />
+                      <Edit3 className="h-4 w-4"/>
                       Edit
                     </>
                 )}
               </Button>
               <Button variant="outline" size="sm" className="gap-2">
-                <Share2 className="h-4 w-4" />
+                <Share2 className="h-4 w-4"/>
                 Share
               </Button>
             </div>
@@ -208,8 +160,8 @@ export function BentoGridEditor() {
 
         <div className="container mx-auto px-4 py-8">
           <div className="grid lg:grid-cols-[1fr_280px] gap-6">
-            <div className="order-2 lg:order-1">
-              <div className="grid grid-cols-4 auto-rows-[180px] gap-4">
+            <div className="order-2 lg:order-1 justify-center items-center">
+              <div className="grid grid-cols-4 auto-rows-[180px] gap-4 max-w-[820px]">
                 {layouts
                     .sort((a, b) => {
                       if (a.y !== b.y) return a.y - b.y
@@ -246,7 +198,8 @@ export function BentoGridEditor() {
                               }`}
                           >
                             {isPlaceholder && (
-                                <div className="absolute inset-0 bg-primary/5 rounded-lg border-2 border-dashed border-primary/50 flex items-center justify-center z-10">
+                                <div
+                                    className="absolute inset-0 bg-primary/5 rounded-lg border-2 border-dashed border-primary/50 flex items-center justify-center z-10">
                                   <div className="text-sm font-medium text-primary">Drop here</div>
                                 </div>
                             )}
@@ -258,7 +211,8 @@ export function BentoGridEditor() {
                             />
 
                             {isEditing && selectedBlockId === layout.id && (
-                                <div className="absolute -top-12 left-0 bg-card border border-border rounded-lg shadow-lg p-1 flex gap-1 z-20">
+                                <div
+                                    className="absolute -top-12 left-0 bg-card border border-border rounded-lg shadow-lg p-1 flex gap-1 z-20">
                                   <Button
                                       variant="ghost"
                                       size="sm"
@@ -268,7 +222,7 @@ export function BentoGridEditor() {
                                         handleResizeBlock(layout.id, 1, 1)
                                       }}
                                   >
-                                    <Square className="h-3 w-3" />
+                                    <Square className="h-3 w-3"/>
                                     <span className="text-xs">1×1</span>
                                   </Button>
                                   <Button
@@ -281,8 +235,8 @@ export function BentoGridEditor() {
                                       }}
                                   >
                                     <div className="flex flex-col gap-0.5">
-                                      <div className="h-1.5 w-2.5 bg-current rounded-sm" />
-                                      <div className="h-1.5 w-2.5 bg-current rounded-sm" />
+                                      <div className="h-1.5 w-2.5 bg-current rounded-sm"/>
+                                      <div className="h-1.5 w-2.5 bg-current rounded-sm"/>
                                     </div>
                                     <span className="text-xs">0.5×2</span>
                                   </Button>
@@ -295,7 +249,7 @@ export function BentoGridEditor() {
                                         handleResizeBlock(layout.id, 2, 1)
                                       }}
                                   >
-                                    <RectangleHorizontal className="h-3 w-3" />
+                                    <RectangleHorizontal className="h-3 w-3"/>
                                     <span className="text-xs">1×2</span>
                                   </Button>
                                   <Button
@@ -307,7 +261,7 @@ export function BentoGridEditor() {
                                         handleResizeBlock(layout.id, 1, 2)
                                       }}
                                   >
-                                    <RectangleVertical className="h-3 w-3" />
+                                    <RectangleVertical className="h-3 w-3"/>
                                     <span className="text-xs">2×1</span>
                                   </Button>
                                   <Button
@@ -319,7 +273,7 @@ export function BentoGridEditor() {
                                         handleResizeBlock(layout.id, 2, 2)
                                       }}
                                   >
-                                    <Square className="h-4 w-4" />
+                                    <Square className="h-4 w-4"/>
                                     <span className="text-xs">2×2</span>
                                   </Button>
                                 </div>
@@ -329,86 +283,86 @@ export function BentoGridEditor() {
                     })}
               </div>
             </div>
-
-            {isEditing && (
-                <div className="order-1 lg:order-2">
-                  <Card className="p-4 sticky top-24">
-                    <h3 className="font-semibold text-sm mb-4 flex items-center gap-2">
-                      <Plus className="h-4 w-4" />
-                      Add Blocks
-                    </h3>
-                    <div className="flex flex-col gap-2">
-                      <Button
-                          variant="outline"
-                          className="justify-start gap-3 h-auto py-3"
-                          onClick={() => handleAddBlock('bio')}
-                      >
-                        <User className="h-4 w-4" />
-                        <div className="text-left">
-                          <div className="font-medium text-sm">Bio</div>
-                          <div className="text-xs text-muted-foreground">Name & description</div>
-                        </div>
-                      </Button>
-
-                      <Button
-                          variant="outline"
-                          className="justify-start gap-3 h-auto py-3"
-                          onClick={() => handleAddBlock('social')}
-                      >
-                        <Share2 className="h-4 w-4" />
-                        <div className="text-left">
-                          <div className="font-medium text-sm">Social</div>
-                          <div className="text-xs text-muted-foreground">Social media link</div>
-                        </div>
-                      </Button>
-
-                      <Button
-                          variant="outline"
-                          className="justify-start gap-3 h-auto py-3"
-                          onClick={() => handleAddBlock('link')}
-                      >
-                        <Link2 className="h-4 w-4" />
-                        <div className="text-left">
-                          <div className="font-medium text-sm">Link</div>
-                          <div className="text-xs text-muted-foreground">External link</div>
-                        </div>
-                      </Button>
-
-                      <Button
-                          variant="outline"
-                          className="justify-start gap-3 h-auto py-3"
-                          onClick={() => handleAddBlock('image')}
-                      >
-                        <Image className="h-4 w-4" />
-                        <div className="text-left">
-                          <div className="font-medium text-sm">Image</div>
-                          <div className="text-xs text-muted-foreground">Photo or artwork</div>
-                        </div>
-                      </Button>
-
-                      <Button
-                          variant="outline"
-                          className="justify-start gap-3 h-auto py-3"
-                          onClick={() => handleAddBlock('text')}
-                      >
-                        <FileText className="h-4 w-4" />
-                        <div className="text-left">
-                          <div className="font-medium text-sm">Text</div>
-                          <div className="text-xs text-muted-foreground">Rich text block</div>
-                        </div>
-                      </Button>
-                    </div>
-
-                    <div className="mt-6 pt-4 border-t border-border">
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        <span className="font-medium text-foreground">💡 Tip:</span> Drag blocks to swap positions. Hover over blocks to see the resize handle in the bottom-right corner.
-                      </p>
-                    </div>
-                  </Card>
-                </div>
-            )}
           </div>
         </div>
       </div>
+  )
+}
+
+export function EditingBar({isEditing, handleAddBlock}: {
+  isEditing: boolean,
+  handleAddBlock: (type: BentoBlockData['type']) => void
+}) {
+  if (!isEditing) {
+    return null;
+  }
+  return (
+      <Card className="p-4 absolute bottom-10 left-1/2 -translate-x-1/2  z-[51]">
+        <h3 className="font-semibold text-sm mb-4 flex items-center gap-2">
+          <Plus className="h-4 w-4"/>
+          Add Blocks
+        </h3>
+        <div className="flex flex-row gap-2">
+          <Button
+              variant="outline"
+              className="justify-start gap-3 h-auto py-3"
+              onClick={() => handleAddBlock('bio')}
+          >
+            <User className="h-4 w-4"/>
+            <div className="text-left">
+              <div className="font-medium text-sm">Bio</div>
+              <div className="text-xs text-muted-foreground">Name & description</div>
+            </div>
+          </Button>
+
+          <Button
+              variant="outline"
+              className="justify-start gap-3 h-auto py-3"
+              onClick={() => handleAddBlock('social')}
+          >
+            <Share2 className="h-4 w-4"/>
+            <div className="text-left">
+              <div className="font-medium text-sm">Social</div>
+              <div className="text-xs text-muted-foreground">Social media link</div>
+            </div>
+          </Button>
+
+          <Button
+              variant="outline"
+              className="justify-start gap-3 h-auto py-3"
+              onClick={() => handleAddBlock('link')}
+          >
+            <Link2 className="h-4 w-4"/>
+            <div className="text-left">
+              <div className="font-medium text-sm">Link</div>
+              <div className="text-xs text-muted-foreground">External link</div>
+            </div>
+          </Button>
+
+          <Button
+              variant="outline"
+              className="justify-start gap-3 h-auto py-3"
+              onClick={() => handleAddBlock('image')}
+          >
+            <Image className="h-4 w-4"/>
+            <div className="text-left">
+              <div className="font-medium text-sm">Image</div>
+              <div className="text-xs text-muted-foreground">Photo or artwork</div>
+            </div>
+          </Button>
+
+          <Button
+              variant="outline"
+              className="justify-start gap-3 h-auto py-3"
+              onClick={() => handleAddBlock('text')}
+          >
+            <FileText className="h-4 w-4"/>
+            <div className="text-left">
+              <div className="font-medium text-sm">Text</div>
+              <div className="text-xs text-muted-foreground">Rich text block</div>
+            </div>
+          </Button>
+        </div>
+      </Card>
   )
 }
