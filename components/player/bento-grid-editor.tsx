@@ -4,21 +4,87 @@ import {useState, useRef, useEffect} from 'react'
 import {BentoBlock, BentoBlockData} from './bento-block'
 import {Button} from '@/components/ui/button'
 import {Card} from '@/components/ui/card'
-import {
-  Plus,
-  User,
-  Link2,
-  Image,
-  FileText,
-  Share2,
-  Eye,
-  Edit3,
-  Square,
-  RectangleHorizontal,
-  RectangleVertical
-} from 'lucide-react'
+import { Plus, User, Link2, Image, FileText, Share2, Eye, Edit3, Square, RectangleHorizontal, RectangleVertical } from 'lucide-react'
 import {GridLayout, initialBlocks, initialLayouts} from "@/components/player/init-data";
+import {Avatar, AvatarFallback} from "@/components/ui/avatar";
+import {AnimatePresence, motion} from "framer-motion";
 
+function findAvailablePosition(
+    layouts: GridLayout[],
+    width: number,
+    height: number,
+    cols: number = 4
+): { x: number; y: number } {
+  // Try to find an empty spot starting from top-left
+  const maxY = Math.max(...layouts.map(l => l.y + l.h), 0, 10)
+
+  for (let y = 0; y <= maxY; y++) {
+    for (let x = 0; x <= cols - width; x++) {
+      if (canPlaceAt(layouts, x, y, width, height)) {
+        return { x, y }
+      }
+    }
+  }
+
+  // If no space found, place at bottom
+  return { x: 0, y: maxY }
+}
+
+function canPlaceAt(
+    layouts: GridLayout[],
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    excludeId?: string
+): boolean {
+  // Check if the position is valid in the grid
+  if (x < 0 || x + w > 4) return false
+
+  // Check for collisions with existing blocks
+  for (const layout of layouts) {
+    if (excludeId && layout.id === excludeId) continue
+
+    const hasCollision = !(
+        x >= layout.x + layout.w ||
+        x + w <= layout.x ||
+        y >= layout.y + layout.h ||
+        y + h <= layout.y
+    )
+
+    if (hasCollision) return false
+  }
+
+  return true
+}
+
+function compactGrid(layouts: GridLayout[]): GridLayout[] {
+  const sorted = [...layouts].sort((a, b) => {
+    if (a.y !== b.y) return a.y - b.y
+    return a.x - b.x
+  })
+
+  const compacted: GridLayout[] = []
+
+  for (const layout of sorted) {
+    let newY = 0
+
+    // Try to move block as far up as possible
+    while (newY < layout.y) {
+      if (canPlaceAt(compacted, layout.x, newY, layout.w, layout.h)) {
+        break
+      }
+      newY++
+    }
+
+    compacted.push({
+      ...layout,
+      y: newY
+    })
+  }
+
+  return compacted
+}
 
 export function BentoGridEditor() {
   const [blocks, setBlocks] = useState<BentoBlockData[]>(initialBlocks)
@@ -28,9 +94,16 @@ export function BentoGridEditor() {
   const [dragOverId, setDragOverId] = useState<string | null>(null)
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null)
 
+  const handleUpdateBlock = (id: string, updates: Partial<BentoBlockData>) => {
+    setBlocks(prev => prev.map(block =>
+        block.id === id ? { ...block, ...updates } : block
+    ))
+  }
+
   const handleRemoveBlock = (id: string) => {
     setBlocks(blocks.filter((block) => block.id !== id))
-    setLayouts(layouts.filter((layout) => layout.id !== id))
+    const newLayouts = layouts.filter((layout) => layout.id !== id)
+    setLayouts(compactGrid(newLayouts))
   }
 
   const handleAddBlock = (type: BentoBlockData['type']) => {
@@ -38,18 +111,20 @@ export function BentoGridEditor() {
     const newBlock: BentoBlockData = {
       id: newId,
       type,
-      title: type === 'bio' ? 'New Bio' : type === 'social' ? 'Social Link' : type === 'link' ? 'New Link' : type === 'text' ? 'New Text' : 'Image',
-      content: type === 'bio' ? 'Add your bio here' : type === 'social' ? '@username' : type === 'link' ? 'Link description' : type === 'text' ? 'Your content here' : undefined,
-      icon: type === 'social' ? 'link' : undefined,
+      title: type === 'link' ? 'New Link' : type === 'text' ? 'New Text' : 'Image',
+      content: type === 'link' ? 'Link description' : type === 'text' ? 'Your content here' : undefined,
     }
 
-    const maxY = Math.max(...layouts.map(l => l.y + l.h), 0)
+    const w = 1
+    const h = type === 'image' ? 2 : 1
+    const position = findAvailablePosition(layouts, w, h)
+
     const newLayout: GridLayout = {
       id: newId,
-      x: 0,
-      y: maxY,
-      w: type === 'bio' ? 2 : 1,
-      h: type === 'bio' || type === 'image' ? 2 : 1,
+      x: position.x,
+      y: position.y,
+      w,
+      h,
     }
 
     setBlocks([...blocks, newBlock])
@@ -87,7 +162,7 @@ export function BentoGridEditor() {
       newLayouts[draggedIndex] = draggedLayout
       newLayouts[targetIndex] = targetLayout
 
-      setLayouts(newLayouts)
+      setLayouts(compactGrid(newLayouts))
     }
   }
 
@@ -109,11 +184,14 @@ export function BentoGridEditor() {
   }
 
   const handleResizeBlock = (id: string, w: number, h: number) => {
-    setLayouts(prev => prev.map(layout =>
-        layout.id === id
-            ? {...layout, w, h}
-            : layout
-    ))
+    const layout = layouts.find(l => l.id === id)
+    if (!layout) return
+
+    if (canPlaceAt(layouts, layout.x, layout.y, w, h, id)) {
+      setLayouts(prev => compactGrid(prev.map(l =>
+          l.id === id ? {...l, w, h} : l
+      )))
+    }
   }
 
   return (
@@ -132,160 +210,184 @@ export function BentoGridEditor() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button
-                  variant={isEditing ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setIsEditing(!isEditing)}
-                  className="gap-2"
-              >
-                {isEditing ? (
-                    <>
-                      <Eye className="h-4 w-4"/>
-                      Preview
-                    </>
-                ) : (
-                    <>
-                      <Edit3 className="h-4 w-4"/>
-                      Edit
-                    </>
-                )}
-              </Button>
-              <Button variant="outline" size="sm" className="gap-2">
-                <Share2 className="h-4 w-4"/>
-                Share
-              </Button>
+              {/*<Button*/}
+              {/*    variant={isEditing ? 'default' : 'outline'}*/}
+              {/*    size="sm"*/}
+              {/*    onClick={() => setIsEditing(!isEditing)}*/}
+              {/*    className="gap-2"*/}
+              {/*>*/}
+              {/*  {isEditing ? (*/}
+              {/*      <>*/}
+              {/*        <Eye className="h-4 w-4"/>*/}
+              {/*        Preview*/}
+              {/*      </>*/}
+              {/*  ) : (*/}
+              {/*      <>*/}
+              {/*        <Edit3 className="h-4 w-4"/>*/}
+              {/*        Edit*/}
+              {/*      </>*/}
+              {/*  )}*/}
+              {/*</Button>*/}
+              {/*<Button variant="outline" size="sm" className="gap-2">*/}
+              {/*  <Share2 className="h-4 w-4"/>*/}
+              {/*  Share*/}
+              {/*</Button>*/}
             </div>
           </div>
         </header>
 
         <div className="container mx-auto px-4 py-8">
-          <div className="grid lg:grid-cols-[1fr_280px] gap-6">
-            <div className="order-2 lg:order-1 justify-center items-center">
+          <div className="flex justify-between gap-6">
+            <div className=" flex flex-col max-h-screen justify-start items-start min-w-40 gap-6">
+              <Avatar className="size-48">
+                <AvatarFallback className="text-xs">
+                  image
+                </AvatarFallback>
+              </Avatar>
+              <div className="text-xl">
+                Player Name (Sviatoslav )
+              </div>
+              <div className="text-lg text-muted-foreground">
+                Player Role ( Goalkeeper )
+              </div>
+            </div>
+            <div className="flex justify-center items-center">
               <div className="grid grid-cols-4 auto-rows-[180px] gap-4 max-w-[820px]">
-                {layouts
-                    .sort((a, b) => {
-                      if (a.y !== b.y) return a.y - b.y
-                      return a.x - b.x
-                    })
-                    .map((layout) => {
-                      const block = blocks.find((b) => b.id === layout.id)
-                      if (!block) return null
+                <AnimatePresence mode="popLayout">
 
-                      const isDragged = draggedId === layout.id
-                      const isPlaceholder = dragOverId === layout.id && draggedId !== null
+                  {layouts
+                      .sort((a, b) => {
+                        if (a.y !== b.y) return a.y - b.y
+                        return a.x - b.x
+                      })
+                      .map((layout) => {
+                        const block = blocks.find((b) => b.id === layout.id)
+                        if (!block) return null
 
-                      return (
-                          <div
-                              key={layout.id}
-                              draggable={isEditing}
-                              onDragStart={(e) => handleDragStart(e, layout.id)}
-                              onDragOver={(e) => handleDragOver(e, layout.id)}
-                              onDrop={(e) => handleDrop(e, layout.id)}
-                              onDragEnd={handleDragEnd}
-                              onClick={() => isEditing && setSelectedBlockId(layout.id)}
-                              style={{
-                                gridColumn: `span ${layout.w}`,
-                                gridRow: `span ${layout.h}`,
-                              }}
-                              className={`relative transition-all duration-200 cursor-pointer ${
-                                  isDragged ? 'opacity-40 scale-95 z-50' : ''
-                              } ${
-                                  isPlaceholder
-                                      ? 'ring-2 ring-primary ring-offset-4 ring-offset-background scale-[0.98]'
-                                      : ''
-                              } ${
-                                  selectedBlockId === layout.id && !isDragged ? 'ring-2 ring-primary' : ''
-                              }`}
-                          >
-                            {isPlaceholder && (
-                                <div
-                                    className="absolute inset-0 bg-primary/5 rounded-lg border-2 border-dashed border-primary/50 flex items-center justify-center z-10">
-                                  <div className="text-sm font-medium text-primary">Drop here</div>
-                                </div>
-                            )}
+                        const isDragged = draggedId === layout.id
+                        const isPlaceholder = dragOverId === layout.id && draggedId !== null
 
-                            <BentoBlock
-                                data={block}
-                                onRemove={handleRemoveBlock}
-                                isEditing={isEditing}
-                            />
+                        return (
+                            <motion.div
+                                key={layout.id}
+                                layout
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{
+                                  opacity: isDragged ? 0.4 : 1,
+                                  scale: isDragged ? 0.95 : 1
+                                }}
+                                exit={{
+                                  opacity: 0,
+                                  scale: 0.8,
+                                  transition: { duration: 0.2 }
+                                }}
+                                transition={{
+                                  layout: { type: "spring", stiffness: 350, damping: 25 },
+                                  opacity: { duration: 0.2 },
+                                  scale: { duration: 0.2 }
+                                }}
+                                draggable={isEditing}
+                                onDragStart={(e) => handleDragStart(e as any, layout.id)}
+                                onDragOver={(e) => handleDragOver(e as any, layout.id)}
+                                onDrop={(e) => handleDrop(e as any, layout.id)}
+                                onDragEnd={handleDragEnd}
+                                onClick={() => isEditing && setSelectedBlockId(layout.id)}
+                                style={{
+                                  gridColumn: `span ${layout.w}`,
+                                  gridRow: `span ${layout.h}`,
+                                }}
+                                className={`relative cursor-pointer ${
+                                    isPlaceholder
+                                        ? 'ring-2 ring-primary ring-offset-4 ring-offset-background'
+                                        : ''
+                                } ${
+                                    selectedBlockId === layout.id && !isDragged ? 'ring-2 ring-primary' : ''
+                                }`}
+                            >
+                              {isPlaceholder && (
+                                  <motion.div
+                                      initial={{ opacity: 0 }}
+                                      animate={{ opacity: 1 }}
+                                      exit={{ opacity: 0 }}
+                                      className="absolute inset-0 bg-primary/5 rounded-lg border-2 border-dashed border-primary/50 flex items-center justify-center z-10">
+                                    <div className="text-sm font-medium text-primary">Drop here</div>
+                                  </motion.div>
+                              )}
 
-                            {isEditing && selectedBlockId === layout.id && (
-                                <div
-                                    className="absolute -top-12 left-0 bg-card border border-border rounded-lg shadow-lg p-1 flex gap-1 z-20">
-                                  <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-8 w-auto px-2 gap-1.5"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        handleResizeBlock(layout.id, 1, 1)
-                                      }}
-                                  >
-                                    <Square className="h-3 w-3"/>
-                                    <span className="text-xs">1×1</span>
-                                  </Button>
-                                  <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-8 w-auto px-2 gap-1.5"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        handleResizeBlock(layout.id, 1, 2)
-                                      }}
-                                  >
-                                    <div className="flex flex-col gap-0.5">
-                                      <div className="h-1.5 w-2.5 bg-current rounded-sm"/>
-                                      <div className="h-1.5 w-2.5 bg-current rounded-sm"/>
-                                    </div>
-                                    <span className="text-xs">0.5×2</span>
-                                  </Button>
-                                  <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-8 w-auto px-2 gap-1.5"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        handleResizeBlock(layout.id, 2, 1)
-                                      }}
-                                  >
-                                    <RectangleHorizontal className="h-3 w-3"/>
-                                    <span className="text-xs">1×2</span>
-                                  </Button>
-                                  <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-8 w-auto px-2 gap-1.5"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        handleResizeBlock(layout.id, 1, 2)
-                                      }}
-                                  >
-                                    <RectangleVertical className="h-3 w-3"/>
-                                    <span className="text-xs">2×1</span>
-                                  </Button>
-                                  <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-8 w-auto px-2 gap-1.5"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        handleResizeBlock(layout.id, 2, 2)
-                                      }}
-                                  >
-                                    <Square className="h-4 w-4"/>
-                                    <span className="text-xs">2×2</span>
-                                  </Button>
-                                </div>
-                            )}
-                          </div>
-                      )
-                    })}
+                              <BentoBlock
+                                  data={block}
+                                  onRemove={handleRemoveBlock}
+                                  onUpdate={handleUpdateBlock}
+                                  isEditing={isEditing}
+                              />
+
+                              {isEditing && selectedBlockId === layout.id && (
+                                  <motion.div
+                                      initial={{ opacity: 0, y: -4 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      exit={{ opacity: 0, y: -4 }}
+                                      transition={{ duration: 0.15 }}
+                                      className="absolute -top-12 left-0 bg-card border border-border rounded-lg shadow-lg p-1 flex gap-1 z-20">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-auto px-2 gap-1.5"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          handleResizeBlock(layout.id, 1, 1)
+                                        }}
+                                    >
+                                      <Square className="h-3 w-3"/>
+                                      <span className="text-xs">1×1</span>
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-auto px-2 gap-1.5"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          handleResizeBlock(layout.id, 2, 1)
+                                        }}
+                                    >
+                                      <RectangleHorizontal className="h-3 w-3"/>
+                                      <span className="text-xs">1×2</span>
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-auto px-2 gap-1.5"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          handleResizeBlock(layout.id, 1, 2)
+                                        }}
+                                    >
+                                      <RectangleVertical className="h-3 w-3"/>
+                                      <span className="text-xs">2×1</span>
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-auto px-2 gap-1.5"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          handleResizeBlock(layout.id, 2, 2)
+                                        }}
+                                    >
+                                      <Square className="h-4 w-4"/>
+                                      <span className="text-xs">2×2</span>
+                                    </Button>
+                                  </motion.div>
+                              )}
+                            </motion.div>
+                        )
+                      })}
+                </AnimatePresence>
               </div>
             </div>
           </div>
         </div>
       </div>
+
   )
 }
 
@@ -297,36 +399,12 @@ export function EditingBar({isEditing, handleAddBlock}: {
     return null;
   }
   return (
-      <Card className="p-4 absolute bottom-10 left-1/2 -translate-x-1/2  z-[51]">
+      <Card className="p-4 fixed bottom-10 left-1/2 -translate-x-1/2  z-[51]">
         <h3 className="font-semibold text-sm mb-4 flex items-center gap-2">
           <Plus className="h-4 w-4"/>
           Add Blocks
         </h3>
         <div className="flex flex-row gap-2">
-          <Button
-              variant="outline"
-              className="justify-start gap-3 h-auto py-3"
-              onClick={() => handleAddBlock('bio')}
-          >
-            <User className="h-4 w-4"/>
-            <div className="text-left">
-              <div className="font-medium text-sm">Bio</div>
-              <div className="text-xs text-muted-foreground">Name & description</div>
-            </div>
-          </Button>
-
-          <Button
-              variant="outline"
-              className="justify-start gap-3 h-auto py-3"
-              onClick={() => handleAddBlock('social')}
-          >
-            <Share2 className="h-4 w-4"/>
-            <div className="text-left">
-              <div className="font-medium text-sm">Social</div>
-              <div className="text-xs text-muted-foreground">Social media link</div>
-            </div>
-          </Button>
-
           <Button
               variant="outline"
               className="justify-start gap-3 h-auto py-3"
