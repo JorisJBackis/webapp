@@ -13,9 +13,7 @@ export type BlockType = 'image' | 'link' | 'text'
 export interface BentoBlockData {
   id: string
   type: BlockType
-  title?: string
   content?: string
-  url?: string
 }
 
 interface BentoBlockProps {
@@ -37,8 +35,8 @@ export function BentoBlock({data, onRemove, onUpdate, isEditing}: BentoBlockProp
                   <div className="flex flex-col gap-2 p-4 h-full justify-center bg-muted/30">
                     <Input
                         placeholder="Image URL"
-                        value={data.url || ''}
-                        onChange={(e) => onUpdate?.(data.id, {url: e.target.value})}
+                        value={data.content || ''}
+                        onChange={(e) => onUpdate?.(data.id, {content: e.target.value})}
                         className="text-sm"
                     />
                     <Button
@@ -50,10 +48,10 @@ export function BentoBlock({data, onRemove, onUpdate, isEditing}: BentoBlockProp
                   </div>
               ) : (
                   <>
-                    {data.url ? (
+                    {data.content ? (
                         <img
-                            src={data.url || "/placeholder.svg"}
-                            alt={data.title || 'Image'}
+                            src={data.content || "/placeholder.svg"}
+                            alt={data.content || 'Image'}
                             className="w-full h-full object-cover cursor-pointer"
                             onClick={() => isEditing && setIsEditingContent(true)}
                         />
@@ -77,8 +75,8 @@ export function BentoBlock({data, onRemove, onUpdate, isEditing}: BentoBlockProp
                   <div className="flex flex-col gap-3 h-full justify-center">
                     <Input
                         placeholder="https://..."
-                        value={data.url || ''}
-                        onChange={(e) => onUpdate?.(data.id, {url: e.target.value})}
+                        value={data.content || ''}
+                        onChange={(e) => onUpdate?.(data.id, {content: e.target.value})}
                         className="text-xs"
                         onBlur={() => setIsEditingContent(false)}
 
@@ -86,7 +84,7 @@ export function BentoBlock({data, onRemove, onUpdate, isEditing}: BentoBlockProp
                   </div>
               ) : (
                   <a
-                      href={data.url || '#'}
+                      href={data.content || '#'}
                       className="flex flex-col gap-2 h-full justify-between group cursor-pointer"
                       target="_blank"
                       rel="noopener noreferrer"
@@ -99,7 +97,7 @@ export function BentoBlock({data, onRemove, onUpdate, isEditing}: BentoBlockProp
                   >
                     <div className="flex flex-col gap-1.5  ">
                       <p className="text-base text-muted-foreground leading-relaxed hover:underline overflow-ellipsis block overflow-hidden whitespace-nowrap">
-                        {data.url || 'Your link'}
+                        {data.content || 'Your link'}
                       </p>
                     </div>
                     <LinkIcon className="h-4 w-4 text-muted-foreground self-end mt-auto"/>
@@ -133,6 +131,8 @@ export function BentoBlock({data, onRemove, onUpdate, isEditing}: BentoBlockProp
               )}
             </>
         )
+
+
 
       default:
         return null

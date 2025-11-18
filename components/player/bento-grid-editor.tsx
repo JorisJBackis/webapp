@@ -86,10 +86,10 @@ function compactGrid(layouts: GridLayout[]): GridLayout[] {
   return compacted
 }
 
-export function BentoGridEditor() {
+export function BentoGridEditor({editorMode, initialBlocks, initialLayouts} : {editorMode: boolean, initialBlocks:BentoBlockData[], initialLayouts: GridLayout[]}) {
   const [blocks, setBlocks] = useState<BentoBlockData[]>(initialBlocks)
   const [layouts, setLayouts] = useState<GridLayout[]>(initialLayouts)
-  const [isEditing, setIsEditing] = useState(true)
+  const [isEditing, setIsEditing] = useState(editorMode)
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const [dragOverId, setDragOverId] = useState<string | null>(null)
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null)
@@ -245,10 +245,10 @@ export function BentoGridEditor() {
                 </AvatarFallback>
               </Avatar>
               <div className="text-xl">
-                Player Name (Sviatoslav )
+                Sviatoslav
               </div>
               <div className="text-lg text-muted-foreground">
-                Player Role ( Goalkeeper )
+                Goalkeeper
               </div>
             </div>
             <div className="flex justify-center items-center">
@@ -327,7 +327,7 @@ export function BentoGridEditor() {
                                       animate={{ opacity: 1, y: 0 }}
                                       exit={{ opacity: 0, y: -4 }}
                                       transition={{ duration: 0.15 }}
-                                      className="absolute -top-12 left-0 bg-card border border-border rounded-lg shadow-lg p-1 flex gap-1 z-20">
+                                      className="absolute -top-12 left-0 bg-card border border-border rounded-lg shadow-lg p-1 flex gap-1 z-[999]">
                                     <Button
                                         variant="ghost"
                                         size="sm"
@@ -400,10 +400,10 @@ export function EditingBar({isEditing, handleAddBlock}: {
   }
   return (
       <Card className="p-4 fixed bottom-10 left-1/2 -translate-x-1/2  z-[51]">
-        <h3 className="font-semibold text-sm mb-4 flex items-center gap-2">
-          <Plus className="h-4 w-4"/>
-          Add Blocks
-        </h3>
+        {/*<h3 className="font-semibold text-sm mb-4 flex items-center gap-2">*/}
+        {/*  <Plus className="h-4 w-4"/>*/}
+          {/*Add Blocks*/}
+        {/*</h3>*/}
         <div className="flex flex-row gap-2">
           <Button
               variant="outline"
@@ -413,7 +413,7 @@ export function EditingBar({isEditing, handleAddBlock}: {
             <Link2 className="h-4 w-4"/>
             <div className="text-left">
               <div className="font-medium text-sm">Link</div>
-              <div className="text-xs text-muted-foreground">External link</div>
+              {/*<div className="text-xs text-muted-foreground">External link</div>*/}
             </div>
           </Button>
 
@@ -425,7 +425,7 @@ export function EditingBar({isEditing, handleAddBlock}: {
             <Image className="h-4 w-4"/>
             <div className="text-left">
               <div className="font-medium text-sm">Image</div>
-              <div className="text-xs text-muted-foreground">Photo or artwork</div>
+              {/*<div className="text-xs text-muted-foreground">Photo or artwork</div>*/}
             </div>
           </Button>
 
@@ -437,7 +437,7 @@ export function EditingBar({isEditing, handleAddBlock}: {
             <FileText className="h-4 w-4"/>
             <div className="text-left">
               <div className="font-medium text-sm">Text</div>
-              <div className="text-xs text-muted-foreground">Rich text block</div>
+              {/*<div className="text-xs text-muted-foreground">Rich text block</div>*/}
             </div>
           </Button>
         </div>

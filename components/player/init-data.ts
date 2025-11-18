@@ -12,26 +12,26 @@ export const initialBlocks: BentoBlockData[] = [
   {
     id: '1',
     type: 'text',
-    title: 'About',
     content: 'Goalkeeper with 5 years of professional experience. Known for quick reflexes and excellent positioning.',
   },
   {
     id: '2',
     type: 'link',
-    title: 'Highlight Reel',
-    content: 'Best saves from 2024 season',
-    url: 'https://youtube.com',
+    // title: 'Highlight Reel',
+    content: 'https://youtube.com',
+    // url: 'https://youtube.com',
   },
   {
     id: '3',
     type: 'image',
-    title: 'Action Shot',
-    url: '/placeholder.svg?height=400&width=400',
+    content: '/placeholder.svg?height=400&width=400'
+    // title: 'Action Shot',
+    // url: '/placeholder.svg?height=400&width=400',
   },
   {
     id: '4',
     type: 'text',
-    title: 'Stats',
+    // title: 'Stats',
     content: 'Clean sheets: 12 | Save percentage: 78% | Appearances: 34',
   },
 ]

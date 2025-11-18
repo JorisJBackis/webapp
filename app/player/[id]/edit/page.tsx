@@ -1,11 +1,12 @@
 import {BentoGridEditor} from "@/components/player/bento-grid-editor";
 import {redirect} from "next/navigation";
 import {createClient} from "@/lib/supabase/server";
+import {initialBlocks, initialLayouts} from "@/components/player/init-data";
 
 export async function generateMetadata({params}) {
   // Mock player data
   const player = {
-    name: "John Doe",
+    name: "Sviatoslav",
     description: "Editable football player profile demo",
   };
 
@@ -29,18 +30,15 @@ export default async function PlayerProfile({params}) {
     data: {user},
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect('/auth/login');
-  }
 
   let editorMode = false;
-  if (user.id === playerId) {
+  if (user?.id === playerId) {
     editorMode = true;
   }
-
+  console.log(editorMode);
   return (
       <div className="container">
-        <BentoGridEditor editorMode={editorMode}/>
+        <BentoGridEditor editorMode={editorMode} initialBlocks={initialBlocks} initialLayouts={initialLayouts}/>
       </div>
   );
 }
