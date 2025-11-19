@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle, Globe, Users } from "lucide-react"
+import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle, Globe, Users, Upload, X, FileText } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -121,6 +121,8 @@ type OnboardingData = {
   desired_salary_range: string
   family_status: string
   youtube_highlight_url: string
+  has_performance_reports: boolean
+  performance_report_files: File[]
 
   // Screen 3 - Optional
   is_free_agent: boolean
@@ -149,6 +151,8 @@ export default function PlayerOnboardingPage() {
     desired_salary_range: "",
     family_status: "",
     youtube_highlight_url: "",
+    has_performance_reports: false,
+    performance_report_files: [],
     is_free_agent: false,
     preferred_playing_style: "",
     agent_name: "",
@@ -214,6 +218,40 @@ export default function PlayerOnboardingPage() {
     }))
   }, [])
 
+  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files) return
+
+    const newFiles = Array.from(files)
+    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg']
+    const maxSize = 10 * 1024 * 1024 // 10MB
+
+    const validFiles = newFiles.filter(file => {
+      if (!allowedTypes.includes(file.type)) {
+        setError(`${file.name} is not a supported format. Please upload PDF, PNG, or JPEG files.`)
+        return false
+      }
+      if (file.size > maxSize) {
+        setError(`${file.name} is too large. Maximum file size is 10MB.`)
+        return false
+      }
+      return true
+    })
+
+    setFormData(prev => ({
+      ...prev,
+      performance_report_files: [...prev.performance_report_files, ...validFiles]
+    }))
+    setError(null)
+  }, [])
+
+  const handleFileRemove = useCallback((index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      performance_report_files: prev.performance_report_files.filter((_, i) => i !== index)
+    }))
+  }, [])
+
   const validateStep1 = () => {
     return formData.primary_position &&
            formData.current_salary_range &&
@@ -246,6 +284,34 @@ export default function PlayerOnboardingPage() {
     try {
       if (!supabase) return;
 
+      // Upload physical performance reports to Supabase Storage if any
+      const uploadedFileUrls: string[] = []
+      if (formData.has_performance_reports && formData.performance_report_files.length > 0) {
+        for (const file of formData.performance_report_files) {
+          const fileExt = file.name.split('.').pop()
+          const fileName = `${user?.user.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('performance-reports')
+            .upload(fileName, file, {
+              cacheControl: '3600',
+              upsert: false
+            })
+
+          if (uploadError) {
+            console.error('Upload error:', uploadError)
+            throw new Error(`Failed to upload ${file.name}: ${uploadError.message}`)
+          }
+
+          // Get public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from('performance-reports')
+            .getPublicUrl(fileName)
+
+          uploadedFileUrls.push(publicUrl)
+        }
+      }
+
       // Prepare countries list (from both regions and specific countries)
       const allCountries = [
         ...formData.preferred_countries,
@@ -267,6 +333,8 @@ export default function PlayerOnboardingPage() {
           desired_salary_range: formData.desired_salary_range || null,
           family_status: formData.family_status || null,
           youtube_highlight_url: formData.youtube_highlight_url || null,
+          has_performance_reports: formData.has_performance_reports,
+          performance_report_urls: uploadedFileUrls.length > 0 ? uploadedFileUrls : null,
           preferred_playing_style: formData.preferred_playing_style || null,
           agent_name: formData.is_free_agent ? null : (formData.agent_name || null),
           agent_email: formData.is_free_agent ? null : (formData.agent_email || null),
@@ -529,6 +597,94 @@ export default function PlayerOnboardingPage() {
                   value={formData.youtube_highlight_url}
                   onChange={(e) => handleInputChange('youtube_highlight_url', e.target.value)}
                 />
+              </div>
+
+              {/* Physical Performance Reports Section */}
+              <div className="border-t pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <Label className="text-base font-medium">Physical Performance Reports</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Do you have performance data from Catapult, PlayerData, gpexe, or similar systems?
+                    </p>
+                  </div>
+                  <Switch
+                    checked={formData.has_performance_reports}
+                    onCheckedChange={(checked) => handleInputChange('has_performance_reports', checked)}
+                  />
+                </div>
+
+                {formData.has_performance_reports && (
+                  <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <div className="space-y-2">
+                      <Label htmlFor="performance-reports" className="text-sm font-medium">
+                        Upload your physical performance reports
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Accepted formats: PDF, PNG, JPEG • Max size: 10MB per file
+                      </p>
+
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="performance-reports"
+                          type="file"
+                          accept=".pdf,.png,.jpg,.jpeg"
+                          multiple
+                          onChange={handleFileUpload}
+                          className="hidden"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById('performance-reports')?.click()}
+                          className="w-full"
+                        >
+                          <Upload className="mr-2 h-4 w-4" />
+                          Choose Files
+                        </Button>
+                      </div>
+
+                      {/* Display uploaded files */}
+                      {formData.performance_report_files.length > 0 && (
+                        <div className="space-y-2 mt-4">
+                          <Label className="text-sm font-medium">Uploaded Files:</Label>
+                          <div className="space-y-2">
+                            {formData.performance_report_files.map((file, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center justify-between p-2 bg-white dark:bg-gray-900 border rounded-md"
+                              >
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <FileText className="h-4 w-4 flex-shrink-0 text-blue-600" />
+                                  <span className="text-sm truncate">{file.name}</span>
+                                  <span className="text-xs text-muted-foreground flex-shrink-0">
+                                    ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                                  </span>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleFileRemove(index)}
+                                  className="flex-shrink-0 ml-2"
+                                >
+                                  <X className="h-4 w-4 text-red-600" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <AlertDescription className="text-xs text-green-900 dark:text-green-100">
+                        <strong>Why this matters:</strong> Physical performance data gives clubs objective insights into your fitness, speed, stamina, and work rate. This data significantly enhances your profile and makes you more attractive to data-driven clubs.
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+                )}
               </div>
             </div>
           )}
