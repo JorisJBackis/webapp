@@ -1,24 +1,37 @@
 "use client"
 
-import {useState, useEffect} from "react"
-import {Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart} from "recharts"
-import {Info} from "lucide-react"
+import { useState,useEffect } from "react"
+import { Bar,Line,XAxis,YAxis,CartesianGrid,Tooltip,Legend,ResponsiveContainer,ComposedChart } from "recharts"
+import { Info } from "lucide-react"
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card"
-import {createClient} from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 
 interface PositionData {
   position: number
   stats:
-      | string
-      | {
+  | string
+  | {
     "Goals Scored (Įv +)": number
     "Goals Conceded (Įv -)": number
     Points: number
   }
+}
+
+interface LuckyUnluckyGame {
+  match_id: number
+  opponent_name: string
+  match_date: string
+  goalsFor: number
+  goalsAgainst: number
+  xgFor: number
+  pointsEarned: number
+  expectedPoints: number
+  luck: number
+  result: string
 }
 
 interface ChartData {
@@ -37,6 +50,7 @@ interface TeamStanding {
   currentExpectedPoints: number
   expectedPoints: number
   isUserTeam?: boolean
+  hasMonteCarloData?: boolean
 }
 
 interface PositionAnalyticsProps {
@@ -44,14 +58,109 @@ interface PositionAnalyticsProps {
   clubId?: number
 }
 
-export default function PositionAnalytics({positionData, clubId}: PositionAnalyticsProps) {
-  const [chartData, setChartData] = useState<ChartData[]>([])
-  const [teamStandings, setTeamStandings] = useState<TeamStanding[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [leagueName, setLeagueName] = useState<string | null>(null)
-  const [leagueData, setLeagueData] = useState<Map<string, { total_games: number | null }>>(new Map())
+export default function PositionAnalytics({ positionData,clubId }: PositionAnalyticsProps) {
+  const [chartData,setChartData] = useState<ChartData[]>([])
+  const [teamStandings,setTeamStandings] = useState<TeamStanding[]>([])
+  const [isLoading,setIsLoading] = useState(true)
+  const [leagueName,setLeagueName] = useState<string | null>(null)
+  const [leagueData,setLeagueData] = useState<Map<string,{ total_games: number | null }>>(new Map())
+  const [luckyUnluckyGames,setLuckyUnluckyGames] = useState<{
+    lucky: LuckyUnluckyGame[]
+    unlucky: LuckyUnluckyGame[]
+  }>({ lucky: [],unlucky: [] })
 
   const supabase = createClient();
+
+  useEffect(() => {
+    const fetchLuckyUnluckyGames = async () => {
+      if (!clubId) return;
+
+      try {
+        const { data: matches,error } = await supabase
+          .from('team_match_stats')
+          .select('match_id, date, stats')
+          .eq('team_id',clubId)
+          .order('date',{ ascending: false })
+
+        if (error) {
+          console.error('Error fetching lucky/unlucky games:',error)
+          return
+        }
+
+        if (!matches || matches.length === 0) {
+          setLuckyUnluckyGames({ lucky: [],unlucky: [] })
+          return
+        }
+
+        const processedMatches: LuckyUnluckyGame[] = matches.map((match: any) => {
+          let stats: any = {}
+
+          // Parse stats if it's a string
+          if (typeof match.stats === 'string') {
+            try {
+              stats = JSON.parse(match.stats)
+            } catch (e) {
+              console.error('Error parsing stats:',e)
+              return null
+            }
+          } else {
+            stats = match.stats
+          }
+
+          // Extract opponent from match_id string (e.g., "AFC Wimbledon - Walsall 1:0")
+          const matchIdParts = match.match_id.split(' - ')
+          let opponent_name = 'Unknown'
+
+          if (matchIdParts.length === 2) {
+            // Extract team name and result
+            const secondPart = matchIdParts[1] // "Walsall 1:0"
+            const resultMatch = secondPart.match(/^(.+?)\s+(\d+):(\d+)$/)
+            if (resultMatch) {
+              opponent_name = resultMatch[1] // "Walsall"
+            }
+          }
+
+          const pointsEarned = stats['Points Earned'] || 0
+          const expectedPoints = stats['Expected Points'] || 0
+          const goalsFor = stats['Goals'] || 0
+          const goalsAgainst = stats['Conceded Goals'] || 0
+          const xgFor = stats['xG'] || 0
+
+          // Determine result
+          let result = ''
+          if (goalsFor > goalsAgainst) result = 'W'
+          else if (goalsFor < goalsAgainst) result = 'L'
+          else result = 'D'
+
+          return {
+            match_id: match.match_id,
+            opponent_name,
+            match_date: match.date,
+            goalsFor,
+            goalsAgainst,
+            xgFor,
+            pointsEarned,
+            expectedPoints,
+            luck: pointsEarned - expectedPoints,
+            result,
+          }
+        }).filter((m): m is LuckyUnluckyGame => m !== null)
+
+        // Sort by luck
+        const sorted = processedMatches.sort((a,b) => b.luck - a.luck)
+
+        // Get top 3 lucky and top 3 unlucky
+        const lucky = sorted.slice(0,3)
+        const unlucky = sorted.slice(-3).reverse()
+
+        setLuckyUnluckyGames({ lucky,unlucky })
+      } catch (error) {
+        console.error('Error in fetchLuckyUnluckyGames:',error)
+      }
+    }
+
+    fetchLuckyUnluckyGames()
+  },[clubId,supabase])
 
   useEffect(() => {
     if (positionData && positionData.length > 0) {
@@ -63,7 +172,7 @@ export default function PositionAnalytics({positionData, clubId}: PositionAnalyt
             try {
               stats = JSON.parse(item.stats)
             } catch (e) {
-              console.error("Error parsing stats JSON:", e)
+              console.error("Error parsing stats JSON:",e)
               stats = {}
             }
           } else {
@@ -80,31 +189,31 @@ export default function PositionAnalytics({positionData, clubId}: PositionAnalyt
 
         setChartData(processedData)
       } catch (error) {
-        console.error("Error processing position data:", error)
+        console.error("Error processing position data:",error)
       }
     }
-  }, [positionData])
+  },[positionData])
 
   // Place this useEffect with the others
   useEffect(() => {
     const fetchLeagueData = async () => {
       if (!supabase) return;
-      const {data, error} = await supabase
-          .from('leagues')
-          .select('name, total_games_per_season');
+      const { data,error } = await supabase
+        .from('leagues')
+        .select('name, total_games_per_season');
 
       if (error) {
-        console.error("Could not fetch league data:", error);
+        console.error("Could not fetch league data:",error);
         return;
       }
 
       const leagueMap = new Map(
-          data.map(league => [league.name, {total_games: league.total_games_per_season}])
+        data.map(league => [league.name,{ total_games: league.total_games_per_season }])
       );
       setLeagueData(leagueMap);
     };
     fetchLeagueData();
-  }, [supabase]);
+  },[supabase]);
 
   useEffect(() => {
     async function fetchTeamStandings() {
@@ -120,14 +229,14 @@ export default function PositionAnalytics({positionData, clubId}: PositionAnalyt
 
         if (clubId) {
           console.log("Fetching user team league...")
-          const {data: userTeam, error: userTeamError} = await supabase
-              .from("clubs")
-              .select("league")
-              .eq("id", clubId)
-              .single()
+          const { data: userTeam,error: userTeamError } = await supabase
+            .from("clubs")
+            .select("league")
+            .eq("id",clubId)
+            .single()
 
           if (userTeamError) {
-            console.error("Error fetching user team:", userTeamError)
+            console.error("Error fetching user team:",userTeamError)
           } else if (userTeam && userTeam.league) {
             userLeague = userTeam.league
             setLeagueName(userLeague)
@@ -141,20 +250,20 @@ export default function PositionAnalytics({positionData, clubId}: PositionAnalyt
 
         // Step 2: Fetch team metrics data
         console.log("Fetching team metrics data...")
-        const {data: teamMetrics, error: metricsError} = await supabase
-            .from("team_metrics_aggregated")
-            .select('*')
-            .not("team_id", "is", null)
+        const { data: teamMetrics,error: metricsError } = await supabase
+          .from("team_metrics_aggregated")
+          .select('*')
+          .not("team_id","is",null)
 
         if (metricsError) {
-          console.error("Error fetching team metrics:", metricsError)
+          console.error("Error fetching team metrics:",metricsError)
           throw metricsError
         }
 
         console.log(`Found ${teamMetrics?.length || 0} teams in metrics data`)
 
         if (!teamMetrics || teamMetrics.length === 0) {
-          console.log("No team metrics data found, aborting")
+          console.log("No team  data found, aborting")
           setTeamStandings([])
           setIsLoading(false)
           return
@@ -169,7 +278,7 @@ export default function PositionAnalytics({positionData, clubId}: PositionAnalyt
         }
 
         // <<< ADD DEBUG LOG 1 >>>
-        console.log("[DEBUG 1] Team IDs after league filter:", filteredTeamMetrics.map(t => t.team_id));
+        console.log("[DEBUG 1] Team IDs after league filter:",filteredTeamMetrics.map(t => t.team_id));
 
         if (filteredTeamMetrics.length === 0) {
           console.log("No teams found in the user's league, showing all teams instead")
@@ -183,20 +292,20 @@ export default function PositionAnalytics({positionData, clubId}: PositionAnalyt
 
         // Step 5: Fetch club data for team names
         console.log("Fetching club data for team names...")
-        const {data: clubsData, error: clubsError} = await supabase
-            .from("clubs")
-            .select("id, name")
-            .in("id", metricTeamIds)
+        const { data: clubsData,error: clubsError } = await supabase
+          .from("clubs")
+          .select("id, name")
+          .in("id",metricTeamIds)
 
         if (clubsError) {
-          console.error("Error fetching clubs data:", clubsError)
+          console.error("Error fetching clubs data:",clubsError)
           throw clubsError
         }
 
         console.log(`Found ${clubsData?.length || 0} teams with club data`)
 
         // Create a map of team IDs to names for easier lookup
-        const teamNameMap: Record<number, string> = {}
+        const teamNameMap: Record<number,string> = {}
         clubsData?.forEach((club) => {
           if (club.id) {
             teamNameMap[club.id] = club.name || `Team ${club.id}`
@@ -205,23 +314,23 @@ export default function PositionAnalytics({positionData, clubId}: PositionAnalyt
 
         // Step 6: Fetch match data for filtered teams
         console.log("Fetching match data...")
-        const {data: matchData, error: matchError} = await supabase
-            .from("team_match_stats")
-            .select("team_id, match_id")
-            .in("team_id", metricTeamIds)
+        const { data: matchData,error: matchError } = await supabase
+          .from("team_match_stats")
+          .select("team_id, match_id")
+          .in("team_id",metricTeamIds)
 
         if (matchError) {
-          console.error("Error fetching match data:", matchError)
+          console.error("Error fetching match data:",matchError)
           throw matchError
         }
 
         console.log(`Found ${matchData?.length || 0} matches for filtered teams`)
         // <<< ADD DEBUG LOG 2 >>>
         const receivedTeamIds = [...new Set(matchData?.map(m => m.team_id))];
-        console.log("[DEBUG 2] Unique team IDs found in 'team_match_stats':", receivedTeamIds);
+        console.log("[DEBUG 2] Unique team IDs found in 'team_match_stats':",receivedTeamIds);
 
         // Count matches per team
-        const matchCountByTeam: Record<number, number> = {}
+        const matchCountByTeam: Record<number,number> = {}
         matchData?.forEach((match) => {
           if (match.team_id === null) return
 
@@ -238,7 +347,7 @@ export default function PositionAnalytics({positionData, clubId}: PositionAnalyt
 
         console.log(`Created match counts for ${Object.keys(matchCountByTeam).length} teams`)
         // <<< ADD DEBUG LOG 3 >>>
-        console.log("[DEBUG 3] Match counts per team ID:", matchCountByTeam);
+        console.log("[DEBUG 3] Match counts per team ID:",matchCountByTeam);
         // Check if we have any teams with matches
         const teamsWithMatches = Object.keys(matchCountByTeam).length
 
@@ -251,20 +360,20 @@ export default function PositionAnalytics({positionData, clubId}: PositionAnalyt
 
         // Step 7: Fetch previous years positions data for average points calculation
         console.log("Fetching previous years positions data...")
-        const {data: previousYearsData, error: previousYearsError} = await supabase
-            .from("previous_years_positions")
-            .select("team_id, Points")
-            .in("team_id", metricTeamIds)
+        const { data: previousYearsData,error: previousYearsError } = await supabase
+          .from("previous_years_positions")
+          .select("team_id, Points")
+          .in("team_id",metricTeamIds)
 
         if (previousYearsError) {
-          console.error("Error fetching previous years data:", previousYearsError)
+          console.error("Error fetching previous years data:",previousYearsError)
           throw previousYearsError
         }
 
         console.log(`Found ${previousYearsData?.length || 0} previous years records`)
 
         // Calculate average points per team from previous years
-        const avgPointsByTeam: Record<number, number> = {}
+        const avgPointsByTeam: Record<number,number> = {}
         previousYearsData?.forEach((record) => {
           if (record.team_id === null) return
 
@@ -292,7 +401,7 @@ export default function PositionAnalytics({positionData, clubId}: PositionAnalyt
 
         const validTeams = filteredTeamMetrics.filter((team) => {
           if (!team.team_id) {
-            console.log(`[DEBUG] Skipping team with no team_id:`, team);
+            console.log(`[DEBUG] Skipping team with no team_id:`,team);
             return false
           }
 
@@ -315,61 +424,62 @@ export default function PositionAnalytics({positionData, clubId}: PositionAnalyt
 
         console.log(`Found ${validTeams.length} valid teams with matches and points data`)
         // <<< ADD DEBUG LOG 4 >>>
-        console.log("[DEBUG 4] 'validTeams' IDs remaining:", validTeams.map(t => t.team_id));
+        console.log("[DEBUG 4] 'validTeams' IDs remaining:",validTeams.map(t => t.team_id));
         const standings = validTeams
-            .map((team) => {
-              const teamId = team.team_id as number
-              const matchCount = matchCountByTeam[teamId] || 0
-              const teamName = teamNameMap[teamId] || (team.Team as string) || `Team ${teamId}`
+          .map((team) => {
+            const teamId = team.team_id as number
+            const matchCount = matchCountByTeam[teamId] || 0
+            const teamName = teamNameMap[teamId] || (team.Team as string) || `Team ${teamId}`
 
-              // Convert points earned to number
-              let pointsEarned: number
-              const pointsEarnedValue = (team as any)["Points Earned"]
-              if (typeof pointsEarnedValue === "number") {
-                pointsEarned = pointsEarnedValue
-              } else {
-                pointsEarned = Number.parseFloat(pointsEarnedValue?.toString() || "0")
-              }
+            // Convert points earned to number
+            let pointsEarned: number
+            const pointsEarnedValue = (team as any)["Points Earned"]
+            if (typeof pointsEarnedValue === "number") {
+              pointsEarned = pointsEarnedValue
+            } else {
+              pointsEarned = Number.parseFloat(pointsEarnedValue?.toString() || "0")
+            }
 
-              if (isNaN(pointsEarned)) {
-                return null
-              }
+            if (isNaN(pointsEarned)) {
+              return null
+            }
 
-              // Calculate expected points
-              const leagueForThisTeam = team.League as string;
+            // Calculate expected points
+            const leagueForThisTeam = team.League as string;
 
-              // Use the fetched leagueData map, with a sensible fallback of 38 games
-              const totalGamesInSeason = leagueData.get(leagueForThisTeam)?.total_games || 38;
-              const currentFormPoints = (pointsEarned / matchCount) * totalGamesInSeason;
-              const avgPoints = avgPointsByTeam[teamId] || 0
+            // Use the fetched leagueData map, with a sensible fallback of 38 games
+            const totalGamesInSeason = leagueData.get(leagueForThisTeam)?.total_games || 38;
+            const currentFormPoints = (pointsEarned / matchCount) * totalGamesInSeason;
+            const avgPoints = avgPointsByTeam[teamId] || 0
 
-              let expectedPoints: number
-              if (avgPoints === null || avgPoints === 0) {
-                expectedPoints = currentFormPoints
-              } else {
-                expectedPoints = (0.9 * currentFormPoints) + (0.1 * avgPoints)
-              }
+            let expectedPoints: number
+            if (avgPoints === null || avgPoints === 0) {
+              expectedPoints = currentFormPoints
+            } else {
+              expectedPoints = (0.9 * currentFormPoints) + (0.1 * avgPoints)
+            }
 
-              const roundedPoints = Math.round(expectedPoints)
+            const roundedPoints = Math.round(expectedPoints)
 
-              // Get Expected Points from the database (Monte Carlo simulation)
-              const dbExpectedPoints = team["Expected Points"]
+            // Get Expected Points from the database (Monte Carlo simulation)
+            const dbExpectedPoints = team["Expected Points"]
 
-              // Current Expected = Monte Carlo simulation from DB
-              // Final Expected = Our calculation based on current form
-              const currentExpectedPoints = dbExpectedPoints ? Math.round(Number(dbExpectedPoints)) : null
+            // Calculate it once and reuse it
+            const roundedDbExpectedPoints = dbExpectedPoints ? Math.round(Number(dbExpectedPoints)) : null
+            const hasMonteCarloData = dbExpectedPoints !== null && dbExpectedPoints !== undefined
 
-              return {
-                teamId,
-                teamName,
-                matchesPlayed: matchCount,
-                actualPoints: Math.round(pointsEarned),
-                currentExpectedPoints: currentExpectedPoints || Math.round(pointsEarned), // Use actual points if no MC data
-                expectedPoints: roundedPoints, // Full season projection
-                isUserTeam: clubId ? teamId === clubId : false,
-              }
-            })
-            .filter((team): team is NonNullable<typeof team> => team !== null) // Filter out null values
+            return {
+              teamId,
+              teamName,
+              matchesPlayed: matchCount,
+              actualPoints: Math.round(pointsEarned),
+              currentExpectedPoints: roundedDbExpectedPoints || Math.round(pointsEarned),
+              expectedPoints: roundedPoints,
+              isUserTeam: clubId ? teamId === clubId : false,
+              hasMonteCarloData,
+            }
+          })
+          .filter((team): team is NonNullable<typeof team> => team !== null) // Filter out null values
 
         console.log(`After processing, have ${standings.length} teams with valid expected points`)
 
@@ -382,17 +492,17 @@ export default function PositionAnalytics({positionData, clubId}: PositionAnalyt
 
         // Sort and add ranks
         const sortedStandings = standings
-            .sort((a, b) => b.expectedPoints - a.expectedPoints) // Sort by expected points (descending)
-            .map((team, index) => ({
-              ...team,
-              rank: index + 1,
-            }))
+          .sort((a,b) => b.expectedPoints - a.expectedPoints) // Sort by expected points (descending)
+          .map((team,index) => ({
+            ...team,
+            rank: index + 1,
+          }))
 
         console.log(`Final standings: ${sortedStandings.length} teams`)
 
         setTeamStandings(sortedStandings)
       } catch (error) {
-        console.error("Error fetching team standings:", error)
+        console.error("Error fetching team standings:",error)
       } finally {
         setIsLoading(false)
         console.log("=== FINISHED TEAM STANDINGS FETCH ===")
@@ -400,7 +510,7 @@ export default function PositionAnalytics({positionData, clubId}: PositionAnalyt
     }
 
     fetchTeamStandings()
-  }, [supabase, clubId, leagueData])
+  },[supabase,clubId,leagueData])
 
   const totalGamesInSeason = leagueData.get(leagueName || "")?.total_games || 38;
 
@@ -408,219 +518,292 @@ export default function PositionAnalytics({positionData, clubId}: PositionAnalyt
     return <div className="text-center py-8">Loading data...</div>
   }
 
+  console.log('team standing variable','----------------------------------------------')
+
+  console.table(teamStandings)
+
+  console.log('team standing variable','----------------------------------------------')
+
   return (
-      <div className="space-y-8">
-        {/* Main combined chart */}
-        <div className="h-96">
-          <h3 className="text-lg font-medium mb-2">Performance Metrics by League Position</h3>
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={chartData} margin={{top: 20, right: 30, left: 20, bottom: 40}}>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.3}/>
-              <XAxis
-                  dataKey="position"
-                  label={{
-                    value: "League Position",
-                    position: "insideBottom",
-                    offset: -5,
-                  }}
-              />
-              <YAxis yAxisId="left" label={{value: "Goals", angle: -90, position: "insideLeft"}}/>
-              <YAxis
-                  yAxisId="right"
-                  orientation="right"
-                  domain={[0, "dataMax + 10"]}
-                  label={{value: "Points", angle: 90, position: "insideRight"}}
-              />
-              <Tooltip
-                  formatter={(value, name) => {
-                    if (name === "points") return [`${value} points`, "Points"];
-                    if (name === "goalsScored") return [`${value} goals`, "Goals Scored"];
-                    if (name === "goalsConceded") return [`${value} goals`, "Goals Conceded"];
-                    return [value, name];
-                  }}
-                  labelFormatter={(label) => `Position: ${label}`}
-                  content={({active, payload, label}) => {
-                    if (!active || !payload?.length) return null;
+    <div className="space-y-8">
+      {/* Main combined chart */}
+      <div className="h-96">
+        <h3 className="text-lg font-medium mb-2">Performance Metrics by League Position</h3>
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={chartData} margin={{ top: 20,right: 30,left: 20,bottom: 40 }}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+            <XAxis
+              dataKey="position"
+              label={{
+                value: "League Position",
+                position: "insideBottom",
+                offset: -5,
+              }}
+            />
+            <YAxis yAxisId="left" label={{ value: "Goals",angle: -90,position: "insideLeft" }} />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              domain={[0,"dataMax + 10"]}
+              label={{ value: "Points",angle: 90,position: "insideRight" }}
+            />
+            <Tooltip
+              formatter={(value,name) => {
+                if (name === "points") return [`${value} points`,"Points"];
+                if (name === "goalsScored") return [`${value} goals`,"Goals Scored"];
+                if (name === "goalsConceded") return [`${value} goals`,"Goals Conceded"];
+                return [value,name];
+              }}
+              labelFormatter={(label) => `Position: ${label}`}
+              content={({ active,payload,label }) => {
+                if (!active || !payload?.length) return null;
 
-                    return (
-                        <div className="bg-background p-3 border rounded shadow-xs">
-                          <p className="font-medium text-foreground">{label && `Position: ${label}`}</p>
-                          {payload.map((entry, index) => {
-                            const displayName = entry.name === "points"
-                                ? "Points"
-                                : entry.name === "goalsScored"
-                                    ? "Goals Scored"
-                                    : entry.name === "goalsConceded"
-                                        ? "Goals Conceded"
-                                        : entry.name;
+                return (
+                  <div className="bg-background p-3 border rounded shadow-xs">
+                    <p className="font-medium text-foreground">{label && `Position: ${label}`}</p>
+                    {payload.map((entry,index) => {
+                      const displayName = entry.name === "points"
+                        ? "Points"
+                        : entry.name === "goalsScored"
+                          ? "Goals Scored"
+                          : entry.name === "goalsConceded"
+                            ? "Goals Conceded"
+                            : entry.name;
 
-                            const displayValue = typeof entry.value === "number"
-                                ? entry.value.toFixed(2)
-                                : entry.value;
+                      const displayValue = typeof entry.value === "number"
+                        ? entry.value.toFixed(2)
+                        : entry.value;
 
-                            return (
-                                <p key={index} className="text-muted-foreground">
-                                  {displayName}: {displayValue}
-                                </p>
-                            );
-                          })}
-                        </div>
-                    );
-                  }}
-              />
+                      return (
+                        <p key={index} className="text-muted-foreground">
+                          {displayName}: {displayValue}
+                        </p>
+                      );
+                    })}
+                  </div>
+                );
+              }}
+            />
 
-              <Legend wrapperStyle={{
-                position: "relative",
-              }}/>
-              <Bar yAxisId="right" dataKey="points" fill="#3182CE" opacity={0.7} barSize={30} name="Points"/>
-              <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="goalsScored"
-                  stroke="#38A169"
-                  strokeWidth={3}
-                  dot={{r: 5}}
-                  activeDot={{r: 8}}
-                  name="Goals Scored"
-              />
-              <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="goalsConceded"
-                  stroke="#E53E3E"
-                  strokeWidth={3}
-                  dot={{r: 5}}
-                  activeDot={{r: 8}}
-                  name="Goals Conceded"
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
+            <Legend wrapperStyle={{
+              position: "relative",
+            }} />
+            <Bar yAxisId="right" dataKey="points" fill="#3182CE" opacity={0.7} barSize={30} name="Points" />
+            <Line
+              yAxisId="left"
+              type="monotone"
+              dataKey="goalsScored"
+              stroke="#38A169"
+              strokeWidth={3}
+              dot={{ r: 5 }}
+              activeDot={{ r: 8 }}
+              name="Goals Scored"
+            />
+            <Line
+              yAxisId="left"
+              type="monotone"
+              dataKey="goalsConceded"
+              stroke="#E53E3E"
+              strokeWidth={3}
+              dot={{ r: 5 }}
+              activeDot={{ r: 8 }}
+              name="Goals Conceded"
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Expected Season Standings Table */}
+      <div className="mt-8">
+        <h3 className="text-lg font-medium mb-4">
+          Expected Season Standings {leagueName ? `- ${leagueName}` : "(All Teams)"}
+        </h3>
+        {teamStandings.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full bg-background rounded-lg overflow-hidden shadow-xs">
+              <thead className="bg-muted text-muted-foreground!">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Rank
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Team
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <div className="flex items-center justify-center gap-1">
+                      <span>Matches<br />Played</span>
+                      <HoverCard>
+                        <HoverCardTrigger asChild>
+                          <Info
+                            className="h-3 w-3 text-gray-400 cursor-help opacity-60 hover:opacity-100 transition-opacity" />
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-60 text-xs">
+                          <p>Games completed so far this season</p>
+                        </HoverCardContent>
+                      </HoverCard>
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <div className="flex items-center justify-center gap-1">
+                      <span>Actual<br />Points</span>
+                      <HoverCard>
+                        <HoverCardTrigger asChild>
+                          <Info
+                            className="h-3 w-3 text-gray-400 cursor-help opacity-60 hover:opacity-100 transition-opacity" />
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-60 text-xs">
+                          <p>Points earned in the current season</p>
+                        </HoverCardContent>
+                      </HoverCard>
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <div className="flex items-center justify-center gap-1">
+                      <span>Current<br />Expected</span>
+                      <HoverCard>
+                        <HoverCardTrigger asChild>
+                          <Info
+                            className="h-3 w-3 text-gray-400 cursor-help opacity-60 hover:opacity-100 transition-opacity" />
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-60 text-xs">
+                          <p>Based on your xG and performance metrics, this is how your current points should look</p>
+                        </HoverCardContent>
+                      </HoverCard>
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <div className="flex items-center justify-center gap-1">
+                      <span>Final<br />Expected</span>
+                      <HoverCard>
+                        <HoverCardTrigger asChild>
+                          <Info
+                            className="h-3 w-3 text-gray-400 cursor-help opacity-60 hover:opacity-100 transition-opacity" />
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-60 text-xs">
+                          <p>Projected total points by end of season based on current form</p>
+                        </HoverCardContent>
+                      </HoverCard>
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {teamStandings.map((team) => (
+                  <tr
+                    key={team.teamId}
+                    className={`${team.isUserTeam ? "bg-blue-50 dark:bg-blue-950" : team.rank % 2 === 0 ? "bg-muted" : "bg-background"} hover:bg-muted/50`}
+                  >
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-muted-foreground">{team.rank}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                      {team.isUserTeam ? <span className="font-semibold">{team.teamName}</span> : team.teamName}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground text-center">
+                      {team.matchesPlayed}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground text-center font-medium">
+                      {team.actualPoints}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground text-center">
+                      {!team.hasMonteCarloData ? (
+                        <span className="text-gray-400">N/A</span>
+                      ) : (
+                        team.currentExpectedPoints
+                      )}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground text-center font-medium">
+                      {team.expectedPoints}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center py-4 bg-muted rounded-lg">
+            {isLoading ? "Loading standings data..." : "No standings data available. Check console for detailed logs."}
+          </div>
+        )}
+        <div className="mt-4 space-y-1">
+          <p className="text-xs text-muted-foreground">
+            <strong>Matches Played:</strong> Games completed so far this season
+          </p>
+          <p className="text-xs text-muted-foreground">
+            <strong>Actual Points:</strong> Points earned in current season
+          </p>
+          <p className="text-xs text-muted-foreground">
+            <strong>Current Expected:</strong> Monte Carlo simulation based on current form
+          </p>
+          <p className="text-xs text-muted-foreground">
+            <strong>Final Expected:</strong> Projected points for full {totalGamesInSeason}-match season
+          </p>
+        </div>
+      </div>
+
+      <h3 className="text-lg font-medium mb-4">
+        View your 3 most lucky/unlucky games
+      </h3>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Most Unlucky Games */}
+        <div className="bg-background rounded-lg shadow-xs border border-gray-200 p-4">
+          <h4 className="font-medium mb-4 text-red-600">Most Unlucky (Underperformed)</h4>
+          <div className="space-y-3">
+            {luckyUnluckyGames.unlucky.length > 0 ? (
+              luckyUnluckyGames.unlucky.map(match => (
+                <div key={match.match_id} className="text-sm border-l-2 border-red-300 pl-3 py-2">
+                  <div className="flex justify-between items-start mb-1">
+                    <p className="font-medium">{match.opponent_name}</p>
+                    <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
+                      {match.result} {match.goalsFor}-{match.goalsAgainst}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(match.match_date).toLocaleDateString()}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    xG: {match.xgFor.toFixed(2)} | Expected Pts: {match.expectedPoints.toFixed(2)}
+                  </p>
+                  <p className="text-red-600 text-xs font-medium mt-2">
+                    Underperformed by {Math.abs(match.luck).toFixed(2)} pts
+                  </p>
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-4">No matches yet</p>
+            )}
+          </div>
         </div>
 
-        {/* Expected Season Standings Table */}
-        <div className="mt-8">
-          <h3 className="text-lg font-medium mb-4">
-            Expected Season Standings {leagueName ? `- ${leagueName}` : "(All Teams)"}
-          </h3>
-          {teamStandings.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="min-w-full bg-background rounded-lg overflow-hidden shadow-xs">
-                  <thead className="bg-muted text-muted-foreground!">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Rank
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Team
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      <div className="flex items-center justify-center gap-1">
-                        <span>Matches<br/>Played</span>
-                        <HoverCard>
-                          <HoverCardTrigger asChild>
-                            <Info
-                                className="h-3 w-3 text-gray-400 cursor-help opacity-60 hover:opacity-100 transition-opacity"/>
-                          </HoverCardTrigger>
-                          <HoverCardContent className="w-60 text-xs">
-                            <p>Games completed so far this season</p>
-                          </HoverCardContent>
-                        </HoverCard>
-                      </div>
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      <div className="flex items-center justify-center gap-1">
-                        <span>Actual<br/>Points</span>
-                        <HoverCard>
-                          <HoverCardTrigger asChild>
-                            <Info
-                                className="h-3 w-3 text-gray-400 cursor-help opacity-60 hover:opacity-100 transition-opacity"/>
-                          </HoverCardTrigger>
-                          <HoverCardContent className="w-60 text-xs">
-                            <p>Points earned in the current season</p>
-                          </HoverCardContent>
-                        </HoverCard>
-                      </div>
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      <div className="flex items-center justify-center gap-1">
-                        <span>Current<br/>Expected</span>
-                        <HoverCard>
-                          <HoverCardTrigger asChild>
-                            <Info
-                                className="h-3 w-3 text-gray-400 cursor-help opacity-60 hover:opacity-100 transition-opacity"/>
-                          </HoverCardTrigger>
-                          <HoverCardContent className="w-60 text-xs">
-                            <p>Based on your xG and performance metrics, this is how your current points should look</p>
-                          </HoverCardContent>
-                        </HoverCard>
-                      </div>
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      <div className="flex items-center justify-center gap-1">
-                        <span>Final<br/>Expected</span>
-                        <HoverCard>
-                          <HoverCardTrigger asChild>
-                            <Info
-                                className="h-3 w-3 text-gray-400 cursor-help opacity-60 hover:opacity-100 transition-opacity"/>
-                          </HoverCardTrigger>
-                          <HoverCardContent className="w-60 text-xs">
-                            <p>Projected total points by end of season based on current form</p>
-                          </HoverCardContent>
-                        </HoverCard>
-                      </div>
-                    </th>
-                  </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                  {teamStandings.map((team) => (
-                      <tr
-                          key={team.teamId}
-                          className={`${team.isUserTeam ? "bg-blue-50 dark:bg-blue-950" : team.rank % 2 === 0 ? "bg-muted" : "bg-background"} hover:bg-muted/50`}
-                      >
-                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-muted-foreground">{team.rank}</td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                          {team.isUserTeam ? <span className="font-semibold">{team.teamName}</span> : team.teamName}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground text-center">
-                          {team.matchesPlayed}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground text-center font-medium">
-                          {team.actualPoints}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground text-center">
-                          {team.currentExpectedPoints === team.actualPoints ?
-                              <span className="text-gray-400">N/A</span> :
-                              team.currentExpectedPoints
-                          }
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground text-center font-medium">
-                          {team.expectedPoints}
-                        </td>
-                      </tr>
-                  ))}
-                  </tbody>
-                </table>
-              </div>
-          ) : (
-              <div className="text-center py-4 bg-muted rounded-lg">
-                {isLoading ? "Loading standings data..." : "No standings data available. Check console for detailed logs."}
-              </div>
-          )}
-          <div className="mt-4 space-y-1">
-            <p className="text-xs text-muted-foreground">
-              <strong>Matches Played:</strong> Games completed so far this season
-            </p>
-            <p className="text-xs text-muted-foreground">
-              <strong>Actual Points:</strong> Points earned in current season
-            </p>
-            <p className="text-xs text-muted-foreground">
-              <strong>Current Expected:</strong> Monte Carlo simulation based on current form
-            </p>
-            <p className="text-xs text-muted-foreground">
-              <strong>Final Expected:</strong> Projected points for full {totalGamesInSeason}-match season
-            </p>
+        {/* Most Lucky Games */}
+        <div className="bg-background rounded-lg shadow-xs border border-gray-200 p-4">
+          <h4 className="font-medium mb-4 text-green-600">Most Lucky (Overperformed)</h4>
+          <div className="space-y-3">
+            {luckyUnluckyGames.lucky.length > 0 ? (
+              luckyUnluckyGames.lucky.map(match => (
+                <div key={match.match_id} className="text-sm border-l-2 border-green-300 pl-3 py-2">
+                  <div className="flex justify-between items-start mb-1">
+                    <p className="font-medium">{match.opponent_name}</p>
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                      {match.result} {match.goalsFor}-{match.goalsAgainst}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(match.match_date).toLocaleDateString()}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    xG: {match.xgFor.toFixed(2)} | Expected Pts: {match.expectedPoints.toFixed(2)}
+                  </p>
+                  <p className="text-green-600 text-xs font-medium mt-2">
+                    Overperformed by {match.luck.toFixed(2)} pts
+                  </p>
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-4">No matches yet</p>
+            )}
           </div>
         </div>
       </div>
+    </div>
   )
 }

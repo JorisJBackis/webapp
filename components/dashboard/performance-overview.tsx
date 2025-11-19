@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect,useState } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card,CardContent,CardDescription,CardHeader,CardTitle } from "@/components/ui/card"
+import { Tabs,TabsContent,TabsList,TabsTrigger } from "@/components/ui/tabs"
 import {
   ResponsiveContainer,
   LineChart,
@@ -16,8 +16,8 @@ import {
   Bar,
   Tooltip,
 } from "recharts"
-import { Loader2, AlertCircle } from "lucide-react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Loader2,AlertCircle } from "lucide-react"
+import { Alert,AlertDescription } from "@/components/ui/alert"
 
 // Define types for the team match stats
 type TeamMatchStats = {
@@ -53,14 +53,14 @@ type MonthlyPerformanceData = {
 }
 
 export default function PerformanceOverview({ clubId }: { clubId?: number }) {
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [performanceData, setPerformanceData] = useState<MonthlyPerformanceData[]>([])
-  const [winRate, setWinRate] = useState<number>(0)
-  const [goalsPerGame, setGoalsPerGame] = useState<number>(0)
-  const [cleanSheets, setCleanSheets] = useState<number>(0)
-  const [totalMatches, setTotalMatches] = useState<number>(0)
-  const [debugInfo, setDebugInfo] = useState<string>("")
+  const [loading,setLoading] = useState(true)
+  const [error,setError] = useState<string | null>(null)
+  const [performanceData,setPerformanceData] = useState<MonthlyPerformanceData[]>([])
+  const [winRate,setWinRate] = useState<number>(0)
+  const [goalsPerGame,setGoalsPerGame] = useState<number>(0)
+  const [cleanSheets,setCleanSheets] = useState<number>(0)
+  const [totalMatches,setTotalMatches] = useState<number>(0)
+  const [debugInfo,setDebugInfo] = useState<string>("")
   const supabase = createClient()
 
   // Helper function to safely extract goals from stats
@@ -74,7 +74,7 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
     if (typeof stats.Score === "number") return stats.Score
 
     // If we can't find goals, log the stats object for debugging
-    console.log("Could not find goals in stats:", stats)
+    console.log("Could not find goals in stats:",stats)
     return 0
   }
 
@@ -83,11 +83,11 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
     try {
       const date = new Date(dateString)
       const formattedDate = date.toISOString().split("T")[0] // YYYY-MM-DD
-      const month = date.toLocaleString("default", { month: "short" })
-      return { formattedDate, month }
+      const month = date.toLocaleString("default",{ month: "short" })
+      return { formattedDate,month }
     } catch (error) {
-      console.error("Error formatting date:", dateString, error)
-      return { formattedDate: dateString, month: "Unknown" }
+      console.error("Error formatting date:",dateString,error)
+      return { formattedDate: dateString,month: "Unknown" }
     }
   }
 
@@ -101,10 +101,10 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
       try {
         // Fetch all match stats for the team
         if (!supabase) return;
-        const { data: teamMatches, error: teamMatchesError } = await supabase
+        const { data: teamMatches,error: teamMatchesError } = await supabase
           .from("team_match_stats")
           .select("*")
-          .eq("team_id", clubId)
+          .eq("team_id",clubId)
 
         if (teamMatchesError) throw teamMatchesError
 
@@ -114,17 +114,17 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
           return // No matches found
         }
 
-        console.log("Team matches:", teamMatches)
+        console.log("Team matches:",teamMatches)
         setDebugInfo(`Found ${teamMatches.length} team matches`)
 
         // Get all unique match IDs
         const matchIds = [...new Set(teamMatches.map((match) => match.match_id))]
 
         // Fetch all match stats for these matches (including opponents)
-        const { data: allMatchStats, error: allMatchStatsError } = await supabase
+        const { data: allMatchStats,error: allMatchStatsError } = await supabase
           .from("team_match_stats")
           .select("*")
-          .in("match_id", matchIds)
+          .in("match_id",matchIds)
 
         if (allMatchStatsError) throw allMatchStatsError
 
@@ -134,7 +134,7 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
           return // No match stats found
         }
 
-        console.log("All match stats:", allMatchStats)
+        console.log("All match stats:",allMatchStats)
         setDebugInfo(`Found ${allMatchStats.length} total match stats`)
 
         // Process the matches to get complete match data
@@ -175,10 +175,10 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
           }
         }
 
-        console.log("Processed matches:", processedMatches)
+        console.log("Processed matches:",processedMatches)
         setDebugInfo(debugMatches)
 
-        processedMatches.sort((a, b) => new Date(a.date!).getTime() - new Date(b.date!).getTime());
+        processedMatches.sort((a,b) => new Date(a.date!).getTime() - new Date(b.date!).getTime());
 
         // Calculate statistics
         const totalMatches = processedMatches.length
@@ -188,7 +188,7 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
 
         const winRate = totalMatches > 0 ? Math.round((wins / totalMatches) * 100) : 0
 
-        const totalGoalsScored = processedMatches.reduce((sum, match) => sum + match.goals_scored, 0)
+        const totalGoalsScored = processedMatches.reduce((sum,match) => sum + match.goals_scored,0)
         const goalsPerGame = totalMatches > 0 ? Number.parseFloat((totalGoalsScored / totalMatches).toFixed(1)) : 0
 
         const cleanSheets = processedMatches.filter((match) => match.goals_conceded === 0).length
@@ -196,7 +196,7 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
         // Group by month for the chart data
         // Group by month while preserving chronological order
         const monthlyDataOrdered: MonthlyPerformanceData[] = [];
-        const monthMap = new Map<string, MonthlyPerformanceData>();
+        const monthMap = new Map<string,MonthlyPerformanceData>();
 
         processedMatches.forEach((match) => {
           const matchDate = new Date(match.date!);
@@ -212,7 +212,7 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
               goalsConceded: 0,
               matchesInMonth: 0, // <<< Initialize matchesInMonth
             };
-            monthMap.set(monthYearKey, newMonthData);
+            monthMap.set(monthYearKey,newMonthData);
             monthlyDataOrdered.push(newMonthData);
           }
 
@@ -236,7 +236,7 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
           goalsConcededPer90: monthData.matchesInMonth > 0 ? (monthData.goalsConceded / monthData.matchesInMonth) : 0,
         }));
 
-        console.log("Chart data:", chartData)
+        console.log("Chart data:",chartData)
 
         // Update state with the calculated data
         setPerformanceData(chartData)
@@ -249,7 +249,7 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
           (prev) => prev + `\nStats: Wins ${wins}, Draws ${draws}, Losses ${losses}, Clean Sheets ${cleanSheets}`,
         )
       } catch (err: any) {
-        console.error("Error fetching team match stats:", err)
+        console.error("Error fetching team match stats:",err)
         setError(`Failed to load performance data: ${err.message}`)
         setDebugInfo(`Error: ${err.message}`)
       } finally {
@@ -258,27 +258,27 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
     }
 
     fetchData()
-  }, [clubId, supabase])
+  },[clubId,supabase])
 
   // Custom tooltip for the charts
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active,payload,label }: any) => {
     if (active && payload && payload.length) {
       return (
-          <div className="bg-background p-3 border rounded shadow-xs">
-            <p className="font-medium">{`${label}`}</p>
-            {payload.map((entry: any, index: number) => {
-              // Wins, Draws, Losses should be whole numbers
-              const isMatchResult = ['Wins', 'Draws', 'Losses'].includes(entry.name);
-              const formattedValue = typeof entry.value === 'number' 
-                ? isMatchResult ? Math.round(entry.value).toString() : entry.value.toFixed(2) 
-                : entry.value;
-              return (
-                  <p key={`item-${index}`} style={{ color: entry.color }}>
-                    {`${entry.name}: ${formattedValue}`}
-                  </p>
-              );
-            })}
-          </div>
+        <div className="bg-background p-3 border rounded shadow-xs">
+          <p className="font-medium">{`${label}`}</p>
+          {payload.map((entry: any,index: number) => {
+            // Wins, Draws, Losses should be whole numbers
+            const isMatchResult = ['Wins','Draws','Losses'].includes(entry.name);
+            const formattedValue = typeof entry.value === 'number'
+              ? isMatchResult ? Math.round(entry.value).toString() : entry.value.toFixed(2)
+              : entry.value;
+            return (
+              <p key={`item-${index}`} style={{ color: entry.color }}>
+                {`${entry.name}: ${formattedValue}`}
+              </p>
+            );
+          })}
+        </div>
       )
     }
     return null
@@ -331,11 +331,11 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
                       <XAxis dataKey="month" />
                       <YAxis />
                       <Tooltip content={<CustomTooltip />}
-                               cursor={{fill: "var(--color-muted)", opacity: 0.5}}/>
+                        cursor={{ fill: "var(--color-muted)",opacity: 0.5 }} />
                       <Legend />
-                      <Bar dataKey="wins" name="Wins" stackId="a"  fill="var(--color-success)" />
+                      <Bar dataKey="wins" name="Wins" stackId="a" fill="var(--color-success)" />
                       <Bar dataKey="draws" name="Draws" stackId="a" fill="#f97316" />
-                      <Bar dataKey="losses" name="Losses" stackId="a"   fill="var(--color-destructive)" />
+                      <Bar dataKey="losses" name="Losses" stackId="a" fill="var(--color-destructive)" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -355,7 +355,7 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
                         name="Goals Scored per 90"
                         stroke="#3949AB"
                         strokeWidth={2}
-                        dot={{ r: 4 }}R
+                        dot={{ r: 4 }}
                         activeDot={{ r: 6 }}
                       />
                       <Line
@@ -391,7 +391,7 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
               <div className="text-5xl font-bold text-primary">{winRate}%</div>
               <p className="text-sm text-muted-foreground">
                 {totalMatches > 0
-                  ? `${performanceData.reduce((sum, month) => sum + month.wins, 0)} wins in ${totalMatches} matches`
+                  ? `${performanceData.reduce((sum,month) => sum + month.wins,0)} wins in ${totalMatches} matches`
                   : "No matches played"}
               </p>
             </div>
@@ -414,7 +414,7 @@ export default function PerformanceOverview({ clubId }: { clubId?: number }) {
               <div className="text-5xl font-bold text-primary">{goalsPerGame}</div>
               <p className="text-sm text-muted-foreground">
                 {totalMatches > 0
-                  ? `${performanceData.reduce((sum, month) => sum + month.goalsScored, 0)} goals in ${totalMatches} matches`
+                  ? `${performanceData.reduce((sum,month) => sum + month.goalsScored,0)} goals in ${totalMatches} matches`
                   : "No matches played"}
               </p>
             </div>

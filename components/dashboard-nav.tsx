@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname,useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/logo"
@@ -13,15 +13,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { BarChart, Home, LogOut, Settings, User, ShoppingCart, Search, Users, Briefcase, Building2, Lightbulb, FileText } from "lucide-react"
-import { useState, useEffect } from "react"
-import {ModeToggleInstant} from "@/components/mode-toggle";
+import { BarChart,Home,LogOut,Settings,User,ShoppingCart,Search,Users,Briefcase,Building2,Lightbulb,FileText } from "lucide-react"
+import { useState,useEffect } from "react"
+import { ModeToggleInstant } from "@/components/mode-toggle";
 
 export default function DashboardNav() {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
-  const [userType, setUserType] = useState<string | null>(null)
+  const [userType,setUserType] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchUserType = async () => {
@@ -31,13 +31,13 @@ export default function DashboardNav() {
         const { data: profile } = await supabase
           .from('profiles')
           .select('user_type')
-          .eq('id', user.id)
+          .eq('id',user.id)
           .single()
         setUserType(profile?.user_type || null)
       }
     }
     fetchUserType()
-  }, [])
+  },[])
 
   const handleSignOut = async () => {
     if (!supabase) return;
@@ -63,7 +63,7 @@ export default function DashboardNav() {
                     className={pathname === "/dashboard" ? "bg-primary text-primary-foreground" : "text-foreground"}
                   >
                     <Home className="mr-2 h-4 w-4" />
-                    Dashboard
+                    My Team
                   </Button>
                 </Link>
                 <Link href="/dashboard/analytics">
@@ -143,7 +143,7 @@ export default function DashboardNav() {
                     Marketplace
                   </Button>
                 </Link>
-                <Link href="/dashboard/scouting">
+                {/* <Link href="/dashboard/scouting">
                   <Button
                     variant={pathname.startsWith("/dashboard/scouting") ? "default" : "ghost"}
                     size="sm"
@@ -152,7 +152,7 @@ export default function DashboardNav() {
                     <Search className="mr-2 h-4 w-4" />
                     Scouting
                   </Button>
-                </Link>
+                </Link> */}
               </>
             )}
           </nav>
