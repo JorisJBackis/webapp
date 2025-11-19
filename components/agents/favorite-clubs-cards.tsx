@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card,CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
@@ -33,31 +33,31 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import type { FavoriteClub, ClubContact } from '@/app/dashboard/agents/clubs/page'
+import type { FavoriteClub,ClubContact } from '@/app/dashboard/agents/clubs/page'
 import { getCountryFlag } from '@/lib/utils/country-flags'
 import ClubPlayersModal from './club-players-modal'
 
 interface FavoriteClubsCardsProps {
   clubs: FavoriteClub[]
   onClubRemoved: (clubId: number) => void
-  onNotesUpdated?: (clubId: number, newNotes: string) => void
-  onContactsUpdated?: (clubId: number, contacts: ClubContact[]) => void
+  onNotesUpdated?: (clubId: number,newNotes: string) => void
+  onContactsUpdated?: (clubId: number,contacts: ClubContact[]) => void
 }
 
-export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdated, onContactsUpdated }: FavoriteClubsCardsProps) {
-  const [editingNotes, setEditingNotes] = useState<number | null>(null)
-  const [notesValue, setNotesValue] = useState('')
-  const [savingNotes, setSavingNotes] = useState(false)
-  const [removingClub, setRemovingClub] = useState<number | null>(null)
-  const [clubToRemove, setClubToRemove] = useState<FavoriteClub | null>(null)
-  const [selectedClub, setSelectedClub] = useState<FavoriteClub | null>(null)
-  const [showPlayersModal, setShowPlayersModal] = useState(false)
+export default function FavoriteClubsCards({ clubs,onClubRemoved,onNotesUpdated,onContactsUpdated }: FavoriteClubsCardsProps) {
+  const [editingNotes,setEditingNotes] = useState<number | null>(null)
+  const [notesValue,setNotesValue] = useState('')
+  const [savingNotes,setSavingNotes] = useState(false)
+  const [removingClub,setRemovingClub] = useState<number | null>(null)
+  const [clubToRemove,setClubToRemove] = useState<FavoriteClub | null>(null)
+  const [selectedClub,setSelectedClub] = useState<FavoriteClub | null>(null)
+  const [showPlayersModal,setShowPlayersModal] = useState(false)
 
   // Contact editing state - now manages array of contacts
-  const [editingContactsForClub, setEditingContactsForClub] = useState<number | null>(null)
-  const [contactsBeingEdited, setContactsBeingEdited] = useState<ClubContact[]>([])
-  const [savingContacts, setSavingContacts] = useState(false)
-  const [editingContactIndex, setEditingContactIndex] = useState<number | null>(null)
+  const [editingContactsForClub,setEditingContactsForClub] = useState<number | null>(null)
+  const [contactsBeingEdited,setContactsBeingEdited] = useState<ClubContact[]>([])
+  const [savingContacts,setSavingContacts] = useState(false)
+  const [editingContactIndex,setEditingContactIndex] = useState<number | null>(null)
 
   const supabase = createClient()
 
@@ -81,7 +81,7 @@ export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdate
       if (!user) throw new Error('Not authenticated')
 
       // Update notes using the add_favorite_club function (it upserts)
-      const { error } = await supabase.rpc('add_favorite_club', {
+      const { error } = await supabase.rpc('add_favorite_club',{
         p_agent_id: user.id,
         p_club_id: clubId,
         p_notes: notesValue || null
@@ -91,13 +91,13 @@ export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdate
 
       // Notify parent if callback provided
       if (onNotesUpdated) {
-        onNotesUpdated(clubId, notesValue)
+        onNotesUpdated(clubId,notesValue)
       }
 
       setEditingNotes(null)
       setNotesValue('')
     } catch (err: any) {
-      console.error('Error saving notes:', err)
+      console.error('Error saving notes:',err)
       alert('Failed to save notes: ' + err.message)
     } finally {
       setSavingNotes(false)
@@ -116,7 +116,7 @@ export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdate
   }
 
   const handleAddContact = () => {
-    setContactsBeingEdited(prev => [...prev, { name: '', email: '', phone: '', role: '' }])
+    setContactsBeingEdited(prev => [...prev,{ name: '',email: '',phone: '',role: '' }])
     setEditingContactIndex(contactsBeingEdited.length)
   }
 
@@ -124,14 +124,14 @@ export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdate
     setEditingContactIndex(index)
   }
 
-  const handleUpdateContact = (index: number, field: keyof ClubContact, value: string) => {
-    setContactsBeingEdited(prev => prev.map((contact, i) =>
-      i === index ? { ...contact, [field]: value || null } : contact
+  const handleUpdateContact = (index: number,field: keyof ClubContact,value: string) => {
+    setContactsBeingEdited(prev => prev.map((contact,i) =>
+      i === index ? { ...contact,[field]: value || null } : contact
     ))
   }
 
   const handleDeleteContact = (index: number) => {
-    setContactsBeingEdited(prev => prev.filter((_, i) => i !== index))
+    setContactsBeingEdited(prev => prev.filter((_,i) => i !== index))
     if (editingContactIndex === index) {
       setEditingContactIndex(null)
     }
@@ -147,7 +147,7 @@ export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdate
       if (!user) throw new Error('Not authenticated')
 
       // Update contacts array (pass as object, not stringified - Supabase handles JSONB conversion)
-      const { error } = await supabase.rpc('update_club_contacts', {
+      const { error } = await supabase.rpc('update_club_contacts',{
         p_agent_id: user.id,
         p_club_id: clubId,
         p_contacts: contactsBeingEdited
@@ -157,14 +157,14 @@ export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdate
 
       // Notify parent if callback provided
       if (onContactsUpdated) {
-        onContactsUpdated(clubId, contactsBeingEdited)
+        onContactsUpdated(clubId,contactsBeingEdited)
       }
 
       setEditingContactsForClub(null)
       setContactsBeingEdited([])
       setEditingContactIndex(null)
     } catch (err: any) {
-      console.error('Error saving contacts:', err)
+      console.error('Error saving contacts:',err)
       alert('Failed to save contact details: ' + err.message)
     } finally {
       setSavingContacts(false)
@@ -182,7 +182,7 @@ export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdate
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
-      const { data, error } = await supabase.rpc('remove_favorite_club', {
+      const { data,error } = await supabase.rpc('remove_favorite_club',{
         p_agent_id: user.id,
         p_club_id: clubToRemove.club_id
       })
@@ -196,7 +196,7 @@ export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdate
       onClubRemoved(clubToRemove.club_id)
       setClubToRemove(null)
     } catch (err: any) {
-      console.error('Error removing club:', err)
+      console.error('Error removing club:',err)
       alert('Failed to remove club: ' + (err.message || 'Unknown error'))
     } finally {
       setRemovingClub(null)
@@ -205,9 +205,9 @@ export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdate
 
   const formatMarketValue = (value: number | null) => {
     if (!value) return 'N/A'
-    if (value >= 1000000) return `€${(value / 1000000).toFixed(1)}M`
-    if (value >= 1000) return `€${(value / 1000).toFixed(0)}K`
-    return `€${value}`
+    if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`
+    if (value >= 1000) return `${(value / 1000).toFixed(0)}K`
+    return `${value}`
   }
 
   const handleViewPlayers = (club: FavoriteClub) => {
@@ -394,7 +394,7 @@ export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdate
 
                         {/* Contact Cards Grid - 2 per row */}
                         <div className="grid grid-cols-2 gap-2">
-                          {contactsBeingEdited.map((contact, index) => (
+                          {contactsBeingEdited.map((contact,index) => (
                             <div
                               key={index}
                               className="p-2 bg-muted/30 rounded border space-y-1.5"
@@ -415,26 +415,26 @@ export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdate
                               </div>
                               <Input
                                 value={contact.name || ''}
-                                onChange={(e) => handleUpdateContact(index, 'name', e.target.value)}
+                                onChange={(e) => handleUpdateContact(index,'name',e.target.value)}
                                 placeholder="Name"
                                 className="h-7 text-xs"
                               />
                               <Input
                                 value={contact.role || ''}
-                                onChange={(e) => handleUpdateContact(index, 'role', e.target.value)}
+                                onChange={(e) => handleUpdateContact(index,'role',e.target.value)}
                                 placeholder="Role"
                                 className="h-7 text-xs"
                               />
                               <Input
                                 value={contact.email || ''}
-                                onChange={(e) => handleUpdateContact(index, 'email', e.target.value)}
+                                onChange={(e) => handleUpdateContact(index,'email',e.target.value)}
                                 placeholder="Email"
                                 type="email"
                                 className="h-7 text-xs"
                               />
                               <Input
                                 value={contact.phone || ''}
-                                onChange={(e) => handleUpdateContact(index, 'phone', e.target.value)}
+                                onChange={(e) => handleUpdateContact(index,'phone',e.target.value)}
                                 placeholder="Phone"
                                 type="tel"
                                 className="h-7 text-xs"
@@ -495,7 +495,7 @@ export default function FavoriteClubsCards({ clubs, onClubRemoved, onNotesUpdate
                         {/* Contact Cards Grid - 2 per row (View Mode) */}
                         {club.contacts.length > 0 ? (
                           <div className="grid grid-cols-2 gap-2">
-                            {club.contacts.map((contact, index) => (
+                            {club.contacts.map((contact,index) => (
                               <div
                                 key={index}
                                 className="text-xs p-2 bg-muted/30 rounded border space-y-1"

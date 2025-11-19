@@ -1,20 +1,20 @@
 // components/marketplace/need-form-modal.tsx
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState,useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/database.types';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertCircle, X } from 'lucide-react'; // Added X
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Loader2,AlertCircle,X } from 'lucide-react'; // Added X
+import { Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription,DialogFooter,DialogClose } from "@/components/ui/dialog";
 import { toast } from '@/components/ui/use-toast';
 import {
-    Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+    Select,SelectContent,SelectItem,SelectTrigger,SelectValue
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"; // Added FormDescription
+import { Form,FormControl,FormDescription,FormField,FormItem,FormLabel,FormMessage } from "@/components/ui/form"; // Added FormDescription
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -25,7 +25,7 @@ type MyRecruitmentNeed = Database['public']['Functions']['get_my_recruitment_nee
 
 // --- Zod Schema for Form Validation ---
 const needFormSchema = z.object({
-    position_needed: z.string().min(1, "Position is required."),
+    position_needed: z.string().min(1,"Position is required."),
     min_age: z.number().int().positive().optional().nullable(), // to number, ensure integer
     max_age: z.number().int().positive().optional().nullable(),
     min_height: z.number().int().positive().optional().nullable(),
@@ -33,41 +33,41 @@ const needFormSchema = z.object({
     preferred_foot: z.string().optional().nullable(), // Keep as string for Select
     budget_transfer_max: z.number().positive().optional().nullable(),
     budget_loan_fee_max: z.number().positive().optional().nullable(),
-    salary_range: z.string().max(50, "Salary range text too long.").optional().nullable(),
-    notes: z.string().max(1000, "Notes cannot exceed 1000 characters.").optional().nullable(),
-    status: z.enum(['active', 'closed'], {error: "Status is required"}), // Added Status
+    salary_range: z.string().max(50,"Salary range text too long.").optional().nullable(),
+    notes: z.string().max(1000,"Notes cannot exceed 1000 characters.").optional().nullable(),
+    status: z.enum(['active','closed'],{ error: "Status is required" }), // Added Status
 }).refine(data => {
     // Optional: Add validation if min > max
     if (data.min_age && data.max_age && data.min_age > data.max_age) {
         return false;
     }
     return true;
-}, { message: "Min age cannot be greater than Max age.", path: ["min_age"] })
+},{ message: "Min age cannot be greater than Max age.",path: ["min_age"] })
     .refine(data => {
         if (data.min_height && data.max_height && data.min_height > data.max_height) {
             return false;
         }
         return true;
-    }, { message: "Min height cannot be greater than Max height.", path: ["min_height"] });
+    },{ message: "Min height cannot be greater than Max height.",path: ["min_height"] });
 
 type NeedFormValues = z.infer<typeof needFormSchema>;
 
 
 // --- NeedFormModal Component ---
 export default function NeedFormModal({
-                                          isOpen,
-                                          onClose,
-                                          needToEdit, // Expecting data matching MyRecruitmentNeed
-                                          userClubId,
-                                          onNeedPosted // Callback to refresh parent list
-                                      }: {
+    isOpen,
+    onClose,
+    needToEdit, // Expecting data matching MyRecruitmentNeed
+    userClubId,
+    onNeedPosted // Callback to refresh parent list
+}: {
     isOpen: boolean;
     onClose: () => void;
     needToEdit?: MyRecruitmentNeed | null;
     userClubId: number | null;
     onNeedPosted: () => void;
 }) {
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSubmitting,setIsSubmitting] = useState(false);
     const supabase = createClient();
 
     const form = useForm<NeedFormValues>({
@@ -78,7 +78,7 @@ export default function NeedFormModal({
     // Effect to reset form when modal opens or data changes
     useEffect(() => {
         if (isOpen) {
-            console.log("Resetting Need Form. Editing:", needToEdit);
+            console.log("Resetting Need Form. Editing:",needToEdit);
             form.reset({
                 position_needed: needToEdit?.position_needed ?? "",
                 min_age: needToEdit?.min_age ?? null,
@@ -93,12 +93,12 @@ export default function NeedFormModal({
                 status: needToEdit?.status as ('active' | 'closed') ?? 'active', // Default new needs to active
             });
         }
-    }, [isOpen, needToEdit, form]);
+    },[isOpen,needToEdit,form]);
 
 
     const onSubmit = async (values: NeedFormValues) => {
         if (!userClubId || !supabase) {
-            toast({ title: "Error", description: "Cannot save need: Missing user or connection info.", variant: "destructive"});
+            toast({ title: "Error",description: "Cannot save need: Missing user or connection info.",variant: "destructive" });
             return;
         }
         setIsSubmitting(true);
@@ -124,18 +124,18 @@ export default function NeedFormModal({
             let response;
             if (needToEdit) {
                 // --- EDIT LOGIC ---
-                console.log("Updating need ID:", needToEdit.need_id, "with data:", dataForDB);
+                console.log("Updating need ID:",needToEdit.need_id,"with data:",dataForDB);
                 // Remove fields not updated or handled by DB default on create
-                const { created_by_club_id, ...updateData } = dataForDB;
+                const { created_by_club_id,...updateData } = dataForDB;
                 response = await supabase
                     .from('recruitment_needs')
                     .update(updateData)
-                    .eq('need_id', needToEdit.need_id);
+                    .eq('need_id',needToEdit.need_id);
             } else {
                 // --- CREATE LOGIC ---
-                console.log("Inserting new need:", dataForDB);
+                console.log("Inserting new need:",dataForDB);
                 // Let DB handle created_at default, remove updated_at for insert
-                const { updated_at, ...insertData } = dataForDB;
+                const { updated_at,...insertData } = dataForDB;
                 response = await supabase
                     .from('recruitment_needs')
                     .insert(insertData);
@@ -143,13 +143,13 @@ export default function NeedFormModal({
 
             if (response.error) throw response.error;
 
-            toast({ title: "Success", description: `Recruitment need ${needToEdit ? 'updated' : 'posted'} successfully.` });
+            toast({ title: "Success",description: `Recruitment need ${needToEdit ? 'updated' : 'posted'} successfully.` });
             onNeedPosted(); // Refresh list in parent component
             onClose(); // Close the modal
 
         } catch (err: any) {
-            console.error(`Error ${needToEdit ? 'updating' : 'posting'} need:`, err);
-            toast({ title: "Error", description: `Failed to ${needToEdit ? 'update' : 'post'} need: ${err.message}`, variant: "destructive"});
+            console.error(`Error ${needToEdit ? 'updating' : 'posting'} need:`,err);
+            toast({ title: "Error",description: `Failed to ${needToEdit ? 'update' : 'post'} need: ${err.message}`,variant: "destructive" });
         } finally {
             setIsSubmitting(false);
         }
@@ -175,7 +175,23 @@ export default function NeedFormModal({
                             <FormField control={form.control} name="position_needed" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Position Needed*</FormLabel>
-                                    <FormControl><Input placeholder="e.g., Left Winger, Striker" {...field} /></FormControl>
+                                    <FormControl>
+                                        <Select value={field.value || ""} onValueChange={field.onChange}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="All positions" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="Goalkeeper">Goalkeeper</SelectItem>
+                                                <SelectItem value="Centre Back">Centre Back</SelectItem>
+                                                <SelectItem value="Full Back">Full Back</SelectItem>
+                                                <SelectItem value="Defensive Midfielder">Defensive Midfielder</SelectItem>
+                                                <SelectItem value="Central Midfielder">Central Midfielder</SelectItem>
+                                                <SelectItem value="Attacking Midfielder">Attacking Midfielder</SelectItem>
+                                                <SelectItem value="Winger">Winger</SelectItem>
+                                                <SelectItem value="Centre Forward">Centre Forward</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )} />
@@ -252,7 +268,7 @@ export default function NeedFormModal({
                             <FormField control={form.control} name="salary_range" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Salary Range (Optional)</FormLabel>
-                                    <FormControl><Input placeholder="e.g., €2k-3k / month" {...field} value={field.value ?? ''}/></FormControl>
+                                    <FormControl><Input placeholder="e.g., €2k-3k / month" {...field} value={field.value ?? ''} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )} />
