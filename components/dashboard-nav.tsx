@@ -13,9 +13,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { BarChart,Home,LogOut,Settings,User,ShoppingCart,Search,Users,Briefcase,Building2,Lightbulb,FileText } from "lucide-react"
-import { useState,useEffect } from "react"
-import { ModeToggleInstant } from "@/components/mode-toggle";
+import { BarChart, Home, LogOut, Settings, User, ShoppingCart, Search, Users, Briefcase, Building2, Lightbulb, FileText, Target } from "lucide-react"
+import { useState, useEffect } from "react"
+import {ModeToggleInstant} from "@/components/mode-toggle";
 
 export default function DashboardNav() {
   const pathname = usePathname()
@@ -54,7 +54,7 @@ export default function DashboardNav() {
         </div>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <nav className="flex items-center space-x-2">
-            {userType !== 'agent' && (
+            {userType !== 'agent' && userType !== 'player' && (
               <>
                 <Link href="/dashboard">
                   <Button
@@ -77,6 +77,18 @@ export default function DashboardNav() {
                   </Button>
                 </Link>
               </>
+            )}
+            {userType === 'player' && (
+              <Link href="/dashboard">
+                <Button
+                  variant={pathname === "/dashboard" ? "default" : "ghost"}
+                  size="sm"
+                  className={pathname === "/dashboard" ? "bg-primary text-primary-foreground" : "text-foreground"}
+                >
+                  <Home className="mr-2 h-4 w-4" />
+                  Dashboard
+                </Button>
+              </Link>
             )}
             {userType === 'agent' ? (
               <>
@@ -153,6 +165,30 @@ export default function DashboardNav() {
                     Scouting
                   </Button>
                 </Link> */}
+              </>
+            )}
+            {userType === 'player' && (
+              <>
+                <Link href="/dashboard/opportunities">
+                  <Button
+                    variant={pathname.startsWith("/dashboard/opportunities") ? "default" : "ghost"}
+                    size="sm"
+                    className={pathname.startsWith("/dashboard/opportunities") ? "bg-primary text-primary-foreground" : "text-foreground"}
+                  >
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    Opportunities
+                  </Button>
+                </Link>
+                <Link href="/dashboard/player-comparison">
+                  <Button
+                    variant={pathname.startsWith("/dashboard/player-comparison") ? "default" : "ghost"}
+                    size="sm"
+                    className={pathname.startsWith("/dashboard/player-comparison") ? "bg-primary text-primary-foreground" : "text-foreground"}
+                  >
+                    <Target className="mr-2 h-4 w-4" />
+                    Benchmark
+                  </Button>
+                </Link>
               </>
             )}
           </nav>

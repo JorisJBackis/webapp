@@ -59,21 +59,6 @@ export default async function DashboardPage() {
       redirect('/auth/player-onboarding')
     }
 
-    // Get player's wyscout data for stats
-    let wyscoutPlayer = null
-    if (playerProfile?.wyscout_player_id) {
-      // Get the latest player data by wyscout_player_id
-      const { data: wyscoutData } = await supabase
-        .from('players')
-        .select('*')
-        .eq('wyscout_player_id',playerProfile.wyscout_player_id)
-        .order('updated_at',{ ascending: false })
-        .limit(1)
-        .single()
-
-      wyscoutPlayer = wyscoutData
-    }
-
     return (
       <PlayerDashboard
         data={{
@@ -81,7 +66,6 @@ export default async function DashboardPage() {
           profile,
           playerProfile,
           playerStats: null,
-          wyscoutPlayer,
           dataRequest
         }}
       />

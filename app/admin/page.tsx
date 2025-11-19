@@ -1,9 +1,10 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { Shield, UserCheck, UserX, Clock, LogOut } from "lucide-react"
+import { Shield, UserCheck, UserX, Clock, LogOut, Link2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { UserManagementTabs } from "@/components/admin/user-management-tabs"
+import Link from "next/link"
 
 export default async function AdminDashboard() {
   const supabase = await createClient()
@@ -75,12 +76,20 @@ export default async function AdminDashboard() {
               <p className="text-sm text-slate-600">User Management Dashboard</p>
             </div>
           </div>
-          <form action={handleSignOut}>
-            <Button variant="outline" type="submit">
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
-          </form>
+          <div className="flex items-center gap-3">
+            <Link href="/admin/player-matching">
+              <Button variant="outline">
+                <Link2 className="h-4 w-4 mr-2" />
+                Player Matching
+              </Button>
+            </Link>
+            <form action={handleSignOut}>
+              <Button variant="outline" type="submit">
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+            </form>
+          </div>
         </div>
       </header>
 

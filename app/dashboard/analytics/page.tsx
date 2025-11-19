@@ -185,26 +185,6 @@ export default function AnalyticsPage() {
           </Card>
         )}
 
-        {/* Demo Data Alert for Players Without Stats */}
-        {!wyscoutPlayer && !dataRequest && (
-          <Card className="mb-6 border-amber-200 bg-amber-50">
-            <CardContent className="pt-6">
-              <div className="flex items-start space-x-3">
-                <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
-                <div className="flex-1">
-                  <h3 className="font-semibold text-amber-900 mb-1">
-                    Demo Analytics - Sample Data
-                  </h3>
-                  <p className="text-sm text-amber-800">
-                    This is a demonstration of how your performance analytics will look once we have your data.
-                    The insights below use sample data to show the types of analysis available.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         <div className="flex flex-wrap gap-2 mb-6 border-b pb-2">
           <Button
               variant={activeTab === "lastGame" ? "default" : "outline-solid"}
