@@ -21,11 +21,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 
 type Player = {
-  id: number
+  id: number  // transfermarkt player ID
   name: string
   club_id: number | null
-  position: string
-  wyscout_player_id?: number
+  position: string  // main_position from transfermarkt
+  club_name?: string  // club name for display
+  age?: number
 }
 
 type Club = {
@@ -92,15 +93,26 @@ export default function RegisterPage() {
   useEffect(() => {
     const fetchPlayers = async () => {
       if (role !== "player") return
-      
+
       try {
         if (!supabase) return;
         setLoadingPlayers(true)
-        // Use the same RPC function as scouting to get unique/latest players
-        const { data, error } = await supabase.rpc('get_scouting_players', {
-          p_requesting_club_id: 1, // Dummy club ID for registration
-          p_limit: 1000 // Higher limit for registration search
-        })
+        // Fetch players from players_transfermarkt with club information
+        const { data, error } = await supabase
+          .from('players_transfermarkt')
+          .select(`
+            id,
+            name,
+            main_position,
+            age,
+            club_id,
+            clubs_transfermarkt!inner (
+              name
+            )
+          `)
+          .not('main_position', 'is', null)
+          .order('name')
+          .limit(2000)
 
         if (error) {
           throw error
@@ -108,11 +120,12 @@ export default function RegisterPage() {
 
         // Transform the data to match our Player type
         const transformedPlayers = data?.map(player => ({
-          id: player.player_id,
+          id: player.id,  // transfermarkt player ID
           name: player.name,
-          position: player.player_pos,
+          position: player.main_position || 'Unknown',
           club_id: player.club_id,
-          wyscout_player_id: player.wyscout_player_id
+          club_name: (player.clubs_transfermarkt as any)?.name || 'No club',
+          age: player.age
         })) || []
 
         setPlayers(transformedPlayers)
@@ -238,7 +251,7 @@ export default function RegisterPage() {
                 registration_note: registrationNote
               }
             : {
-                wyscout_player_id: selectedPlayer?.wyscout_player_id || selectedPlayer?.id,
+                transfermarkt_player_id: selectedPlayer?.id,  // NEW: Transfermarkt player ID
                 user_type: 'player',
                 player_name: selectedPlayer?.name,
                 player_position: selectedPlayer?.position,
@@ -306,9 +319,10 @@ export default function RegisterPage() {
     search === "" ? clubs : clubs.filter((club) => club.name.toLowerCase().includes(search.toLowerCase()))
 
   const filteredPlayers =
-    playerSearch === "" ? players : players.filter((player) => 
+    playerSearch === "" ? players : players.filter((player) =>
       player.name.toLowerCase().includes(playerSearch.toLowerCase()) ||
-      player.position.toLowerCase().includes(playerSearch.toLowerCase())
+      player.position.toLowerCase().includes(playerSearch.toLowerCase()) ||
+      (player.club_name && player.club_name.toLowerCase().includes(playerSearch.toLowerCase()))
     )
 
   // If user already exists, show the existing user message
@@ -562,7 +576,10 @@ export default function RegisterPage() {
                                     </div>
                                     <div className="flex flex-col items-start">
                                       <span className="text-sm font-medium">{selectedPlayer.name}</span>
-                                      <span className="text-xs text-muted-foreground">{selectedPlayer.position}</span>
+                                      <span className="text-xs text-muted-foreground">
+                                        {selectedPlayer.position} • {selectedPlayer.club_name}
+                                        {selectedPlayer.age && ` • ${selectedPlayer.age}y`}
+                                      </span>
                                     </div>
                                   </div>
                               )
@@ -579,7 +596,7 @@ export default function RegisterPage() {
                           {filteredPlayers.slice(0, 50).map((player) => (
                               <CommandItem
                                   key={player.id}
-                                  value={`${player.name} ${player.position}`}
+                                  value={`${player.name} ${player.position} ${player.club_name}`}
                                   onSelect={() => {
                                     setSelectedPlayer(player)
                                     setPlayerOpen(false)
@@ -591,7 +608,10 @@ export default function RegisterPage() {
                                 </div>
                                 <div className="flex flex-col items-start">
                                   <span className="text-sm font-medium">{player.name}</span>
-                                  <span className="text-xs text-muted-foreground">{player.position}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {player.position} • {player.club_name}
+                                    {player.age && ` • ${player.age}y`}
+                                  </span>
                                 </div>
                                 <Check
                                     className={cn(
