@@ -838,6 +838,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                   <Eye className="h-4 w-4 mr-2" />
                   View Public Profile
                 </Button>
+
                 <Button
                   variant="ghost"
                   className="text-primary-foreground border-white/30 hover:bg-background/20 dark:hover:text-white"
