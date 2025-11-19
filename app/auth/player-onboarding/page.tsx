@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import { Logo } from "@/components/logo"
 import { Switch } from "@/components/ui/switch"
+import { getCountryFlag } from "@/lib/utils/country-flags"
 
 const STEPS = [
   { id: 1, title: "Essential Info", description: "Core information for matching" },
@@ -88,7 +89,73 @@ const LANGUAGES = {
   "Finnish": ["Fluent", "Conversational", "Basic"],
   "Greek": ["Fluent", "Conversational", "Basic"],
   "Croatian": ["Fluent", "Conversational", "Basic"],
-  "Serbian": ["Fluent", "Conversational", "Basic"]
+  "Serbian": ["Fluent", "Conversational", "Basic"],
+  "Czech": ["Fluent", "Conversational", "Basic"],
+  "Romanian": ["Fluent", "Conversational", "Basic"],
+  "Hungarian": ["Fluent", "Conversational", "Basic"],
+  "Bulgarian": ["Fluent", "Conversational", "Basic"],
+  "Ukrainian": ["Fluent", "Conversational", "Basic"],
+  "Slovak": ["Fluent", "Conversational", "Basic"],
+  "Bosnian": ["Fluent", "Conversational", "Basic"],
+  "Slovenian": ["Fluent", "Conversational", "Basic"],
+  "Albanian": ["Fluent", "Conversational", "Basic"],
+  "Macedonian": ["Fluent", "Conversational", "Basic"],
+  "Icelandic": ["Fluent", "Conversational", "Basic"],
+  "Japanese": ["Fluent", "Conversational", "Basic"],
+  "Korean": ["Fluent", "Conversational", "Basic"],
+  "Mandarin": ["Fluent", "Conversational", "Basic"],
+  "Hindi": ["Fluent", "Conversational", "Basic"],
+  "Bengali": ["Fluent", "Conversational", "Basic"],
+  "Urdu": ["Fluent", "Conversational", "Basic"],
+  "Indonesian": ["Fluent", "Conversational", "Basic"],
+  "Vietnamese": ["Fluent", "Conversational", "Basic"],
+  "Thai": ["Fluent", "Conversational", "Basic"],
+  "Hebrew": ["Fluent", "Conversational", "Basic"],
+  "Persian": ["Fluent", "Conversational", "Basic"]
+}
+
+// Language to representative country mapping for flags
+const LANGUAGE_FLAGS: Record<string, string> = {
+  "English": "England",
+  "Spanish": "Spain",
+  "French": "France",
+  "German": "Germany",
+  "Italian": "Italy",
+  "Portuguese": "Portugal",
+  "Dutch": "Netherlands",
+  "Turkish": "Turkey",
+  "Arabic": "Saudi Arabia",
+  "Russian": "Russia",
+  "Polish": "Poland",
+  "Swedish": "Sweden",
+  "Norwegian": "Norway",
+  "Danish": "Denmark",
+  "Finnish": "Finland",
+  "Greek": "Greece",
+  "Croatian": "Croatia",
+  "Serbian": "Serbia",
+  "Czech": "Czech Republic",
+  "Romanian": "Romania",
+  "Hungarian": "Hungary",
+  "Bulgarian": "Bulgaria",
+  "Ukrainian": "Ukraine",
+  "Slovak": "Slovakia",
+  "Bosnian": "Bosnia and Herzegovina",
+  "Slovenian": "Slovenia",
+  "Albanian": "Albania",
+  "Macedonian": "North Macedonia",
+  "Icelandic": "Iceland",
+  "Japanese": "Japan",
+  "Korean": "South Korea",
+  "Mandarin": "China",
+  "Hindi": "India",
+  "Bengali": "Bangladesh",
+  "Urdu": "Pakistan",
+  "Indonesian": "Indonesia",
+  "Vietnamese": "Vietnam",
+  "Thai": "Thailand",
+  "Hebrew": "Israel",
+  "Persian": "Iran"
 }
 
 // Expanded playing styles
@@ -252,12 +319,12 @@ export default function PlayerOnboardingPage() {
     }))
   }, [])
 
-  const validateStep1 = () => {
+  const validateStep1 = useCallback(() => {
     return formData.primary_position &&
            formData.current_salary_range &&
            (formData.preferred_regions.length > 0 || formData.preferred_countries.length > 0) &&
            formData.languages.length > 0
-  }
+  }, [formData])
 
   const handleNext = useCallback(() => {
     if (currentStep === 1 && !validateStep1()) {
@@ -266,7 +333,7 @@ export default function PlayerOnboardingPage() {
     }
     setError(null)
     setCurrentStep(prev => Math.min(3, prev + 1))
-  }, [currentStep])
+  }, [currentStep, validateStep1])
 
   const handlePrev = useCallback(() => {
     setCurrentStep(prev => Math.max(1, prev - 1))
@@ -336,6 +403,7 @@ export default function PlayerOnboardingPage() {
           has_performance_reports: formData.has_performance_reports,
           performance_report_urls: uploadedFileUrls.length > 0 ? uploadedFileUrls : null,
           preferred_playing_style: formData.preferred_playing_style || null,
+          is_free_agent: formData.is_free_agent,
           agent_name: formData.is_free_agent ? null : (formData.agent_name || null),
           agent_email: formData.is_free_agent ? null : (formData.agent_email || null),
           agent_phone: formData.is_free_agent ? null : (formData.agent_phone || null),
@@ -471,7 +539,9 @@ export default function PlayerOnboardingPage() {
                             checked={formData.preferred_countries.includes(country)}
                             onCheckedChange={(checked) => handleMultiSelect('preferred_countries', country, checked as boolean)}
                           />
-                          <Label htmlFor={`country-${country}`} className="text-sm">{country}</Label>
+                          <Label htmlFor={`country-${country}`} className="text-sm flex items-center gap-1">
+                            {getCountryFlag(country)} {country}
+                          </Label>
                         </div>
                       ))}
                     </div>
@@ -483,7 +553,7 @@ export default function PlayerOnboardingPage() {
                   <div className="text-sm text-muted-foreground">
                     Selected: {formData.preferred_regions.join(", ")}
                     {formData.preferred_regions.length > 0 && formData.preferred_countries.length > 0 && ", "}
-                    {formData.preferred_countries.join(", ")}
+                    {formData.preferred_countries.map(country => `${getCountryFlag(country)} ${country}`).join(", ")}
                   </div>
                 )}
               </div>
@@ -493,51 +563,68 @@ export default function PlayerOnboardingPage() {
                   <Users className="h-4 w-4" />
                   What languages do you speak? * (Select proficiency level)
                 </Label>
-                <div className="space-y-2">
-                  {Object.keys(LANGUAGES).map(lang => {
-                    const existingLang = formData.languages.find(l => l.language === lang)
-                    return (
-                      <div key={lang} className="flex items-center gap-2">
-                        <Checkbox
-                          id={`lang-${lang}`}
-                          checked={!!existingLang}
-                          onCheckedChange={(checked) => {
-                            if (!checked) handleLanguageRemove(lang)
-                          }}
-                        />
-                        <Label htmlFor={`lang-${lang}`} className="text-sm w-32">{lang}</Label>
-                        {existingLang && (
+
+                {/* Add Language Dropdown */}
+                <div className="flex gap-2">
+                  <Select
+                    value=""
+                    onValueChange={(lang) => {
+                      if (lang && !formData.languages.find(l => l.language === lang)) {
+                        handleLanguageAdd(lang, "Fluent")
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select a language to add..." />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[300px]">
+                      {Object.keys(LANGUAGES)
+                        .filter(lang => !formData.languages.find(l => l.language === lang))
+                        .map(lang => (
+                          <SelectItem key={lang} value={lang}>
+                            <span className="flex items-center gap-2">
+                              {getCountryFlag(LANGUAGE_FLAGS[lang])} {lang}
+                            </span>
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Selected Languages with Proficiency */}
+                {formData.languages.length > 0 && (
+                  <div className="space-y-2 border rounded-md p-3 bg-muted/30">
+                    <p className="text-xs font-medium text-muted-foreground uppercase">Selected Languages:</p>
+                    {formData.languages.map(lang => (
+                      <div key={lang.language} className="flex items-center justify-between gap-2 bg-background rounded-md p-2">
+                        <span className="font-medium text-sm flex items-center gap-2">
+                          {getCountryFlag(LANGUAGE_FLAGS[lang.language])} {lang.language}
+                        </span>
+                        <div className="flex items-center gap-2">
                           <Select
-                            value={existingLang.level}
-                            onValueChange={(level) => handleLanguageAdd(lang, level)}
+                            value={lang.level}
+                            onValueChange={(level) => handleLanguageAdd(lang.language, level)}
                           >
-                            <SelectTrigger className="w-40">
-                              <SelectValue placeholder="Level..." />
+                            <SelectTrigger className="w-40 h-8 text-xs">
+                              <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {LANGUAGES[lang as keyof typeof LANGUAGES].map(level => (
+                              {LANGUAGES[lang.language as keyof typeof LANGUAGES].map(level => (
                                 <SelectItem key={level} value={level}>{level}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
-                        )}
-                        {!existingLang && (
                           <Button
                             variant="ghost"
-                            size="sm"
-                            onClick={() => handleLanguageAdd(lang, "Fluent")}
-                            className="text-xs"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleLanguageRemove(lang.language)}
                           >
-                            Add
+                            <X className="h-4 w-4" />
                           </Button>
-                        )}
+                        </div>
                       </div>
-                    )
-                  })}
-                </div>
-                {formData.languages.length > 0 && (
-                  <div className="text-sm text-muted-foreground">
-                    Selected: {formData.languages.map(l => `${l.language} (${l.level})`).join(", ")}
+                    ))}
                   </div>
                 )}
               </div>
