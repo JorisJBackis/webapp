@@ -1,19 +1,20 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle } from "lucide-react"
+import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle, Globe, Users, Upload, X, FileText } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import { Logo } from "@/components/logo"
-// Remove server-side import since this is a client component
+import { Switch } from "@/components/ui/switch"
+import { getCountryFlag } from "@/lib/utils/country-flags"
 
 const STEPS = [
   { id: 1, title: "Essential Info", description: "Core information for matching" },
@@ -21,38 +22,177 @@ const STEPS = [
   { id: 3, title: "Professional Info", description: "Playing style & representation" }
 ]
 
-const COUNTRIES = [
-  "England", "Spain", "Germany", "France", "Italy", "Netherlands", 
-  "Portugal", "Belgium", "Turkey", "Greece", "Switzerland", "Austria",
-  "Poland", "Czech Republic", "Croatia", "Serbia", "Denmark", "Sweden",
-  "Norway", "Scotland", "Ireland", "Wales", "Romania", "Bulgaria"
-]
-
-const LANGUAGES = [
-  "English", "Spanish", "German", "French", "Italian", "Dutch", 
-  "Portuguese", "Turkish", "Greek", "Polish", "Croatian", "Serbian",
-  "Danish", "Swedish", "Norwegian", "Romanian", "Bulgarian", "Czech"
-]
-
+// Transfermarkt positions from database
 const POSITIONS = [
-  "Goalkeeper", "Centre Back", "Full Back", "Defensive Midfielder",
-  "Central Midfielder", "Attacking Midfielder", "Winger", "Centre Forward"
+  "Goalkeeper",
+  "Centre-Back",
+  "Left-Back",
+  "Right-Back",
+  "Defensive Midfield",
+  "Central Midfield",
+  "Left Midfield",
+  "Right Midfield",
+  "Attacking Midfield",
+  "Left Winger",
+  "Right Winger",
+  "Centre-Forward",
+  "Second Striker"
 ]
+
+// Granular salary brackets - low-end focused, growing exponentially
+const SALARY_RANGES = [
+  "Under €1k",
+  "€1-2k",
+  "€2-3k",
+  "€3-5k",
+  "€5-7k",
+  "€7-10k",
+  "€10-15k",
+  "€15-25k",
+  "€25-40k",
+  "€40-60k",
+  "€60k+",
+  "Prefer not to say"
+]
+
+// World regions with their countries
+const REGIONS = {
+  "Western Europe": ["England", "France", "Germany", "Netherlands", "Belgium", "Switzerland", "Austria"],
+  "Southern Europe": ["Spain", "Italy", "Portugal", "Greece", "Turkey"],
+  "Scandinavia": ["Sweden", "Norway", "Denmark", "Finland", "Iceland"],
+  "Eastern Europe": ["Poland", "Czech Republic", "Slovakia", "Hungary", "Romania", "Bulgaria"],
+  "Balkans": ["Croatia", "Serbia", "Bosnia", "Slovenia", "North Macedonia", "Albania", "Montenegro"],
+  "British Isles": ["Scotland", "Wales", "Ireland", "Northern Ireland"],
+  "Americas": ["USA", "Canada", "Mexico", "Brazil", "Argentina", "Chile", "Colombia"],
+  "Middle East": ["UAE", "Saudi Arabia", "Qatar", "Kuwait", "Bahrain"],
+  "Asia": ["Japan", "South Korea", "China", "Thailand", "Singapore", "India"],
+  "Africa": ["South Africa", "Egypt", "Morocco", "Tunisia", "Nigeria", "Ghana"],
+  "Oceania": ["Australia", "New Zealand"]
+}
+
+// Major languages with proficiency levels
+const LANGUAGES = {
+  "English": ["Fluent", "Conversational", "Basic"],
+  "Spanish": ["Fluent", "Conversational", "Basic"],
+  "French": ["Fluent", "Conversational", "Basic"],
+  "German": ["Fluent", "Conversational", "Basic"],
+  "Italian": ["Fluent", "Conversational", "Basic"],
+  "Portuguese": ["Fluent", "Conversational", "Basic"],
+  "Dutch": ["Fluent", "Conversational", "Basic"],
+  "Turkish": ["Fluent", "Conversational", "Basic"],
+  "Arabic": ["Fluent", "Conversational", "Basic"],
+  "Russian": ["Fluent", "Conversational", "Basic"],
+  "Polish": ["Fluent", "Conversational", "Basic"],
+  "Swedish": ["Fluent", "Conversational", "Basic"],
+  "Norwegian": ["Fluent", "Conversational", "Basic"],
+  "Danish": ["Fluent", "Conversational", "Basic"],
+  "Finnish": ["Fluent", "Conversational", "Basic"],
+  "Greek": ["Fluent", "Conversational", "Basic"],
+  "Croatian": ["Fluent", "Conversational", "Basic"],
+  "Serbian": ["Fluent", "Conversational", "Basic"],
+  "Czech": ["Fluent", "Conversational", "Basic"],
+  "Romanian": ["Fluent", "Conversational", "Basic"],
+  "Hungarian": ["Fluent", "Conversational", "Basic"],
+  "Bulgarian": ["Fluent", "Conversational", "Basic"],
+  "Ukrainian": ["Fluent", "Conversational", "Basic"],
+  "Slovak": ["Fluent", "Conversational", "Basic"],
+  "Bosnian": ["Fluent", "Conversational", "Basic"],
+  "Slovenian": ["Fluent", "Conversational", "Basic"],
+  "Albanian": ["Fluent", "Conversational", "Basic"],
+  "Macedonian": ["Fluent", "Conversational", "Basic"],
+  "Icelandic": ["Fluent", "Conversational", "Basic"],
+  "Japanese": ["Fluent", "Conversational", "Basic"],
+  "Korean": ["Fluent", "Conversational", "Basic"],
+  "Mandarin": ["Fluent", "Conversational", "Basic"],
+  "Hindi": ["Fluent", "Conversational", "Basic"],
+  "Bengali": ["Fluent", "Conversational", "Basic"],
+  "Urdu": ["Fluent", "Conversational", "Basic"],
+  "Indonesian": ["Fluent", "Conversational", "Basic"],
+  "Vietnamese": ["Fluent", "Conversational", "Basic"],
+  "Thai": ["Fluent", "Conversational", "Basic"],
+  "Hebrew": ["Fluent", "Conversational", "Basic"],
+  "Persian": ["Fluent", "Conversational", "Basic"]
+}
+
+// Language to representative country mapping for flags
+const LANGUAGE_FLAGS: Record<string, string> = {
+  "English": "England",
+  "Spanish": "Spain",
+  "French": "France",
+  "German": "Germany",
+  "Italian": "Italy",
+  "Portuguese": "Portugal",
+  "Dutch": "Netherlands",
+  "Turkish": "Turkey",
+  "Arabic": "Saudi Arabia",
+  "Russian": "Russia",
+  "Polish": "Poland",
+  "Swedish": "Sweden",
+  "Norwegian": "Norway",
+  "Danish": "Denmark",
+  "Finnish": "Finland",
+  "Greek": "Greece",
+  "Croatian": "Croatia",
+  "Serbian": "Serbia",
+  "Czech": "Czech Republic",
+  "Romanian": "Romania",
+  "Hungarian": "Hungary",
+  "Bulgarian": "Bulgaria",
+  "Ukrainian": "Ukraine",
+  "Slovak": "Slovakia",
+  "Bosnian": "Bosnia and Herzegovina",
+  "Slovenian": "Slovenia",
+  "Albanian": "Albania",
+  "Macedonian": "North Macedonia",
+  "Icelandic": "Iceland",
+  "Japanese": "Japan",
+  "Korean": "South Korea",
+  "Mandarin": "China",
+  "Hindi": "India",
+  "Bengali": "Bangladesh",
+  "Urdu": "Pakistan",
+  "Indonesian": "Indonesia",
+  "Vietnamese": "Vietnam",
+  "Thai": "Thailand",
+  "Hebrew": "Israel",
+  "Persian": "Iran"
+}
+
+// Expanded playing styles
+const PLAYING_STYLES = [
+  "Possession-based / Tiki-taka",
+  "Counter-attack / Direct play",
+  "High press / Gegenpressing",
+  "Low block / Defensive",
+  "Wing play / Crossing",
+  "Through the middle / Narrow",
+  "Long ball / Route one",
+  "Flexible / Adaptable"
+]
+
+type LanguageProficiency = {
+  language: string
+  level: string
+}
 
 type OnboardingData = {
   // Screen 1 - Required
   primary_position: string
   current_salary_range: string
+  preferred_regions: string[]
   preferred_countries: string[]
-  languages: string[]
-  
+  languages: LanguageProficiency[]
+
   // Screen 2 - Optional
   contract_end_date: string
   desired_salary_range: string
   family_status: string
   youtube_highlight_url: string
-  
+  has_performance_reports: boolean
+  performance_report_files: File[]
+
   // Screen 3 - Optional
+  is_free_agent: boolean
   preferred_playing_style: string
   agent_name: string
   agent_email: string
@@ -66,16 +206,21 @@ export default function PlayerOnboardingPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
+  const [selectedRegion, setSelectedRegion] = useState<string>("")
 
   const [formData, setFormData] = useState<OnboardingData>({
     primary_position: "",
     current_salary_range: "",
+    preferred_regions: [],
     preferred_countries: [],
     languages: [],
     contract_end_date: "",
     desired_salary_range: "",
     family_status: "",
     youtube_highlight_url: "",
+    has_performance_reports: false,
+    performance_report_files: [],
+    is_free_agent: false,
     preferred_playing_style: "",
     agent_name: "",
     agent_email: "",
@@ -108,38 +253,91 @@ export default function PlayerOnboardingPage() {
     checkAuth()
   }, [router, supabase])
 
-  const handleInputChange = (field: keyof OnboardingData, value: string) => {
+  const handleInputChange = useCallback((field: keyof OnboardingData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }))
-  }
+  }, [])
 
-  const handleMultiSelect = (field: keyof OnboardingData, value: string, checked: boolean) => {
+  const handleMultiSelect = useCallback((field: keyof OnboardingData, value: string, checked: boolean) => {
     setFormData(prev => ({
       ...prev,
-      [field]: checked 
+      [field]: checked
         ? [...(prev[field] as string[]), value]
         : (prev[field] as string[]).filter(item => item !== value)
     }))
-  }
+  }, [])
 
-  const validateStep1 = () => {
-    return formData.primary_position && 
-           formData.current_salary_range && 
-           formData.preferred_countries.length > 0 && 
+  const handleLanguageAdd = useCallback((language: string, level: string) => {
+    setFormData(prev => {
+      const existingIndex = prev.languages.findIndex(l => l.language === language)
+      if (existingIndex >= 0) {
+        const newLanguages = [...prev.languages]
+        newLanguages[existingIndex] = { language, level }
+        return { ...prev, languages: newLanguages }
+      }
+      return { ...prev, languages: [...prev.languages, { language, level }] }
+    })
+  }, [])
+
+  const handleLanguageRemove = useCallback((language: string) => {
+    setFormData(prev => ({
+      ...prev,
+      languages: prev.languages.filter(l => l.language !== language)
+    }))
+  }, [])
+
+  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files) return
+
+    const newFiles = Array.from(files)
+    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg']
+    const maxSize = 10 * 1024 * 1024 // 10MB
+
+    const validFiles = newFiles.filter(file => {
+      if (!allowedTypes.includes(file.type)) {
+        setError(`${file.name} is not a supported format. Please upload PDF, PNG, or JPEG files.`)
+        return false
+      }
+      if (file.size > maxSize) {
+        setError(`${file.name} is too large. Maximum file size is 10MB.`)
+        return false
+      }
+      return true
+    })
+
+    setFormData(prev => ({
+      ...prev,
+      performance_report_files: [...prev.performance_report_files, ...validFiles]
+    }))
+    setError(null)
+  }, [])
+
+  const handleFileRemove = useCallback((index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      performance_report_files: prev.performance_report_files.filter((_, i) => i !== index)
+    }))
+  }, [])
+
+  const validateStep1 = useCallback(() => {
+    return formData.primary_position &&
+           formData.current_salary_range &&
+           (formData.preferred_regions.length > 0 || formData.preferred_countries.length > 0) &&
            formData.languages.length > 0
-  }
+  }, [formData])
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentStep === 1 && !validateStep1()) {
       setError("Please complete all required fields in Step 1")
       return
     }
     setError(null)
     setCurrentStep(prev => Math.min(3, prev + 1))
-  }
+  }, [currentStep, validateStep1])
 
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
     setCurrentStep(prev => Math.max(1, prev - 1))
-  }
+  }, [])
 
   const handleComplete = async () => {
     if (!validateStep1()) {
@@ -151,24 +349,64 @@ export default function PlayerOnboardingPage() {
     setError(null)
 
     try {
-      // Update player_profiles with onboarding data
       if (!supabase) return;
+
+      // Upload physical performance reports to Supabase Storage if any
+      const uploadedFileUrls: string[] = []
+      if (formData.has_performance_reports && formData.performance_report_files.length > 0) {
+        for (const file of formData.performance_report_files) {
+          const fileExt = file.name.split('.').pop()
+          const fileName = `${user?.user.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('performance-reports')
+            .upload(fileName, file, {
+              cacheControl: '3600',
+              upsert: false
+            })
+
+          if (uploadError) {
+            console.error('Upload error:', uploadError)
+            throw new Error(`Failed to upload ${file.name}: ${uploadError.message}`)
+          }
+
+          // Get public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from('performance-reports')
+            .getPublicUrl(fileName)
+
+          uploadedFileUrls.push(publicUrl)
+        }
+      }
+
+      // Prepare countries list (from both regions and specific countries)
+      const allCountries = [
+        ...formData.preferred_countries,
+        ...formData.preferred_regions.flatMap(region => REGIONS[region as keyof typeof REGIONS] || [])
+      ]
+      const uniqueCountries = Array.from(new Set(allCountries))
+
+      // Prepare languages array (just the language names with levels as suffix for storage)
+      const languageStrings = formData.languages.map(l => `${l.language} (${l.level})`)
+
       const { error: updateError } = await supabase
         .from('player_profiles')
         .update({
-          // Convert arrays to PostgreSQL format
           playing_positions: [formData.primary_position],
           current_salary_range: formData.current_salary_range,
-          preferred_countries: formData.preferred_countries,
-          languages: formData.languages,
+          preferred_countries: uniqueCountries,
+          languages: languageStrings,
           contract_end_date: formData.contract_end_date || null,
           desired_salary_range: formData.desired_salary_range || null,
           family_status: formData.family_status || null,
           youtube_highlight_url: formData.youtube_highlight_url || null,
+          has_performance_reports: formData.has_performance_reports,
+          performance_report_urls: uploadedFileUrls.length > 0 ? uploadedFileUrls : null,
           preferred_playing_style: formData.preferred_playing_style || null,
-          agent_name: formData.agent_name || null,
-          agent_email: formData.agent_email || null,
-          agent_phone: formData.agent_phone || null,
+          is_free_agent: formData.is_free_agent,
+          agent_name: formData.is_free_agent ? null : (formData.agent_name || null),
+          agent_email: formData.is_free_agent ? null : (formData.agent_email || null),
+          agent_phone: formData.is_free_agent ? null : (formData.agent_phone || null),
           updated_at: new Date().toISOString()
         })
         .eq('id', user?.user.id)
@@ -177,7 +415,6 @@ export default function PlayerOnboardingPage() {
         throw updateError
       }
 
-      // Success! Redirect to player dashboard
       router.push('/dashboard')
     } catch (error: any) {
       console.error("Onboarding error:", error)
@@ -198,7 +435,7 @@ export default function PlayerOnboardingPage() {
       <div className="mb-8 absolute top-8">
         <Logo />
       </div>
-      
+
       <Card className="w-full max-w-2xl bg-gray-50 shadow-lg">
         <CardHeader className="space-y-4">
           <div className="flex items-center justify-between">
@@ -249,46 +486,147 @@ export default function PlayerOnboardingPage() {
                     <SelectValue placeholder="Select salary range..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Under €5k">Under €5k</SelectItem>
-                    <SelectItem value="€5-10k">€5k - €10k</SelectItem>
-                    <SelectItem value="€10-20k">€10k - €20k</SelectItem>
-                    <SelectItem value="€20-40k">€20k - €40k</SelectItem>
-                    <SelectItem value="€40k+">€40k+</SelectItem>
-                    <SelectItem value="Prefer not to say">Prefer not to say</SelectItem>
+                    {SALARY_RANGES.map(range => (
+                      <SelectItem key={range} value={range}>{range}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-3">
-                <Label>Which countries would you consider playing in? * (Select all that apply)</Label>
-                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
-                  {COUNTRIES.map(country => (
-                    <div key={country} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={country}
-                        checked={formData.preferred_countries.includes(country)}
-                        onCheckedChange={(checked) => handleMultiSelect('preferred_countries', country, checked as boolean)}
-                      />
-                      <Label htmlFor={country} className="text-sm">{country}</Label>
-                    </div>
-                  ))}
+                <Label className="flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  Which regions/countries would you consider playing in? *
+                </Label>
+                <p className="text-sm text-muted-foreground">Select regions or specific countries</p>
+
+                {/* Regions */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Regions</Label>
+                  <div className="grid grid-cols-2 gap-2 border rounded-md p-3">
+                    {Object.keys(REGIONS).map(region => (
+                      <div key={region} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`region-${region}`}
+                          checked={formData.preferred_regions.includes(region)}
+                          onCheckedChange={(checked) => handleMultiSelect('preferred_regions', region, checked as boolean)}
+                        />
+                        <Label htmlFor={`region-${region}`} className="text-sm">{region}</Label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
+
+                {/* Specific Countries */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Or select specific countries</Label>
+                  <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a region to see countries..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.keys(REGIONS).map(region => (
+                        <SelectItem key={region} value={region}>{region}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedRegion && (
+                    <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border rounded-md p-3">
+                      {REGIONS[selectedRegion as keyof typeof REGIONS]?.map(country => (
+                        <div key={country} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`country-${country}`}
+                            checked={formData.preferred_countries.includes(country)}
+                            onCheckedChange={(checked) => handleMultiSelect('preferred_countries', country, checked as boolean)}
+                          />
+                          <Label htmlFor={`country-${country}`} className="text-sm flex items-center gap-1">
+                            {getCountryFlag(country)} {country}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Selected items display */}
+                {(formData.preferred_regions.length > 0 || formData.preferred_countries.length > 0) && (
+                  <div className="text-sm text-muted-foreground">
+                    Selected: {formData.preferred_regions.join(", ")}
+                    {formData.preferred_regions.length > 0 && formData.preferred_countries.length > 0 && ", "}
+                    {formData.preferred_countries.map(country => `${getCountryFlag(country)} ${country}`).join(", ")}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-3">
-                <Label>What languages do you speak fluently? * (Select all that apply)</Label>
-                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
-                  {LANGUAGES.map(language => (
-                    <div key={language} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={language}
-                        checked={formData.languages.includes(language)}
-                        onCheckedChange={(checked) => handleMultiSelect('languages', language, checked as boolean)}
-                      />
-                      <Label htmlFor={language} className="text-sm">{language}</Label>
-                    </div>
-                  ))}
+                <Label className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  What languages do you speak? * (Select proficiency level)
+                </Label>
+
+                {/* Add Language Dropdown */}
+                <div className="flex gap-2">
+                  <Select
+                    value=""
+                    onValueChange={(lang) => {
+                      if (lang && !formData.languages.find(l => l.language === lang)) {
+                        handleLanguageAdd(lang, "Fluent")
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select a language to add..." />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[300px]">
+                      {Object.keys(LANGUAGES)
+                        .filter(lang => !formData.languages.find(l => l.language === lang))
+                        .map(lang => (
+                          <SelectItem key={lang} value={lang}>
+                            <span className="flex items-center gap-2">
+                              {getCountryFlag(LANGUAGE_FLAGS[lang])} {lang}
+                            </span>
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+
+                {/* Selected Languages with Proficiency */}
+                {formData.languages.length > 0 && (
+                  <div className="space-y-2 border rounded-md p-3 bg-muted/30">
+                    <p className="text-xs font-medium text-muted-foreground uppercase">Selected Languages:</p>
+                    {formData.languages.map(lang => (
+                      <div key={lang.language} className="flex items-center justify-between gap-2 bg-background rounded-md p-2">
+                        <span className="font-medium text-sm flex items-center gap-2">
+                          {getCountryFlag(LANGUAGE_FLAGS[lang.language])} {lang.language}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <Select
+                            value={lang.level}
+                            onValueChange={(level) => handleLanguageAdd(lang.language, level)}
+                          >
+                            <SelectTrigger className="w-40 h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {LANGUAGES[lang.language as keyof typeof LANGUAGES].map(level => (
+                                <SelectItem key={level} value={level}>{level}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleLanguageRemove(lang.language)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -313,11 +651,9 @@ export default function PlayerOnboardingPage() {
                     <SelectValue placeholder="Select desired salary range..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Under €5k">Under €5k</SelectItem>
-                    <SelectItem value="€5-10k">€5k - €10k</SelectItem>
-                    <SelectItem value="€10-20k">€10k - €20k</SelectItem>
-                    <SelectItem value="€20-40k">€20k - €40k</SelectItem>
-                    <SelectItem value="€40k+">€40k+</SelectItem>
+                    {SALARY_RANGES.map(range => (
+                      <SelectItem key={range} value={range}>{range}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -337,7 +673,10 @@ export default function PlayerOnboardingPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="youtube">Do you have a highlight video? (YouTube URL)</Label>
+                <Label htmlFor="youtube" className="flex items-center gap-2">
+                  Do you have a highlight video? (YouTube URL)
+                  <span className="text-xs text-muted-foreground font-normal">(Optional)</span>
+                </Label>
                 <Input
                   id="youtube"
                   type="url"
@@ -346,6 +685,94 @@ export default function PlayerOnboardingPage() {
                   onChange={(e) => handleInputChange('youtube_highlight_url', e.target.value)}
                 />
               </div>
+
+              {/* Physical Performance Reports Section */}
+              <div className="border-t pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <Label className="text-base font-medium">Physical Performance Reports</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Do you have performance data from Catapult, PlayerData, gpexe, or similar systems?
+                    </p>
+                  </div>
+                  <Switch
+                    checked={formData.has_performance_reports}
+                    onCheckedChange={(checked) => handleInputChange('has_performance_reports', checked)}
+                  />
+                </div>
+
+                {formData.has_performance_reports && (
+                  <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <div className="space-y-2">
+                      <Label htmlFor="performance-reports" className="text-sm font-medium">
+                        Upload your physical performance reports
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Accepted formats: PDF, PNG, JPEG • Max size: 10MB per file
+                      </p>
+
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="performance-reports"
+                          type="file"
+                          accept=".pdf,.png,.jpg,.jpeg"
+                          multiple
+                          onChange={handleFileUpload}
+                          className="hidden"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById('performance-reports')?.click()}
+                          className="w-full"
+                        >
+                          <Upload className="mr-2 h-4 w-4" />
+                          Choose Files
+                        </Button>
+                      </div>
+
+                      {/* Display uploaded files */}
+                      {formData.performance_report_files.length > 0 && (
+                        <div className="space-y-2 mt-4">
+                          <Label className="text-sm font-medium">Uploaded Files:</Label>
+                          <div className="space-y-2">
+                            {formData.performance_report_files.map((file, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center justify-between p-2 bg-white dark:bg-gray-900 border rounded-md"
+                              >
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <FileText className="h-4 w-4 flex-shrink-0 text-blue-600" />
+                                  <span className="text-sm truncate">{file.name}</span>
+                                  <span className="text-xs text-muted-foreground flex-shrink-0">
+                                    ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                                  </span>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleFileRemove(index)}
+                                  className="flex-shrink-0 ml-2"
+                                >
+                                  <X className="h-4 w-4 text-red-600" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <AlertDescription className="text-xs text-green-900 dark:text-green-100">
+                        <strong>Why this matters:</strong> Physical performance data gives clubs objective insights into your fitness, speed, stamina, and work rate. This data significantly enhances your profile and makes you more attractive to data-driven clubs.
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -353,67 +780,86 @@ export default function PlayerOnboardingPage() {
           {currentStep === 3 && (
             <div className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="playing_style">What's your preferred playing style?</Label>
+                <Label htmlFor="playing_style" className="flex items-center gap-2">
+                  What's your preferred playing style?
+                  <span className="text-xs text-muted-foreground font-normal">(Optional)</span>
+                </Label>
                 <Select value={formData.preferred_playing_style} onValueChange={(value) => handleInputChange('preferred_playing_style', value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select playing style..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="possession">Possession-based</SelectItem>
-                    <SelectItem value="counter_attack">Counter-attack</SelectItem>
-                    <SelectItem value="high_press">High press</SelectItem>
-                    <SelectItem value="flexible">Flexible</SelectItem>
+                    {PLAYING_STYLES.map(style => (
+                      <SelectItem key={style} value={style}>{style}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="border-t pt-6">
-                <Label className="text-base font-medium">Agent Information (Optional)</Label>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Are you represented by an agent?
-                </p>
-                
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="agent_name">Agent Name</Label>
-                    <Input
-                      id="agent_name"
-                      placeholder="Agent's full name"
-                      value={formData.agent_name}
-                      onChange={(e) => handleInputChange('agent_name', e.target.value)}
-                    />
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <Label className="text-base font-medium">Are you a free agent?</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Not represented by an agent
+                    </p>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="agent_email">Agent Email</Label>
-                    <Input
-                      id="agent_email"
-                      type="email"
-                      placeholder="agent@example.com"
-                      value={formData.agent_email}
-                      onChange={(e) => handleInputChange('agent_email', e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="agent_phone">Agent Phone</Label>
-                    <Input
-                      id="agent_phone"
-                      type="tel"
-                      placeholder="+1234567890"
-                      value={formData.agent_phone}
-                      onChange={(e) => handleInputChange('agent_phone', e.target.value)}
-                    />
-                  </div>
+                  <Switch
+                    checked={formData.is_free_agent}
+                    onCheckedChange={(checked) => handleInputChange('is_free_agent', checked)}
+                  />
                 </div>
+
+                {!formData.is_free_agent && (
+                  <>
+                    <Label className="text-base font-medium">Agent Information (Optional)</Label>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Provide your agent's contact details
+                    </p>
+
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="agent_name">Agent Name</Label>
+                        <Input
+                          id="agent_name"
+                          placeholder="Agent's full name"
+                          value={formData.agent_name}
+                          onChange={(e) => handleInputChange('agent_name', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="agent_email">Agent Email</Label>
+                        <Input
+                          id="agent_email"
+                          type="email"
+                          placeholder="agent@example.com"
+                          value={formData.agent_email}
+                          onChange={(e) => handleInputChange('agent_email', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="agent_phone">Agent Phone</Label>
+                        <Input
+                          id="agent_phone"
+                          type="tel"
+                          placeholder="+1234567890"
+                          value={formData.agent_phone}
+                          onChange={(e) => handleInputChange('agent_phone', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}
 
           {/* Navigation */}
           <div className="flex justify-between pt-6 mt-8 border-t">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={handlePrev}
               disabled={currentStep === 1}
             >
@@ -427,8 +873,8 @@ export default function PlayerOnboardingPage() {
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             ) : (
-              <Button 
-                onClick={handleComplete} 
+              <Button
+                onClick={handleComplete}
                 disabled={loading}
                 className="bg-primary hover:bg-primary/90"
               >

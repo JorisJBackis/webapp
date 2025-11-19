@@ -19,13 +19,15 @@ import { cn } from "@/lib/utils"
 import { Logo } from "@/components/logo"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import PlayerSelectionModal from "@/components/player-selection-modal"
 
 type Player = {
-  id: number
+  id: number  // transfermarkt player ID
   name: string
   club_id: number | null
-  position: string
-  wyscout_player_id?: number
+  position: string  // main_position from transfermarkt
+  club_name?: string  // club name for display
+  age?: number
 }
 
 type Club = {
@@ -56,11 +58,8 @@ export default function RegisterPage() {
   const [loadingClubs, setLoadingClubs] = useState(true)
 
   // Player selection state
-  const [playerOpen, setPlayerOpen] = useState(false)
-  const [playerSearch, setPlayerSearch] = useState("")
+  const [playerModalOpen, setPlayerModalOpen] = useState(false)
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
-  const [players, setPlayers] = useState<Player[]>([])
-  const [loadingPlayers, setLoadingPlayers] = useState(true)
   const [playerNotFound, setPlayerNotFound] = useState(false)
   const [playerName, setPlayerName] = useState("")
   const [transfermarktLink, setTransfermarktLink] = useState("")
@@ -89,43 +88,6 @@ export default function RegisterPage() {
     fetchClubs()
   }, [supabase])
 
-  useEffect(() => {
-    const fetchPlayers = async () => {
-      if (role !== "player") return
-      
-      try {
-        if (!supabase) return;
-        setLoadingPlayers(true)
-        // Use the same RPC function as scouting to get unique/latest players
-        const { data, error } = await supabase.rpc('get_scouting_players', {
-          p_requesting_club_id: 1, // Dummy club ID for registration
-          p_limit: 1000 // Higher limit for registration search
-        })
-
-        if (error) {
-          throw error
-        }
-
-        // Transform the data to match our Player type
-        const transformedPlayers = data?.map(player => ({
-          id: player.player_id,
-          name: player.name,
-          position: player.player_pos,
-          club_id: player.club_id,
-          wyscout_player_id: player.wyscout_player_id
-        })) || []
-
-        setPlayers(transformedPlayers)
-      } catch (error: any) {
-        console.error("Error fetching players:", error)
-        setError("Failed to load players. Please try again.")
-      } finally {
-        setLoadingPlayers(false)
-      }
-    }
-
-    fetchPlayers()
-  }, [supabase, role])
 
   useEffect(() => {
     if (role === "club") {
@@ -238,7 +200,7 @@ export default function RegisterPage() {
                 registration_note: registrationNote
               }
             : {
-                wyscout_player_id: selectedPlayer?.wyscout_player_id || selectedPlayer?.id,
+                transfermarkt_player_id: selectedPlayer?.id,  // NEW: Transfermarkt player ID
                 user_type: 'player',
                 player_name: selectedPlayer?.name,
                 player_position: selectedPlayer?.position,
@@ -304,12 +266,6 @@ export default function RegisterPage() {
 
   const filteredClubs =
     search === "" ? clubs : clubs.filter((club) => club.name.toLowerCase().includes(search.toLowerCase()))
-
-  const filteredPlayers =
-    playerSearch === "" ? players : players.filter((player) => 
-      player.name.toLowerCase().includes(playerSearch.toLowerCase()) ||
-      player.position.toLowerCase().includes(playerSearch.toLowerCase())
-    )
 
   // If user already exists, show the existing user message
   if (existingUser) {
@@ -542,70 +498,33 @@ export default function RegisterPage() {
                 <Label htmlFor="player">
                   Find Your Player Profile
                 </Label>
-                <Popover open={playerOpen} onOpenChange={setPlayerOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                        id="player"
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={playerOpen}
-                        className="w-full justify-between"
-                        disabled={loadingPlayers || playerNotFound}
-                    >
-                      {loadingPlayers
-                          ? "Loading players..."
-                          : selectedPlayer
-                              ? (
-                                  <div className="flex items-center">
-                                    <div className="h-6 w-6 mr-2 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">
-                                      {selectedPlayer.name.charAt(0)}
-                                    </div>
-                                    <div className="flex flex-col items-start">
-                                      <span className="text-sm font-medium">{selectedPlayer.name}</span>
-                                      <span className="text-xs text-muted-foreground">{selectedPlayer.position}</span>
-                                    </div>
-                                  </div>
-                              )
-                              : "Search for your player profile..."}
-                      <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[400px] p-0">
-                    <Command>
-                      <CommandInput placeholder="Search by name or position..." value={playerSearch} onValueChange={setPlayerSearch} />
-                      <CommandList>
-                        <CommandEmpty>No players found. Try a different search term.</CommandEmpty>
-                        <CommandGroup>
-                          {filteredPlayers.slice(0, 50).map((player) => (
-                              <CommandItem
-                                  key={player.id}
-                                  value={`${player.name} ${player.position}`}
-                                  onSelect={() => {
-                                    setSelectedPlayer(player)
-                                    setPlayerOpen(false)
-                                  }}
-                                  className="flex items-center"
-                              >
-                                <div className="h-6 w-6 mr-2 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">
-                                  {player.name.charAt(0)}
-                                </div>
-                                <div className="flex flex-col items-start">
-                                  <span className="text-sm font-medium">{player.name}</span>
-                                  <span className="text-xs text-muted-foreground">{player.position}</span>
-                                </div>
-                                <Check
-                                    className={cn(
-                                        "ml-auto h-4 w-4",
-                                        selectedPlayer?.id === player.id ? "opacity-100" : "opacity-0",
-                                    )}
-                                />
-                              </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                <Button
+                  id="player"
+                  variant="outline"
+                  className="w-full justify-between"
+                  disabled={playerNotFound}
+                  onClick={() => setPlayerModalOpen(true)}
+                  type="button"
+                >
+                  {selectedPlayer ? (
+                    <div className="flex items-center">
+                      <div className="h-6 w-6 mr-2 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">
+                        {selectedPlayer.name.charAt(0)}
+                      </div>
+                      <div className="flex flex-col items-start">
+                        <span className="text-sm font-medium">{selectedPlayer.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {selectedPlayer.position} • {selectedPlayer.club_name}
+                          {selectedPlayer.age && ` • ${selectedPlayer.age}y`}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    "Search for your player profile..."
+                  )}
+                  <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+
                 <div className="space-y-2">
                   <p className="text-xs text-muted-foreground">
                     Can't find yourself? Your profile may not be in our player list yet.
@@ -683,6 +602,23 @@ export default function RegisterPage() {
           </div>
         </CardFooter>
       </Card>
+
+      {/* Player Selection Modal */}
+      <PlayerSelectionModal
+        isOpen={playerModalOpen}
+        onClose={() => setPlayerModalOpen(false)}
+        onPlayerSelected={(player: any) => {
+          setSelectedPlayer({
+            id: player.id,
+            name: player.name,
+            position: player.main_position || 'Unknown',
+            club_id: player.club_id,
+            club_name: player.club_name,
+            age: player.age
+          })
+        }}
+        selectedPlayerId={selectedPlayer?.id}
+      />
     </div>
   )
 }
