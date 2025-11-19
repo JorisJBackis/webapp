@@ -194,6 +194,10 @@ export function BentoGridEditor({editorMode, initialBlocks, initialLayouts} : {e
     }
   }
 
+  const handleSave = () => {
+
+  }
+
   return (
       <div className="min-h-screen bg-background relative">
         <EditingBar isEditing={isEditing} handleAddBlock={handleAddBlock}/>
@@ -232,6 +236,9 @@ export function BentoGridEditor({editorMode, initialBlocks, initialLayouts} : {e
               {/*  <Share2 className="h-4 w-4"/>*/}
               {/*  Share*/}
               {/*</Button>*/}
+              {isEditing ? <Button variant="" size="sm" className="gap-2" onClick={() => handleSave}>
+                Save
+              </Button> : null}
             </div>
           </div>
         </header>
