@@ -21,19 +21,6 @@ interface PositionData {
   }
 }
 
-interface LuckyUnluckyGame {
-  match_id: number
-  opponent_name: string
-  match_date: string
-  goalsFor: number
-  goalsAgainst: number
-  xgFor: number
-  pointsEarned: number
-  expectedPoints: number
-  luck: number
-  result: string
-}
-
 interface ChartData {
   position: number
   goalsScored: number
@@ -53,6 +40,27 @@ interface TeamStanding {
   hasMonteCarloData?: boolean
 }
 
+interface LuckyUnluckyGame {
+  match_id: string
+  match_date: string
+  user_team_name: string
+  opponent_team_name: string
+  result: string
+  user_goals: number
+  opp_goals: number
+  user_shots: number
+  opp_shots: number
+  user_shots_on_target: number
+  opp_shots_on_target: number
+  user_xg: number
+  opp_xg: number
+  user_expected_points: number
+  opp_expected_points: number
+  user_points_earned: number
+  opp_points_earned: number
+  luck: number
+}
+
 interface PositionAnalyticsProps {
   positionData: PositionData[]
   clubId?: number
@@ -70,97 +78,6 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
   }>({ lucky: [],unlucky: [] })
 
   const supabase = createClient();
-
-  useEffect(() => {
-    const fetchLuckyUnluckyGames = async () => {
-      if (!clubId) return;
-
-      try {
-        const { data: matches,error } = await supabase
-          .from('team_match_stats')
-          .select('match_id, date, stats')
-          .eq('team_id',clubId)
-          .order('date',{ ascending: false })
-
-        if (error) {
-          console.error('Error fetching lucky/unlucky games:',error)
-          return
-        }
-
-        if (!matches || matches.length === 0) {
-          setLuckyUnluckyGames({ lucky: [],unlucky: [] })
-          return
-        }
-
-        const processedMatches: LuckyUnluckyGame[] = matches.map((match: any) => {
-          let stats: any = {}
-
-          // Parse stats if it's a string
-          if (typeof match.stats === 'string') {
-            try {
-              stats = JSON.parse(match.stats)
-            } catch (e) {
-              console.error('Error parsing stats:',e)
-              return null
-            }
-          } else {
-            stats = match.stats
-          }
-
-          // Extract opponent from match_id string (e.g., "AFC Wimbledon - Walsall 1:0")
-          const matchIdParts = match.match_id.split(' - ')
-          let opponent_name = 'Unknown'
-
-          if (matchIdParts.length === 2) {
-            // Extract team name and result
-            const secondPart = matchIdParts[1] // "Walsall 1:0"
-            const resultMatch = secondPart.match(/^(.+?)\s+(\d+):(\d+)$/)
-            if (resultMatch) {
-              opponent_name = resultMatch[1] // "Walsall"
-            }
-          }
-
-          const pointsEarned = stats['Points Earned'] || 0
-          const expectedPoints = stats['Expected Points'] || 0
-          const goalsFor = stats['Goals'] || 0
-          const goalsAgainst = stats['Conceded Goals'] || 0
-          const xgFor = stats['xG'] || 0
-
-          // Determine result
-          let result = ''
-          if (goalsFor > goalsAgainst) result = 'W'
-          else if (goalsFor < goalsAgainst) result = 'L'
-          else result = 'D'
-
-          return {
-            match_id: match.match_id,
-            opponent_name,
-            match_date: match.date,
-            goalsFor,
-            goalsAgainst,
-            xgFor,
-            pointsEarned,
-            expectedPoints,
-            luck: pointsEarned - expectedPoints,
-            result,
-          }
-        }).filter((m): m is LuckyUnluckyGame => m !== null)
-
-        // Sort by luck
-        const sorted = processedMatches.sort((a,b) => b.luck - a.luck)
-
-        // Get top 3 lucky and top 3 unlucky
-        const lucky = sorted.slice(0,3)
-        const unlucky = sorted.slice(-3).reverse()
-
-        setLuckyUnluckyGames({ lucky,unlucky })
-      } catch (error) {
-        console.error('Error in fetchLuckyUnluckyGames:',error)
-      }
-    }
-
-    fetchLuckyUnluckyGames()
-  },[clubId,supabase])
 
   useEffect(() => {
     if (positionData && positionData.length > 0) {
@@ -194,7 +111,6 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
     }
   },[positionData])
 
-  // Place this useEffect with the others
   useEffect(() => {
     const fetchLeagueData = async () => {
       if (!supabase) return;
@@ -224,7 +140,6 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
       setIsLoading(true)
 
       try {
-        // Step 1: Get the user's team league if clubId is provided
         let userLeague: string | null = null
 
         if (clubId) {
@@ -248,7 +163,6 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
           console.log("No clubId provided, will show all teams")
         }
 
-        // Step 2: Fetch team metrics data
         console.log("Fetching team metrics data...")
         const { data: teamMetrics,error: metricsError } = await supabase
           .from("team_metrics_aggregated")
@@ -269,7 +183,6 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
           return
         }
 
-        // Step 3: Filter teams by league if userLeague is available
         let filteredTeamMetrics = teamMetrics
 
         if (userLeague) {
@@ -277,7 +190,6 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
           console.log(`Filtered to ${filteredTeamMetrics.length} teams in league: ${userLeague}`)
         }
 
-        // <<< ADD DEBUG LOG 1 >>>
         console.log("[DEBUG 1] Team IDs after league filter:",filteredTeamMetrics.map(t => t.team_id));
 
         if (filteredTeamMetrics.length === 0) {
@@ -285,12 +197,10 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
           filteredTeamMetrics = teamMetrics
         }
 
-        // Step 4: Get team IDs from filtered metrics data
         const metricTeamIds = filteredTeamMetrics.filter((team) => team.team_id !== null).map((team) => Number(team.team_id))
 
         console.log(`Working with ${metricTeamIds.length} team IDs`)
 
-        // Step 5: Fetch club data for team names
         console.log("Fetching club data for team names...")
         const { data: clubsData,error: clubsError } = await supabase
           .from("clubs")
@@ -304,7 +214,6 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
 
         console.log(`Found ${clubsData?.length || 0} teams with club data`)
 
-        // Create a map of team IDs to names for easier lookup
         const teamNameMap: Record<number,string> = {}
         clubsData?.forEach((club) => {
           if (club.id) {
@@ -312,7 +221,6 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
           }
         })
 
-        // Step 6: Fetch match data for filtered teams
         console.log("Fetching match data...")
         const { data: matchData,error: matchError } = await supabase
           .from("team_match_stats")
@@ -325,19 +233,16 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
         }
 
         console.log(`Found ${matchData?.length || 0} matches for filtered teams`)
-        // <<< ADD DEBUG LOG 2 >>>
         const receivedTeamIds = [...new Set(matchData?.map(m => m.team_id))];
         console.log("[DEBUG 2] Unique team IDs found in 'team_match_stats':",receivedTeamIds);
 
-        // Count matches per team
         const matchCountByTeam: Record<number,number> = {}
         matchData?.forEach((match) => {
           if (match.team_id === null) return
 
-          //Force to number using Number() for safety
           const teamId = Number(match.team_id);
 
-          if (!isNaN(teamId)) { // Only count if it's a valid number
+          if (!isNaN(teamId)) {
             if (!matchCountByTeam[teamId]) {
               matchCountByTeam[teamId] = 0
             }
@@ -346,9 +251,7 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
         })
 
         console.log(`Created match counts for ${Object.keys(matchCountByTeam).length} teams`)
-        // <<< ADD DEBUG LOG 3 >>>
         console.log("[DEBUG 3] Match counts per team ID:",matchCountByTeam);
-        // Check if we have any teams with matches
         const teamsWithMatches = Object.keys(matchCountByTeam).length
 
         if (teamsWithMatches === 0) {
@@ -358,7 +261,6 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
           return
         }
 
-        // Step 7: Fetch previous years positions data for average points calculation
         console.log("Fetching previous years positions data...")
         const { data: previousYearsData,error: previousYearsError } = await supabase
           .from("previous_years_positions")
@@ -372,7 +274,6 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
 
         console.log(`Found ${previousYearsData?.length || 0} previous years records`)
 
-        // Calculate average points per team from previous years
         const avgPointsByTeam: Record<number,number> = {}
         previousYearsData?.forEach((record) => {
           if (record.team_id === null) return
@@ -386,7 +287,6 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
           avgPointsByTeam[teamId] += points
         })
 
-        // Calculate averages
         Object.keys(avgPointsByTeam).forEach((teamId) => {
           const teamIdNum = Number(teamId)
           const totalPoints = avgPointsByTeam[teamIdNum]
@@ -396,7 +296,6 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
 
         console.log(`Calculated average points for ${Object.keys(avgPointsByTeam).length} teams`)
 
-        // Step 8: Process team metrics and calculate expected points
         console.log("Processing team metrics and calculating expected points...")
 
         const validTeams = filteredTeamMetrics.filter((team) => {
@@ -423,7 +322,6 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
         })
 
         console.log(`Found ${validTeams.length} valid teams with matches and points data`)
-        // <<< ADD DEBUG LOG 4 >>>
         console.log("[DEBUG 4] 'validTeams' IDs remaining:",validTeams.map(t => t.team_id));
         const standings = validTeams
           .map((team) => {
@@ -431,7 +329,6 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
             const matchCount = matchCountByTeam[teamId] || 0
             const teamName = teamNameMap[teamId] || (team.Team as string) || `Team ${teamId}`
 
-            // Convert points earned to number
             let pointsEarned: number
             const pointsEarnedValue = (team as any)["Points Earned"]
             if (typeof pointsEarnedValue === "number") {
@@ -444,10 +341,8 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
               return null
             }
 
-            // Calculate expected points
             const leagueForThisTeam = team.League as string;
 
-            // Use the fetched leagueData map, with a sensible fallback of 38 games
             const totalGamesInSeason = leagueData.get(leagueForThisTeam)?.total_games || 38;
             const currentFormPoints = (pointsEarned / matchCount) * totalGamesInSeason;
             const avgPoints = avgPointsByTeam[teamId] || 0
@@ -461,10 +356,8 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
 
             const roundedPoints = Math.round(expectedPoints)
 
-            // Get Expected Points from the database (Monte Carlo simulation)
             const dbExpectedPoints = team["Expected Points"]
 
-            // Calculate it once and reuse it
             const roundedDbExpectedPoints = dbExpectedPoints ? Math.round(Number(dbExpectedPoints)) : null
             const hasMonteCarloData = dbExpectedPoints !== null && dbExpectedPoints !== undefined
 
@@ -479,7 +372,7 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
               hasMonteCarloData,
             }
           })
-          .filter((team): team is NonNullable<typeof team> => team !== null) // Filter out null values
+          .filter((team): team is NonNullable<typeof team> => team !== null)
 
         console.log(`After processing, have ${standings.length} teams with valid expected points`)
 
@@ -490,9 +383,8 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
           return
         }
 
-        // Sort and add ranks
         const sortedStandings = standings
-          .sort((a,b) => b.expectedPoints - a.expectedPoints) // Sort by expected points (descending)
+          .sort((a,b) => b.expectedPoints - a.expectedPoints)
           .map((team,index) => ({
             ...team,
             rank: index + 1,
@@ -512,17 +404,147 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
     fetchTeamStandings()
   },[supabase,clubId,leagueData])
 
+  // Fetch lucky/unlucky games
+  useEffect(() => {
+    const fetchLuckyUnluckyGames = async () => {
+      if (!clubId) return;
+
+      try {
+        const { data: userMatches,error: userError } = await supabase
+          .from('team_match_stats')
+          .select('match_id, date, stats')
+          .eq('team_id',clubId)
+          .order('date',{ ascending: false });
+
+        if (userError) {
+          console.error('Error fetching user matches:',userError);
+          return;
+        }
+
+        if (!userMatches || userMatches.length === 0) {
+          setLuckyUnluckyGames({ lucky: [],unlucky: [] });
+          return;
+        }
+
+        const processedMatches: LuckyUnluckyGame[] = await Promise.all(
+          userMatches.map(async (match: any) => {
+            try {
+              let userStats: any = {};
+              if (typeof match.stats === 'string') {
+                userStats = JSON.parse(match.stats);
+              } else {
+                userStats = match.stats;
+              }
+
+              const { data: opponentMatches,error: oppError } = await supabase
+                .from('team_match_stats')
+                .select('stats, team_id')
+                .eq('match_id',match.match_id)
+                .neq('team_id',clubId)
+                .limit(1);
+
+              if (oppError || !opponentMatches || opponentMatches.length === 0) {
+                console.error('Could not find opponent stats for match:',match.match_id);
+                return null;
+              }
+
+              let opponentStats: any = {};
+              const oppData = opponentMatches[0];
+              if (typeof oppData.stats === 'string') {
+                opponentStats = JSON.parse(oppData.stats);
+              } else {
+                opponentStats = oppData.stats;
+              }
+
+              // Parse match_id: "Team1 - Team2 Score" e.g., "AFC Wimbledon - Walsall 1:0"
+              const matchIdParts = match.match_id.split(' - ');
+              let userTeamName = 'Unknown';
+              let opponentTeamName = 'Unknown';
+
+              if (matchIdParts.length === 2) {
+                userTeamName = matchIdParts[0];
+                const secondPart = matchIdParts[1]; // "Walsall 1:0"
+                const resultMatch = secondPart.match(/^(.+?)\s+(\d+):(\d+)$/);
+                if (resultMatch) {
+                  opponentTeamName = resultMatch[1];
+                }
+              }
+
+              const userGoals = userStats['Goals'] || 0;
+              const oppGoals = opponentStats['Goals'] || 0;
+              const userShots = userStats['Total Shots'] || 0;
+              const oppShots = opponentStats['Total Shots'] || 0;
+              const userShotsOnTarget = userStats['Shots on Target'] || 0;
+              const oppShotsOnTarget = opponentStats['Shots on Target'] || 0;
+              const userXG = userStats['xG'] || 0;
+              const oppXG = opponentStats['xG'] || 0;
+              const userExpectedPoints = userStats['Expected Points'] || 0;
+              const oppExpectedPoints = opponentStats['Expected Points'] || 0;
+              const userPointsEarned = userStats['Points Earned'] || 0;
+              const oppPointsEarned = opponentStats['Points Earned'] || 0;
+
+              let userResult = '';
+              if (userGoals > oppGoals) userResult = 'W';
+              else if (userGoals < oppGoals) userResult = 'L';
+              else userResult = 'D';
+
+              const userLuck = userPointsEarned - userExpectedPoints;
+
+              return {
+                match_id: match.match_id,
+                match_date: match.date,
+                user_team_name: userTeamName,
+                opponent_team_name: opponentTeamName,
+                result: userResult,
+                user_goals: userGoals,
+                opp_goals: oppGoals,
+                user_shots: userShots,
+                opp_shots: oppShots,
+                user_shots_on_target: userShotsOnTarget,
+                opp_shots_on_target: oppShotsOnTarget,
+                user_xg: userXG,
+                opp_xg: oppXG,
+                user_expected_points: userExpectedPoints,
+                opp_expected_points: oppExpectedPoints,
+                user_points_earned: userPointsEarned,
+                opp_points_earned: oppPointsEarned,
+                luck: userLuck,
+              } as LuckyUnluckyGame;
+            } catch (error) {
+              console.error('Error processing match:',error);
+              return null;
+            }
+          })
+        );
+
+        const validMatches = processedMatches.filter(
+          (m): m is LuckyUnluckyGame => m !== null
+        );
+
+        if (validMatches.length === 0) {
+          setLuckyUnluckyGames({ lucky: [],unlucky: [] });
+          return;
+        }
+
+        const sorted = validMatches.sort((a,b) => b.luck - a.luck);
+
+        const lucky = sorted.slice(0,3);
+        const unlucky = sorted.slice(-3).reverse();
+
+        setLuckyUnluckyGames({ lucky,unlucky });
+      } catch (error) {
+        console.error('Error in fetchLuckyUnluckyGames:',error);
+      }
+    };
+
+    fetchLuckyUnluckyGames();
+  },[clubId,supabase])
+
   const totalGamesInSeason = leagueData.get(leagueName || "")?.total_games || 38;
 
   if (chartData.length === 0 || isLoading) {
     return <div className="text-center py-8">Loading data...</div>
   }
-
-  console.log('team standing variable','----------------------------------------------')
-
-  console.table(teamStandings)
-
-  console.log('team standing variable','----------------------------------------------')
 
   return (
     <div className="space-y-8">
@@ -739,68 +761,195 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
         </div>
       </div>
 
-      <h3 className="text-lg font-medium mb-4">
-        View your 3 most lucky/unlucky games
-      </h3>
+      {/* Lucky/Unlucky Games Section */}
+      <div className="mt-8">
+        <h3 className="text-lg font-medium mb-6">
+          View your 3 most lucky/unlucky games
+        </h3>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Most Unlucky Games */}
-        <div className="bg-background rounded-lg shadow-xs border border-gray-200 p-4">
-          <h4 className="font-medium mb-4 text-red-600">Most Unlucky (Underperformed)</h4>
-          <div className="space-y-3">
-            {luckyUnluckyGames.unlucky.length > 0 ? (
-              luckyUnluckyGames.unlucky.map(match => (
-                <div key={match.match_id} className="text-sm border-l-2 border-red-300 pl-3 py-2">
-                  <div className="flex justify-between items-start mb-1">
-                    <p className="font-medium">{match.opponent_name}</p>
-                    <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
-                      {match.result} {match.goalsFor}-{match.goalsAgainst}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(match.match_date).toLocaleDateString()}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    xG: {match.xgFor.toFixed(2)} | Expected Pts: {match.expectedPoints.toFixed(2)}
-                  </p>
-                  <p className="text-red-600 text-xs font-medium mt-2">
-                    Underperformed by {Math.abs(match.luck).toFixed(2)} pts
-                  </p>
-                </div>
-              ))
-            ) : (
-              <p className="text-xs text-muted-foreground text-center py-4">No matches yet</p>
-            )}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Most Unlucky Games */}
+          <div>
+            <h4 className="font-semibold mb-4 text-red-600 text-base">Most Unlucky (Underperformed)</h4>
+            <div className="space-y-4">
+              {luckyUnluckyGames.unlucky.length > 0 ? (
+                luckyUnluckyGames.unlucky.map((match) => {
+                  const matchDate = new Date(match.match_date);
+                  const formattedDate = `${matchDate.getFullYear()}-${String(matchDate.getMonth() + 1).padStart(2,'0')}-${String(matchDate.getDate()).padStart(2,'0')}`;
+
+                  return (
+                    <div key={match.match_id} className="bg-background rounded-lg border-2 border-red-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      {/* Header */}
+                      <div className="bg-red-50 px-4 py-3 border-b border-red-200">
+                        <div className="flex justify-between items-start gap-3">
+                          <div className="flex-1">
+                            <p className="font-bold text-sm text-slate-800">
+                              {match.user_team_name} vs {match.opponent_team_name}
+                            </p>
+                            <p className="text-xs text-gray-600 mt-1">{formattedDate}</p>
+                          </div>
+                          <span className="text-sm bg-red-600 text-white px-2.5 py-1.5 rounded font-bold whitespace-nowrap">
+                            {match.result} {match.user_goals}-{match.opp_goals}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Stats */}
+                      <div className="px-4 py-4">
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          {/* User Team Stats */}
+                          <div>
+                            <p className="font-semibold text-sm text-slate-800 mb-3">{match.user_team_name}</p>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Shots</span>
+                                <span className="font-semibold">{match.user_shots} ({match.user_shots_on_target} on target)</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Expected Goals</span>
+                                <span className="font-semibold">{match.user_xg.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Expected Points</span>
+                                <span className="font-semibold">{match.user_expected_points.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Points Earned</span>
+                                <span className="font-semibold">{match.user_points_earned}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Opponent Stats */}
+                          <div>
+                            <p className="font-semibold text-sm text-slate-800 mb-3">{match.opponent_team_name}</p>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Shots</span>
+                                <span className="font-semibold">{match.opp_shots} ({match.opp_shots_on_target} on target)</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Expected Goals</span>
+                                <span className="font-semibold">{match.opp_xg.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Expected Points</span>
+                                <span className="font-semibold">{match.opp_expected_points.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Points Earned</span>
+                                <span className="font-semibold">{match.opp_points_earned}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Summary */}
+                        <div className="pt-3 border-t border-red-100">
+                          <p className="text-red-700 font-medium text-xs leading-relaxed">
+                            📉 Underperformed by <span className="font-bold">{Math.abs(match.luck).toFixed(2)} pts</span> - You had better chances but failed to capitalize
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-8">No matches yet</p>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Most Lucky Games */}
-        <div className="bg-background rounded-lg shadow-xs border border-gray-200 p-4">
-          <h4 className="font-medium mb-4 text-green-600">Most Lucky (Overperformed)</h4>
-          <div className="space-y-3">
-            {luckyUnluckyGames.lucky.length > 0 ? (
-              luckyUnluckyGames.lucky.map(match => (
-                <div key={match.match_id} className="text-sm border-l-2 border-green-300 pl-3 py-2">
-                  <div className="flex justify-between items-start mb-1">
-                    <p className="font-medium">{match.opponent_name}</p>
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                      {match.result} {match.goalsFor}-{match.goalsAgainst}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(match.match_date).toLocaleDateString()}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    xG: {match.xgFor.toFixed(2)} | Expected Pts: {match.expectedPoints.toFixed(2)}
-                  </p>
-                  <p className="text-green-600 text-xs font-medium mt-2">
-                    Overperformed by {match.luck.toFixed(2)} pts
-                  </p>
-                </div>
-              ))
-            ) : (
-              <p className="text-xs text-muted-foreground text-center py-4">No matches yet</p>
-            )}
+          {/* Most Lucky Games */}
+          <div>
+            <h4 className="font-semibold mb-4 text-green-600 text-base">Most Lucky (Overperformed)</h4>
+            <div className="space-y-4">
+              {luckyUnluckyGames.lucky.length > 0 ? (
+                luckyUnluckyGames.lucky.map((match) => {
+                  const matchDate = new Date(match.match_date);
+                  const formattedDate = `${matchDate.getFullYear()}-${String(matchDate.getMonth() + 1).padStart(2,'0')}-${String(matchDate.getDate()).padStart(2,'0')}`;
+
+                  return (
+                    <div key={match.match_id} className="bg-background rounded-lg border-2 border-green-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      {/* Header */}
+                      <div className="bg-green-50 px-4 py-3 border-b border-green-200">
+                        <div className="flex justify-between items-start gap-3">
+                          <div className="flex-1">
+                            <p className="font-bold text-sm text-slate-800">
+                              {match.user_team_name} vs {match.opponent_team_name}
+                            </p>
+                            <p className="text-xs text-gray-600 mt-1">{formattedDate}</p>
+                          </div>
+                          <span className="text-sm bg-green-600 text-white px-2.5 py-1.5 rounded font-bold whitespace-nowrap">
+                            {match.result} {match.user_goals}-{match.opp_goals}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Stats */}
+                      <div className="px-4 py-4">
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          {/* User Team Stats */}
+                          <div>
+                            <p className="font-semibold text-sm text-slate-800 mb-3">{match.user_team_name}</p>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Shots</span>
+                                <span className="font-semibold">{match.user_shots} ({match.user_shots_on_target} on target)</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Expected Goals</span>
+                                <span className="font-semibold">{match.user_xg.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Expected Points</span>
+                                <span className="font-semibold">{match.user_expected_points.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Points Earned</span>
+                                <span className="font-semibold">{match.user_points_earned}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Opponent Stats */}
+                          <div>
+                            <p className="font-semibold text-sm text-slate-800 mb-3">{match.opponent_team_name}</p>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Shots</span>
+                                <span className="font-semibold">{match.opp_shots} ({match.opp_shots_on_target} on target)</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Expected Goals</span>
+                                <span className="font-semibold">{match.opp_xg.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Expected Points</span>
+                                <span className="font-semibold">{match.opp_expected_points.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Points Earned</span>
+                                <span className="font-semibold">{match.opp_points_earned}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Summary */}
+                        <div className="pt-3 border-t border-green-100">
+                          <p className="text-green-700 font-medium text-xs leading-relaxed">
+                            📈 Overperformed by <span className="font-bold">{match.luck.toFixed(2)} pts</span> - You made your chances count and got away with a strong result
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-8">No matches yet</p>
+              )}
+            </div>
           </div>
         </div>
       </div>
