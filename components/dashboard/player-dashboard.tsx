@@ -377,10 +377,12 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                   <Eye className="h-4 w-4 mr-2" />
                   View Public Profile
                 </Button>
+
                 <Button
                   variant="ghost"
                   className="text-primary-foreground border-white/30 hover:bg-background/20 dark:hover:text-white"
-                  onClick={() => alert('Profile editing coming soon!')}
+                  onClick={() => window.open(`/player/${data.user?.id}/edit`, '_blank')}
+
                 >
                   Edit Profile
                 </Button>
