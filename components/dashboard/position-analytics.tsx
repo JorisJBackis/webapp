@@ -410,6 +410,21 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
       if (!clubId) return;
 
       try {
+        // First, fetch the user's team name for accurate matching
+        const { data: userTeamData,error: userTeamError } = await supabase
+          .from('clubs')
+          .select('name')
+          .eq('id',clubId)
+          .single();
+
+        if (userTeamError || !userTeamData) {
+          console.error('Could not fetch user team name:',userTeamError);
+          return;
+        }
+
+        const userTeamName = userTeamData.name;
+        console.log(`Fetching matches for user team: ${userTeamName}`);
+
         const { data: userMatches,error: userError } = await supabase
           .from('team_match_stats')
           .select('match_id, date, stats')
@@ -446,8 +461,22 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
               }
 
               const team2Name = scoreMatch[1].trim();
-              const team1ExpectedScore = parseInt(scoreMatch[2],10);
-              const team2ExpectedScore = parseInt(scoreMatch[3],10);
+              const team1Goals = parseInt(scoreMatch[2],10);
+              const team2Goals = parseInt(scoreMatch[3],10);
+
+              // Determine which team is the user's team by matching names
+              const userIsTeam1 = team1Name === userTeamName;
+              const userIsTeam2 = team2Name === userTeamName;
+
+              if (!userIsTeam1 && !userIsTeam2) {
+                console.error(`User team "${userTeamName}" not found in match:`,match.match_id);
+                return null;
+              }
+
+              // Correctly assign user and opponent based on which team the user is
+              const opponentTeamName = userIsTeam1 ? team2Name : team1Name;
+              const userGoals = userIsTeam1 ? team1Goals : team2Goals;
+              const oppGoals = userIsTeam1 ? team2Goals : team1Goals;
 
               // Fetch user stats
               let userStats: any = {};
@@ -477,27 +506,30 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
                 opponentStats = opponentMatches[0].stats;
               }
 
-              // Use match_id scores for display
-              const userGoals = team1ExpectedScore;
-              const oppGoals = team2ExpectedScore;
+              // Assign stats based on which team is which in the match_id
+              let team1Stats = userIsTeam1 ? userStats : opponentStats;
+              let team2Stats = userIsTeam1 ? opponentStats : userStats;
 
-              // Determine match result from Points Earned (source of truth for result)
-              const userPointsEarned = parseFloat(userStats['Points Earned']?.toString() || '0');
-              let userResult = '';
-              if (userPointsEarned >= 3) userResult = 'W';      // 3 points = win
-              else if (userPointsEarned === 1) userResult = 'D'; // 1 point = draw
-              else userResult = 'L';                              // 0 points = loss
+              // Extract stats for team1 and team2 (in match_id order)
+              const team1Shots = team1Stats['Total Shots'] || 0;
+              const team2Shots = team2Stats['Total Shots'] || 0;
+              const team1ShotsOnTarget = team1Stats['Shots on Target'] || 0;
+              const team2ShotsOnTarget = team2Stats['Shots on Target'] || 0;
+              const team1XG = parseFloat(team1Stats['xG']?.toString() || '0');
+              const team2XG = parseFloat(team2Stats['xG']?.toString() || '0');
+              const team1ExpectedPoints = parseFloat(team1Stats['Expected Points']?.toString() || '0');
+              const team2ExpectedPoints = parseFloat(team2Stats['Expected Points']?.toString() || '0');
+              const team1PointsEarned = parseFloat(team1Stats['Points Earned']?.toString() || '0');
+              const team2PointsEarned = parseFloat(team2Stats['Points Earned']?.toString() || '0');
 
-              // Extract all stats
-              const userShots = userStats['Total Shots'] || 0;
-              const oppShots = opponentStats['Total Shots'] || 0;
-              const userShotsOnTarget = userStats['Shots on Target'] || 0;
-              const oppShotsOnTarget = opponentStats['Shots on Target'] || 0;
-              const userXG = parseFloat(userStats['xG']?.toString() || '0');
-              const oppXG = parseFloat(opponentStats['xG']?.toString() || '0');
-              const userExpectedPoints = parseFloat(userStats['Expected Points']?.toString() || '0');
-              const oppExpectedPoints = parseFloat(opponentStats['Expected Points']?.toString() || '0');
-              const oppPointsEarned = parseFloat(opponentStats['Points Earned']?.toString() || '0');
+              // Determine result based on which team is the user (for luck calculation)
+              const userPointsEarned = userIsTeam1 ? team1PointsEarned : team2PointsEarned;
+              const userExpectedPoints = userIsTeam1 ? team1ExpectedPoints : team2ExpectedPoints;
+
+              let resultDisplay = '';
+              if (userPointsEarned >= 3) resultDisplay = 'W';
+              else if (userPointsEarned === 1) resultDisplay = 'D';
+              else resultDisplay = 'L';
 
               const userLuck = userPointsEarned - userExpectedPoints;
 
@@ -506,19 +538,19 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
                 match_date: match.date,
                 user_team_name: team1Name,
                 opponent_team_name: team2Name,
-                result: userResult,
-                user_goals: userGoals,
-                opp_goals: oppGoals,
-                user_shots: userShots,
-                opp_shots: oppShots,
-                user_shots_on_target: userShotsOnTarget,
-                opp_shots_on_target: oppShotsOnTarget,
-                user_xg: userXG,
-                opp_xg: oppXG,
-                user_expected_points: userExpectedPoints,
-                opp_expected_points: oppExpectedPoints,
-                user_points_earned: userPointsEarned,
-                opp_points_earned: oppPointsEarned,
+                result: resultDisplay,
+                user_goals: team1Goals,
+                opp_goals: team2Goals,
+                user_shots: team1Shots,
+                opp_shots: team2Shots,
+                user_shots_on_target: team1ShotsOnTarget,
+                opp_shots_on_target: team2ShotsOnTarget,
+                user_xg: team1XG,
+                opp_xg: team2XG,
+                user_expected_points: team1ExpectedPoints,
+                opp_expected_points: team2ExpectedPoints,
+                user_points_earned: team1PointsEarned,
+                opp_points_earned: team2PointsEarned,
                 luck: userLuck,
               } as LuckyUnluckyGame;
             } catch (error) {
@@ -597,6 +629,14 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
   if (chartData.length === 0 || isLoading) {
     return <div className="text-center py-8">Loading data...</div>
   }
+
+  console.log('----------------------------------------------------------------------')
+
+  console.log('lucky unlucky games variable')
+
+  console.log(luckyUnluckyGames)
+
+  console.log('----------------------------------------------------------------------')
 
   return (
     <div className="space-y-8">
