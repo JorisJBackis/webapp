@@ -429,6 +429,27 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
         const processedMatches: LuckyUnluckyGame[] = await Promise.all(
           userMatches.map(async (match: any) => {
             try {
+              // Parse match_id: "Team1 - Team2 Score" e.g., "Banga - Siauliai 1:2"
+              const matchIdParts = match.match_id.split(' - ');
+              if (matchIdParts.length !== 2) {
+                console.error('Invalid match_id format:',match.match_id);
+                return null;
+              }
+
+              const team1Name = matchIdParts[0].trim();
+              const secondPart = matchIdParts[1];
+              const scoreMatch = secondPart.match(/^(.+?)\s+(\d+):(\d+)$/);
+
+              if (!scoreMatch) {
+                console.error('Could not parse score from:',secondPart);
+                return null;
+              }
+
+              const team2Name = scoreMatch[1].trim();
+              const team1ExpectedScore = parseInt(scoreMatch[2],10);
+              const team2ExpectedScore = parseInt(scoreMatch[3],10);
+
+              // Fetch user stats
               let userStats: any = {};
               if (typeof match.stats === 'string') {
                 userStats = JSON.parse(match.stats);
@@ -436,6 +457,7 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
                 userStats = match.stats;
               }
 
+              // Fetch opponent stats
               const { data: opponentMatches,error: oppError } = await supabase
                 .from('team_match_stats')
                 .select('stats, team_id')
@@ -449,59 +471,41 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
               }
 
               let opponentStats: any = {};
-              const oppData = opponentMatches[0];
-              const opponentTeamId = oppData.team_id;
-
-              if (typeof oppData.stats === 'string') {
-                opponentStats = JSON.parse(oppData.stats);
+              if (typeof opponentMatches[0].stats === 'string') {
+                opponentStats = JSON.parse(opponentMatches[0].stats);
               } else {
-                opponentStats = oppData.stats;
+                opponentStats = opponentMatches[0].stats;
               }
 
-              // FIX: Fetch actual team names from clubs table using team IDs
-              const { data: teamNamesData,error: teamNamesError } = await supabase
-                .from('clubs')
-                .select('id, name')
-                .in('id',[clubId,opponentTeamId]);
+              // Use match_id scores for display
+              const userGoals = team1ExpectedScore;
+              const oppGoals = team2ExpectedScore;
 
-              let userTeamName = 'Unknown';
-              let opponentTeamName = 'Unknown';
+              // Determine match result from Points Earned (source of truth for result)
+              const userPointsEarned = parseFloat(userStats['Points Earned']?.toString() || '0');
+              let userResult = '';
+              if (userPointsEarned >= 3) userResult = 'W';      // 3 points = win
+              else if (userPointsEarned === 1) userResult = 'D'; // 1 point = draw
+              else userResult = 'L';                              // 0 points = loss
 
-              if (!teamNamesError && teamNamesData && teamNamesData.length > 0) {
-                const teamNameMap: Record<number,string> = {};
-                teamNamesData.forEach(team => {
-                  teamNameMap[team.id] = team.name;
-                });
-
-                userTeamName = teamNameMap[clubId] || 'Unknown';
-                opponentTeamName = teamNameMap[opponentTeamId] || 'Unknown';
-              }
-
-              const userGoals = userStats['Goals'] || 0;
-              const oppGoals = opponentStats['Goals'] || 0;
+              // Extract all stats
               const userShots = userStats['Total Shots'] || 0;
               const oppShots = opponentStats['Total Shots'] || 0;
               const userShotsOnTarget = userStats['Shots on Target'] || 0;
               const oppShotsOnTarget = opponentStats['Shots on Target'] || 0;
-              const userXG = userStats['xG'] || 0;
-              const oppXG = opponentStats['xG'] || 0;
-              const userExpectedPoints = userStats['Expected Points'] || 0;
-              const oppExpectedPoints = opponentStats['Expected Points'] || 0;
-              const userPointsEarned = userStats['Points Earned'] || 0;
-              const oppPointsEarned = opponentStats['Points Earned'] || 0;
-
-              let userResult = '';
-              if (userGoals > oppGoals) userResult = 'W';
-              else if (userGoals < oppGoals) userResult = 'L';
-              else userResult = 'D';
+              const userXG = parseFloat(userStats['xG']?.toString() || '0');
+              const oppXG = parseFloat(opponentStats['xG']?.toString() || '0');
+              const userExpectedPoints = parseFloat(userStats['Expected Points']?.toString() || '0');
+              const oppExpectedPoints = parseFloat(opponentStats['Expected Points']?.toString() || '0');
+              const oppPointsEarned = parseFloat(opponentStats['Points Earned']?.toString() || '0');
 
               const userLuck = userPointsEarned - userExpectedPoints;
 
               return {
                 match_id: match.match_id,
                 match_date: match.date,
-                user_team_name: userTeamName,
-                opponent_team_name: opponentTeamName,
+                user_team_name: team1Name,
+                opponent_team_name: team2Name,
                 result: userResult,
                 user_goals: userGoals,
                 opp_goals: oppGoals,
@@ -518,7 +522,7 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
                 luck: userLuck,
               } as LuckyUnluckyGame;
             } catch (error) {
-              console.error('Error processing match:',error);
+              console.error('Error processing match:',match.match_id,error);
               return null;
             }
           })
@@ -534,7 +538,6 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
         }
 
         const sorted = validMatches.sort((a,b) => b.luck - a.luck);
-
         const lucky = sorted.slice(0,3);
         const unlucky = sorted.slice(-3).reverse();
 
@@ -548,6 +551,48 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
   },[clubId,supabase])
 
   const totalGamesInSeason = leagueData.get(leagueName || "")?.total_games || 38;
+
+  // Helper function to get badge color based on result
+  const getResultBadgeColor = (result: string) => {
+    switch (result) {
+      case 'W':
+        return 'bg-green-600';
+      case 'L':
+        return 'bg-red-600';
+      case 'D':
+        return 'bg-gray-500'; // Gray for draws
+      default:
+        return 'bg-gray-400';
+    }
+  };
+
+  // Helper function to get header color based on result
+  const getHeaderBgColor = (result: string) => {
+    switch (result) {
+      case 'W':
+        return 'bg-green-50';
+      case 'L':
+        return 'bg-red-50';
+      case 'D':
+        return 'bg-gray-50'; // Gray for draws
+      default:
+        return 'bg-gray-50';
+    }
+  };
+
+  // Helper function to get border color based on result
+  const getBorderColor = (result: string) => {
+    switch (result) {
+      case 'W':
+        return 'border-green-200';
+      case 'L':
+        return 'border-red-200';
+      case 'D':
+        return 'border-gray-200'; // Gray for draws
+      default:
+        return 'border-gray-200';
+    }
+  };
 
   if (chartData.length === 0 || isLoading) {
     return <div className="text-center py-8">Loading data...</div>
@@ -631,7 +676,7 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
             <Line
               yAxisId="left"
               type="monotone"
-              dataKey="goalsConcconceded"
+              dataKey="goalsConceded"
               stroke="#E53E3E"
               strokeWidth={3}
               dot={{ r: 5 }}
@@ -785,9 +830,9 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
                   const formattedDate = `${matchDate.getFullYear()}-${String(matchDate.getMonth() + 1).padStart(2,'0')}-${String(matchDate.getDate()).padStart(2,'0')}`;
 
                   return (
-                    <div key={match.match_id} className="bg-background rounded-lg border-2 border-red-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    <div key={match.match_id} className={`bg-background rounded-lg border-2 ${getBorderColor(match.result)} overflow-hidden shadow-sm hover:shadow-md transition-shadow`}>
                       {/* Header */}
-                      <div className="bg-red-50 px-4 py-3 border-b border-red-200">
+                      <div className={`${getHeaderBgColor(match.result)} px-4 py-3 border-b ${getBorderColor(match.result)}`}>
                         <div className="flex justify-between items-start gap-3">
                           <div className="flex-1">
                             <p className="font-bold text-sm text-slate-800">
@@ -795,7 +840,7 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
                             </p>
                             <p className="text-xs text-gray-600 mt-1">{formattedDate}</p>
                           </div>
-                          <span className="text-sm bg-red-600 text-white px-2.5 py-1.5 rounded font-bold whitespace-nowrap">
+                          <span className={`text-sm ${getResultBadgeColor(match.result)} text-white px-2.5 py-1.5 rounded font-bold whitespace-nowrap`}>
                             {match.result} {match.user_goals}-{match.opp_goals}
                           </span>
                         </div>
@@ -852,8 +897,8 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
                         </div>
 
                         {/* Summary */}
-                        <div className="pt-3 border-t border-red-100">
-                          <p className="text-red-700 font-medium text-xs leading-relaxed">
+                        <div className={`pt-3 border-t ${match.result === 'D' ? 'border-gray-100' : 'border-red-100'}`}>
+                          <p className={`${match.result === 'D' ? 'text-gray-700' : 'text-red-700'} font-medium text-xs leading-relaxed`}>
                             📉 Underperformed by <span className="font-bold">{Math.abs(match.luck).toFixed(2)} pts</span> - You had better chances but failed to capitalize
                           </p>
                         </div>
@@ -877,9 +922,9 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
                   const formattedDate = `${matchDate.getFullYear()}-${String(matchDate.getMonth() + 1).padStart(2,'0')}-${String(matchDate.getDate()).padStart(2,'0')}`;
 
                   return (
-                    <div key={match.match_id} className="bg-background rounded-lg border-2 border-green-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    <div key={match.match_id} className={`bg-background rounded-lg border-2 ${getBorderColor(match.result)} overflow-hidden shadow-sm hover:shadow-md transition-shadow`}>
                       {/* Header */}
-                      <div className="bg-green-50 px-4 py-3 border-b border-green-200">
+                      <div className={`${getHeaderBgColor(match.result)} px-4 py-3 border-b ${getBorderColor(match.result)}`}>
                         <div className="flex justify-between items-start gap-3">
                           <div className="flex-1">
                             <p className="font-bold text-sm text-slate-800">
@@ -887,7 +932,7 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
                             </p>
                             <p className="text-xs text-gray-600 mt-1">{formattedDate}</p>
                           </div>
-                          <span className="text-sm bg-green-600 text-white px-2.5 py-1.5 rounded font-bold whitespace-nowrap">
+                          <span className={`text-sm ${getResultBadgeColor(match.result)} text-white px-2.5 py-1.5 rounded font-bold whitespace-nowrap`}>
                             {match.result} {match.user_goals}-{match.opp_goals}
                           </span>
                         </div>
@@ -944,8 +989,8 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
                         </div>
 
                         {/* Summary */}
-                        <div className="pt-3 border-t border-green-100">
-                          <p className="text-green-700 font-medium text-xs leading-relaxed">
+                        <div className={`pt-3 border-t ${match.result === 'D' ? 'border-gray-100' : 'border-green-100'}`}>
+                          <p className={`${match.result === 'D' ? 'text-gray-700' : 'text-green-700'} font-medium text-xs leading-relaxed`}>
                             📈 Overperformed by <span className="font-bold">{match.luck.toFixed(2)} pts</span> - You made your chances count and got away with a strong result
                           </p>
                         </div>
