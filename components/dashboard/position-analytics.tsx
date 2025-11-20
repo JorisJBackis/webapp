@@ -17,7 +17,7 @@ interface PositionData {
   | {
     "Goals Scored (Įv +)": number
     "Goals Conceded (Įv -)": number
-    Points: number
+    "Points": number
   }
 }
 
@@ -450,24 +450,31 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
 
               let opponentStats: any = {};
               const oppData = opponentMatches[0];
+              const opponentTeamId = oppData.team_id;
+
               if (typeof oppData.stats === 'string') {
                 opponentStats = JSON.parse(oppData.stats);
               } else {
                 opponentStats = oppData.stats;
               }
 
-              // Parse match_id: "Team1 - Team2 Score" e.g., "AFC Wimbledon - Walsall 1:0"
-              const matchIdParts = match.match_id.split(' - ');
+              // FIX: Fetch actual team names from clubs table using team IDs
+              const { data: teamNamesData,error: teamNamesError } = await supabase
+                .from('clubs')
+                .select('id, name')
+                .in('id',[clubId,opponentTeamId]);
+
               let userTeamName = 'Unknown';
               let opponentTeamName = 'Unknown';
 
-              if (matchIdParts.length === 2) {
-                userTeamName = matchIdParts[0];
-                const secondPart = matchIdParts[1]; // "Walsall 1:0"
-                const resultMatch = secondPart.match(/^(.+?)\s+(\d+):(\d+)$/);
-                if (resultMatch) {
-                  opponentTeamName = resultMatch[1];
-                }
+              if (!teamNamesError && teamNamesData && teamNamesData.length > 0) {
+                const teamNameMap: Record<number,string> = {};
+                teamNamesData.forEach(team => {
+                  teamNameMap[team.id] = team.name;
+                });
+
+                userTeamName = teamNameMap[clubId] || 'Unknown';
+                opponentTeamName = teamNameMap[opponentTeamId] || 'Unknown';
               }
 
               const userGoals = userStats['Goals'] || 0;
@@ -624,7 +631,7 @@ export default function PositionAnalytics({ positionData,clubId }: PositionAnaly
             <Line
               yAxisId="left"
               type="monotone"
-              dataKey="goalsConceded"
+              dataKey="goalsConcconceded"
               stroke="#E53E3E"
               strokeWidth={3}
               dot={{ r: 5 }}

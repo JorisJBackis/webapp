@@ -178,17 +178,23 @@ export default function NeedFormModal({
                                     <FormControl>
                                         <Select value={field.value || ""} onValueChange={field.onChange}>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="All positions" />
+                                                <SelectValue placeholder="e.g., Centre-Back" />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="Goalkeeper">Goalkeeper</SelectItem>
-                                                <SelectItem value="Centre Back">Centre Back</SelectItem>
-                                                <SelectItem value="Full Back">Full Back</SelectItem>
-                                                <SelectItem value="Defensive Midfielder">Defensive Midfielder</SelectItem>
-                                                <SelectItem value="Central Midfielder">Central Midfielder</SelectItem>
-                                                <SelectItem value="Attacking Midfielder">Attacking Midfielder</SelectItem>
-                                                <SelectItem value="Winger">Winger</SelectItem>
-                                                <SelectItem value="Centre Forward">Centre Forward</SelectItem>
+                                                <SelectItem value="Centre-Back">Centre-Back</SelectItem>
+                                                <SelectItem value="Left-Back">Left-Back</SelectItem>
+                                                <SelectItem value="Right-Back">Right-Back</SelectItem>
+                                                <SelectItem value="Defensive Midfield">Defensive Midfield</SelectItem>
+                                                <SelectItem value="Central Midfield">Central Midfield</SelectItem>
+                                                <SelectItem value="Attacking Midfield">Attacking Midfield</SelectItem>
+                                                <SelectItem value="Left Midfield">Left Midfield</SelectItem>
+                                                <SelectItem value="Right Midfield">Right Midfield</SelectItem>
+                                                <SelectItem value="Midfield">Midfield</SelectItem>
+                                                <SelectItem value="Left Winger">Left Winger</SelectItem>
+                                                <SelectItem value="Right Winger">Right Winger</SelectItem>
+                                                <SelectItem value="Centre-Forward">Centre-Forward</SelectItem>
+                                                <SelectItem value="Second Striker">Second Striker</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </FormControl>
