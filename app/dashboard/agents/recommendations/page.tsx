@@ -3,8 +3,9 @@
 import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Loader2, AlertCircle, TrendingUp, Building2 } from 'lucide-react'
+import { Loader2, AlertCircle, TrendingUp, Building2, ChevronDown } from 'lucide-react'
 import SmartRecommendationsCards from '@/components/agents/smart-recommendations-cards'
 import AlgorithmSettingsModal from '@/components/agents/algorithm-settings-modal'
 
@@ -71,8 +72,12 @@ export interface SmartRecommendation {
 export default function SmartRecommendationsPage() {
   const [recommendations, setRecommendations] = useState<SmartRecommendation[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [agentId, setAgentId] = useState<string | null>(null)
+  const [hasMore, setHasMore] = useState(true)
+  const [page, setPage] = useState(0)
+  const PAGE_SIZE = 20
 
   const supabase = createClient()
 
@@ -104,44 +109,74 @@ export default function SmartRecommendationsPage() {
     getAgentId()
   }, [supabase])
 
-  // Fetch smart recommendations
+  // Fetch smart recommendations with pagination
+  const fetchRecommendations = async (pageNum: number, append: boolean = false) => {
+    try {
+      if (pageNum === 0) {
+        setLoading(true)
+      } else {
+        setLoadingMore(true)
+      }
+      setError(null)
+
+      if (!supabase || !agentId) return
+
+      console.log('[Smart Recommendations] Fetching page:', pageNum, 'for agent:', agentId)
+
+      const { data, error: rpcError } = await supabase.rpc('get_smart_recommendations_nordic_paginated', {
+        p_agent_id: agentId,
+        p_limit: PAGE_SIZE,
+        p_offset: pageNum * PAGE_SIZE
+      })
+
+      console.log('[Smart Recommendations] Response:', { count: data?.length, error: rpcError })
+
+      if (rpcError) {
+        // Fallback to non-paginated version if paginated doesn't exist
+        if (rpcError.message?.includes('function') || rpcError.code === '42883') {
+          console.log('[Smart Recommendations] Falling back to non-paginated version')
+          const { data: fallbackData, error: fallbackError } = await supabase.rpc('get_smart_recommendations_nordic', {
+            p_agent_id: agentId
+          })
+          if (fallbackError) throw fallbackError
+          setRecommendations(fallbackData || [])
+          setHasMore(false)
+          return
+        }
+        throw rpcError
+      }
+
+      const newData = data || []
+
+      if (append) {
+        setRecommendations(prev => [...prev, ...newData])
+      } else {
+        setRecommendations(newData)
+      }
+
+      setHasMore(newData.length === PAGE_SIZE)
+      setPage(pageNum)
+    } catch (err: any) {
+      console.error('Error fetching recommendations:', err)
+      setError('Failed to load recommendations')
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
+    }
+  }
+
+  // Initial fetch
   useEffect(() => {
     if (!agentId) return
-
-    const fetchRecommendations = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-
-        if (!supabase) return
-
-        console.log('[Smart Recommendations] Fetching for agent:', agentId)
-
-        const { data, error: rpcError } = await supabase.rpc('get_smart_recommendations_nordic', {
-          p_agent_id: agentId
-        })
-
-        console.log('[Smart Recommendations] Response:', { data, error: rpcError })
-
-        if (rpcError) {
-          console.error('[Smart Recommendations] Full Error:', JSON.stringify(rpcError, null, 2))
-          console.error('[Smart Recommendations] Error message:', rpcError.message)
-          console.error('[Smart Recommendations] Error details:', rpcError.details)
-          console.error('[Smart Recommendations] Error hint:', rpcError.hint)
-          throw rpcError
-        }
-
-        setRecommendations(data || [])
-      } catch (err: any) {
-        console.error('Error fetching recommendations:', err)
-        setError('Failed to load recommendations')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchRecommendations()
+    fetchRecommendations(0)
   }, [agentId, supabase])
+
+  // Load more function
+  const loadMore = () => {
+    if (!loadingMore && hasMore) {
+      fetchRecommendations(page + 1, true)
+    }
+  }
 
   // Calculate stats (must be before early returns)
   const stats = useMemo(() => {
@@ -257,7 +292,34 @@ export default function SmartRecommendationsPage() {
           </CardContent>
         </Card>
       ) : (
-        <SmartRecommendationsCards recommendations={recommendations} />
+        <>
+          <SmartRecommendationsCards recommendations={recommendations} />
+
+          {/* Load More Button */}
+          {hasMore && (
+            <div className="flex justify-center mt-6">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="min-w-[200px]"
+              >
+                {loadingMore ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-4 w-4 mr-2" />
+                    Load More
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
