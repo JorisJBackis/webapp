@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Building2,
   TrendingUp,
@@ -31,185 +32,103 @@ interface SmartRecommendationsCardsProps {
   recommendations: SmartRecommendation[]
 }
 
-// Component for each recommendation - fetches full player data
-function RecommendationCard({ rec }: { rec: SmartRecommendation }) {
-  const [agentPlayerData, setAgentPlayerData] = useState<PlayerCardData | null>(null)
-  const [expiringPlayersData, setExpiringPlayersData] = useState<Record<string, PlayerCardData>>({})
-  const [clubContacts, setClubContacts] = useState<ClubContact[]>([])
-  const [loading, setLoading] = useState(true)
+// Skeleton card for loading state
+function RecommendationCardSkeleton() {
+  return (
+    <Card className="overflow-hidden">
+      <CardContent className="p-6">
+        <div className="flex gap-6">
+          <div className="flex-1 space-y-4">
+            <div className="flex items-center gap-3">
+              <Skeleton className="w-16 h-16 rounded-lg" />
+              <div className="space-y-2 flex-1">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-4 w-48" />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Skeleton className="h-6 w-20" />
+              <Skeleton className="h-6 w-16" />
+              <Skeleton className="h-6 w-24" />
+            </div>
+          </div>
+          <div className="w-48 space-y-4">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-6 w-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-5/6" />
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
-  const supabase = createClient()
+// Component for each recommendation - uses data from recommendation directly (no extra API calls!)
+function RecommendationCard({
+  rec,
+  clubContacts
+}: {
+  rec: SmartRecommendation
+  clubContacts: ClubContact[]
+}) {
+  // Build player data directly from recommendation - NO API CALLS NEEDED!
+  const agentPlayerData: PlayerCardData = useMemo(() => ({
+    player_id: rec.player_id,
+    player_name: rec.player_name,
+    player_transfermarkt_url: rec.player_transfermarkt_url,
+    picture_url: rec.player_picture_url,
+    position: rec.player_position,
+    age: rec.player_age,
+    nationality: rec.player_nationality,
+    club_name: null, // Player's current club not needed for comparison
+    club_logo_url: null,
+    club_transfermarkt_url: null,
+    club_avg_market_value: null,
+    league_name: null,
+    league_tier: null,
+    league_country: null,
+    league_transfermarkt_url: null,
+    height: null,
+    foot: null,
+    market_value: rec.player_market_value,
+    contract_expires: rec.player_contract_expires,
+    is_eu_passport: null
+  }), [rec])
 
-  useEffect(() => {
-    const fetchPlayerData = async () => {
-      try {
-        setLoading(true)
-
-        // Get current user (agent)
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-
-        // Fetch full data for agent's player with separate queries
-        const { data: playerData, error: playerError } = await supabase
-          .from('players_transfermarkt')
-          .select('*')
-          .eq('id', rec.player_id)
-          .single()
-
-        if (playerError) {
-          console.error('[Recommendations] Error fetching player:', playerError)
+  // Build expiring players data from match_reasons
+  const expiringPlayersData: Record<string, PlayerCardData> = useMemo(() => {
+    const map: Record<string, PlayerCardData> = {}
+    if (rec.match_reasons.expiring_players) {
+      rec.match_reasons.expiring_players.forEach(p => {
+        map[p.name] = {
+          player_id: 0,
+          player_name: p.name,
+          player_transfermarkt_url: null,
+          picture_url: null,
+          position: rec.player_position, // Same position
+          age: p.age,
+          nationality: null,
+          club_name: rec.club_name,
+          club_logo_url: rec.club_logo_url,
+          club_transfermarkt_url: rec.club_transfermarkt_url,
+          club_avg_market_value: rec.club_avg_market_value,
+          league_name: rec.league_name,
+          league_tier: rec.league_tier,
+          league_country: rec.club_country,
+          league_transfermarkt_url: null,
+          height: null,
+          foot: null,
+          market_value: p.market_value,
+          contract_expires: p.contract_expires,
+          is_eu_passport: null
         }
-
-        // Fetch agent overrides for this player
-        const { data: overrideData } = await supabase
-          .from('agent_player_overrides')
-          .select('*')
-          .eq('agent_id', user.id)
-          .eq('player_id', rec.player_id)
-          .maybeSingle()
-
-        if (playerData) {
-          // Apply overrides using COALESCE pattern (override takes priority)
-          const finalPosition = overrideData?.position_override ?? playerData.main_position
-          const finalAge = overrideData?.age_override ?? playerData.age
-          const finalHeight = overrideData?.height_override ?? playerData.height
-          const finalFoot = overrideData?.foot_override ?? playerData.foot
-          const finalNationality = overrideData?.nationality_override ?? playerData.nationality
-          const finalContractExpires = overrideData?.contract_expires_override ?? playerData.contract_expires
-          const finalMarketValue = overrideData?.market_value_override ?? playerData.market_value_eur
-
-          // Fetch club data
-          let clubData = null
-          let leagueData = null
-
-          if (playerData.club_id) {
-            const { data: club } = await supabase
-              .from('clubs_transfermarkt')
-              .select('*')
-              .eq('id', playerData.club_id)
-              .single()
-
-            clubData = club
-
-            // Fetch league data
-            if (club?.league_id) {
-              const { data: league } = await supabase
-                .from('leagues_transfermarkt')
-                .select('*')
-                .eq('id', club.league_id)
-                .single()
-
-              leagueData = league
-            }
-          }
-
-          setAgentPlayerData({
-            player_id: playerData.id,
-            player_name: playerData.name,
-            player_transfermarkt_url: playerData.transfermarkt_url,
-            picture_url: playerData.picture_url,
-            position: finalPosition,
-            age: finalAge,
-            nationality: finalNationality,
-            club_name: clubData?.name,
-            club_logo_url: clubData?.logo_url,
-            club_transfermarkt_url: clubData?.transfermarkt_url,
-            club_avg_market_value: clubData?.avg_market_value_eur,
-            league_name: leagueData?.name,
-            league_tier: leagueData?.tier,
-            league_country: leagueData?.country,
-            league_transfermarkt_url: leagueData?.transfermarkt_url,
-            height: finalHeight,
-            foot: finalFoot,
-            market_value: finalMarketValue,
-            contract_expires: finalContractExpires,
-            is_eu_passport: playerData.is_eu_passport
-          })
-        }
-
-        // Fetch full data for expiring players
-        if (rec.match_reasons.expiring_players && rec.match_reasons.expiring_players.length > 0) {
-          const expiringPlayerNames = rec.match_reasons.expiring_players.map(p => p.name)
-
-          const { data: expiringData, error: expiringError } = await supabase
-            .from('players_transfermarkt')
-            .select('*')
-            .eq('club_id', rec.club_id)
-            .in('name', expiringPlayerNames)
-
-          if (expiringError) {
-            console.error('[Recommendations] Error fetching expiring players:', expiringError)
-          }
-
-          if (expiringData && expiringData.length > 0) {
-            const expiringMap: Record<string, PlayerCardData> = {}
-
-            // Fetch club data (same for all expiring players since they're from the same club)
-            const { data: clubData } = await supabase
-              .from('clubs_transfermarkt')
-              .select('*')
-              .eq('id', rec.club_id)
-              .single()
-
-            // Fetch league data
-            let leagueData = null
-            if (clubData?.league_id) {
-              const { data: league } = await supabase
-                .from('leagues_transfermarkt')
-                .select('*')
-                .eq('id', clubData.league_id)
-                .single()
-
-              leagueData = league
-            }
-
-            expiringData.forEach((player: any) => {
-              expiringMap[player.name] = {
-                player_id: player.id,
-                player_name: player.name,
-                player_transfermarkt_url: player.transfermarkt_url,
-                picture_url: player.picture_url,
-                position: player.main_position,
-                age: player.age,
-                nationality: player.nationality,
-                club_name: clubData?.name,
-                club_logo_url: clubData?.logo_url,
-                club_transfermarkt_url: clubData?.transfermarkt_url,
-                club_avg_market_value: clubData?.avg_market_value_eur,
-                league_name: leagueData?.name,
-                league_tier: leagueData?.tier,
-                league_country: leagueData?.country,
-                league_transfermarkt_url: leagueData?.transfermarkt_url,
-                height: player.height,
-                foot: player.foot,
-                market_value: player.market_value_eur,
-                contract_expires: player.contract_expires,
-                is_eu_passport: player.is_eu_passport
-              }
-            })
-            setExpiringPlayersData(expiringMap)
-          }
-        }
-
-        // Fetch club contacts from agent_favorite_clubs
-        const { data: favoriteClubData } = await supabase
-          .from('agent_favorite_clubs')
-          .select('contacts')
-          .eq('agent_id', user.id)
-          .eq('club_id', rec.club_id)
-          .maybeSingle()
-
-        if (favoriteClubData && favoriteClubData.contacts) {
-          setClubContacts(Array.isArray(favoriteClubData.contacts) ? favoriteClubData.contacts : [])
-        }
-      } catch (error) {
-        console.error('[Recommendations] Error fetching player data:', error)
-      } finally {
-        setLoading(false)
-      }
+      })
     }
-
-    fetchPlayerData()
+    return map
   }, [rec])
 
   const formatDate = (dateString: string) => {
@@ -242,23 +161,6 @@ function RecommendationCard({ rec }: { rec: SmartRecommendation }) {
     if (value >= 1000000) return `€${(value / 1000000).toFixed(1)}M`
     if (value >= 1000) return `€${(value / 1000).toFixed(0)}K`
     return `€${value}`
-  }
-
-  if (loading) {
-    return (
-      <Card className="overflow-hidden">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-3 text-muted-foreground">
-            <div className="h-4 w-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm">Loading player smart recommendations...</span>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (!agentPlayerData) {
-    return null
   }
 
   return (
@@ -322,7 +224,7 @@ function RecommendationCard({ rec }: { rec: SmartRecommendation }) {
                 )}
 
                 {/* Country, League & Tier on same line */}
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
                   {rec.club_country && (
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
                       <span className="text-base">{getCountryFlag(rec.club_country)}</span>
@@ -357,7 +259,7 @@ function RecommendationCard({ rec }: { rec: SmartRecommendation }) {
             {/* Player Comparisons */}
             {rec.match_reasons.expiring_contracts_in_position > 0 && rec.match_reasons.expiring_players && rec.match_reasons.expiring_players.length > 0 && (
               <div className="space-y-4">
-                {rec.match_reasons.expiring_players.map((expiringPlayer, idx) => {
+                {rec.match_reasons.expiring_players.slice(0, 2).map((expiringPlayer, idx) => {
                   const expiringPlayerFullData = expiringPlayersData[expiringPlayer.name]
 
                   if (!expiringPlayerFullData) return null
@@ -419,7 +321,6 @@ function RecommendationCard({ rec }: { rec: SmartRecommendation }) {
               <div className="space-y-2 text-xs">
                 {/* Contract Timing - KILLER FEATURE */}
                 {rec.match_reasons.contract_timing_perfect && rec.match_reasons.expiring_players && rec.match_reasons.expiring_players.length > 0 && (() => {
-                  // Calculate actual difference between the two contracts
                   const agentContractDate = new Date(rec.player_contract_expires)
                   const expiringContractDate = new Date(rec.match_reasons.expiring_players[0].contract_expires)
                   const daysDiff = Math.abs((agentContractDate.getTime() - expiringContractDate.getTime()) / (1000 * 60 * 60 * 24))
@@ -435,7 +336,6 @@ function RecommendationCard({ rec }: { rec: SmartRecommendation }) {
                   )
                 })()}
                 {rec.match_reasons.contract_timing_good && !rec.match_reasons.contract_timing_perfect && rec.match_reasons.expiring_players && rec.match_reasons.expiring_players.length > 0 && (() => {
-                  // Calculate actual difference between the two contracts
                   const agentContractDate = new Date(rec.player_contract_expires)
                   const expiringContractDate = new Date(rec.match_reasons.expiring_players[0].contract_expires)
                   const daysDiff = Math.abs((agentContractDate.getTime() - expiringContractDate.getTime()) / (1000 * 60 * 60 * 24))
@@ -455,19 +355,19 @@ function RecommendationCard({ rec }: { rec: SmartRecommendation }) {
                 {rec.match_reasons.urgency_total_replacement && (
                   <div className="flex items-start gap-2">
                     <AlertCircle className="h-3 w-3 text-red-600 mt-0.5 flex-shrink-0" />
-                    <span className="font-semibold text-red-700">100% squad leaving in this position - total replacement needed (+40 pts)</span>
+                    <span className="font-semibold text-red-700">100% squad leaving - total replacement needed (+40 pts)</span>
                   </div>
                 )}
                 {rec.match_reasons.urgency_most_leaving && !rec.match_reasons.urgency_total_replacement && (
                   <div className="flex items-start gap-2">
                     <AlertCircle className="h-3 w-3 text-orange-600 mt-0.5 flex-shrink-0" />
-                    <span className="font-semibold text-orange-700">Most squad leaving this position ({rec.match_reasons.turnover_percentage}%) - {rec.match_reasons.expiring_contracts_in_position}/{rec.match_reasons.position_count} players (+25 pts)</span>
+                    <span className="font-semibold text-orange-700">Most leaving ({rec.match_reasons.turnover_percentage}%) - {rec.match_reasons.expiring_contracts_in_position}/{rec.match_reasons.position_count} players (+25 pts)</span>
                   </div>
                 )}
                 {rec.match_reasons.urgency_half_leaving && !rec.match_reasons.urgency_most_leaving && !rec.match_reasons.urgency_total_replacement && (
                   <div className="flex items-start gap-2">
                     <AlertCircle className="h-3 w-3 text-yellow-600 mt-0.5 flex-shrink-0" />
-                    <span className="font-medium text-yellow-700">Need replacement ({rec.match_reasons.turnover_percentage}%) - {rec.match_reasons.expiring_contracts_in_position}/{rec.match_reasons.position_count} players leaving this position (+15 pts)</span>
+                    <span className="font-medium text-yellow-700">Need replacement ({rec.match_reasons.turnover_percentage}%) (+15 pts)</span>
                   </div>
                 )}
 
@@ -483,26 +383,15 @@ function RecommendationCard({ rec }: { rec: SmartRecommendation }) {
                 {rec.match_reasons.market_fit_perfect && (
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span>Perfect market fit - ideal price range (+30 pts)</span>
+                    <span>Perfect market fit (+30 pts)</span>
                   </div>
                 )}
+
                 {/* Multiple Openings */}
                 {rec.match_reasons.multiple_openings_massive && (
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span className="font-semibold">Multiple openings - {rec.match_reasons.expiring_contracts_in_position} players leaving (+25 pts)</span>
-                  </div>
-                )}
-                {rec.match_reasons.multiple_openings_great && !rec.match_reasons.multiple_openings_massive && (
-                  <div className="flex items-start gap-2">
-                    <CheckCircle2 className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span className="font-semibold">Multiple openings - 4 players leaving (+20 pts)</span>
-                  </div>
-                )}
-                {rec.match_reasons.multiple_openings_good && !rec.match_reasons.multiple_openings_great && !rec.match_reasons.multiple_openings_massive && (
-                  <div className="flex items-start gap-2">
-                    <CheckCircle2 className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span>Multiple openings - 3 players leaving (+15 pts)</span>
+                    <span className="font-semibold">{rec.match_reasons.expiring_contracts_in_position} players leaving (+25 pts)</span>
                   </div>
                 )}
 
@@ -510,7 +399,7 @@ function RecommendationCard({ rec }: { rec: SmartRecommendation }) {
                 {rec.match_reasons.imminent_free && (
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span>Free agent in {Math.round(rec.match_reasons.details.months_until_free)} month{Math.round(rec.match_reasons.details.months_until_free) !== 1 ? 's' : ''} - Urgent (+25 pts)</span>
+                    <span>Free in {Math.round(rec.match_reasons.details.months_until_free)} month{Math.round(rec.match_reasons.details.months_until_free) !== 1 ? 's' : ''} (+25 pts)</span>
                   </div>
                 )}
 
@@ -518,7 +407,7 @@ function RecommendationCard({ rec }: { rec: SmartRecommendation }) {
                 {rec.match_reasons.same_country && (
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span>Same nationality - easy integration (+20 pts)</span>
+                    <span>Same nationality (+20 pts)</span>
                   </div>
                 )}
 
@@ -526,9 +415,7 @@ function RecommendationCard({ rec }: { rec: SmartRecommendation }) {
                 {rec.match_reasons.age_fits_profile && (
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span>
-                      Age fits squad profile - {rec.match_reasons.squad_avg_age_in_position?.toFixed(1)} avg (+15 pts)
-                    </span>
+                    <span>Age fits squad (+15 pts)</span>
                   </div>
                 )}
 
@@ -536,15 +423,7 @@ function RecommendationCard({ rec }: { rec: SmartRecommendation }) {
                 {rec.match_reasons.age_prime && (
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span>Prime age (23-28) - peak performance (+15 pts)</span>
-                  </div>
-                )}
-
-                {/* Young Prospect */}
-                {rec.match_reasons.age_prospect && !rec.match_reasons.age_prime && (
-                  <div className="flex items-start gap-2">
-                    <CheckCircle2 className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span>Young prospect (19-22) - development potential (+10 pts)</span>
+                    <span>Prime age 23-28 (+15 pts)</span>
                   </div>
                 )}
 
@@ -552,7 +431,7 @@ function RecommendationCard({ rec }: { rec: SmartRecommendation }) {
                 {rec.match_reasons.nordic_neighbor && !rec.match_reasons.same_country && (
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span>Nordic neighbor - similar culture (+10 pts)</span>
+                    <span>Nordic neighbor (+10 pts)</span>
                   </div>
                 )}
               </div>
@@ -583,10 +462,7 @@ function RecommendationCard({ rec }: { rec: SmartRecommendation }) {
                       {contact.email && (
                         <div className="flex items-center gap-1.5">
                           <Mail className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                          <a
-                            href={`mailto:${contact.email}`}
-                            className="text-primary hover:underline truncate"
-                          >
+                          <a href={`mailto:${contact.email}`} className="text-primary hover:underline truncate">
                             {contact.email}
                           </a>
                         </div>
@@ -594,10 +470,7 @@ function RecommendationCard({ rec }: { rec: SmartRecommendation }) {
                       {contact.phone && (
                         <div className="flex items-center gap-1.5">
                           <Phone className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                          <a
-                            href={`tel:${contact.phone}`}
-                            className="text-primary hover:underline truncate"
-                          >
+                          <a href={`tel:${contact.phone}`} className="text-primary hover:underline truncate">
                             {contact.phone}
                           </a>
                         </div>
@@ -610,10 +483,7 @@ function RecommendationCard({ rec }: { rec: SmartRecommendation }) {
 
             {/* Contact Club Button */}
             <div className="mt-6">
-              <Button
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                size="lg"
-              >
+              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" size="lg">
                 <Send className="h-4 w-4 mr-2" />
                 Contact Club!
               </Button>
@@ -626,77 +496,102 @@ function RecommendationCard({ rec }: { rec: SmartRecommendation }) {
 }
 
 export default function SmartRecommendationsCards({ recommendations }: SmartRecommendationsCardsProps) {
-  const [displayCount, setDisplayCount] = useState(1)
-  const [isLoading, setIsLoading] = useState(false)
+  const [clubContactsMap, setClubContactsMap] = useState<Record<number, ClubContact[]>>({})
+  const [loadingContacts, setLoadingContacts] = useState(true)
+  const [displayCount, setDisplayCount] = useState(3)
 
+  const supabase = createClient()
+
+  // Batch fetch all club contacts in ONE query
+  useEffect(() => {
+    const fetchAllContacts = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          setLoadingContacts(false)
+          return
+        }
+
+        // Get unique club IDs
+        const clubIds = [...new Set(recommendations.map(r => r.club_id))]
+
+        // Fetch all contacts in ONE query
+        const { data: favoriteClubs } = await supabase
+          .from('agent_favorite_clubs')
+          .select('club_id, contacts')
+          .eq('agent_id', user.id)
+          .in('club_id', clubIds)
+
+        // Build map
+        const contactsMap: Record<number, ClubContact[]> = {}
+        favoriteClubs?.forEach(fc => {
+          if (fc.contacts && Array.isArray(fc.contacts)) {
+            contactsMap[fc.club_id] = fc.contacts
+          }
+        })
+
+        setClubContactsMap(contactsMap)
+      } catch (error) {
+        console.error('[Recommendations] Error fetching contacts:', error)
+      } finally {
+        setLoadingContacts(false)
+      }
+    }
+
+    if (recommendations.length > 0) {
+      fetchAllContacts()
+    } else {
+      setLoadingContacts(false)
+    }
+  }, [recommendations, supabase])
+
+  // Progressive loading: show first 3 immediately, then load more on scroll
   const visibleRecommendations = recommendations.slice(0, displayCount)
   const hasMore = displayCount < recommendations.length
 
-  // Staggered initial load: 1 -> 2 -> 3
+  // Load more when scrolling near bottom
   useEffect(() => {
-    if (displayCount === 1 && recommendations.length > 1) {
-      const timer = setTimeout(() => setDisplayCount(2), 500)
-      return () => clearTimeout(timer)
+    if (!hasMore) return
+
+    const handleScroll = () => {
+      const scrolledToBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 800
+      if (scrolledToBottom && hasMore) {
+        setDisplayCount(prev => Math.min(prev + 5, recommendations.length))
+      }
     }
-    if (displayCount === 2 && recommendations.length > 2) {
-      const timer = setTimeout(() => setDisplayCount(3), 500)
-      return () => clearTimeout(timer)
-    }
-  }, [displayCount, recommendations.length])
 
-  // Infinite scroll: load 10 more when trigger element enters viewport
-  useEffect(() => {
-    if (displayCount < 3 || !hasMore || isLoading) return
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [hasMore, recommendations.length])
 
-    // Calculate trigger index: 5 cards from bottom, but at least index 0
-    const triggerIndex = Math.max(0, displayCount - 5)
-    const triggerElement = document.querySelector(`[data-recommendation-index="${triggerIndex}"]`)
-
-    if (!triggerElement) return
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && hasMore && !isLoading) {
-            setIsLoading(true)
-            // Load 10 more cards
-            setTimeout(() => {
-              setDisplayCount(prev => Math.min(prev + 10, recommendations.length))
-              setIsLoading(false)
-            }, 300)
-          }
-        })
-      },
-      { rootMargin: '400px' } // Start loading when 400px away
+  // Show skeletons while loading contacts (but cards render immediately!)
+  if (loadingContacts && recommendations.length > 0) {
+    return (
+      <div className="space-y-6">
+        {recommendations.slice(0, 3).map((rec) => (
+          <RecommendationCard
+            key={rec.recommendation_id}
+            rec={rec}
+            clubContacts={[]}
+          />
+        ))}
+      </div>
     )
-
-    observer.observe(triggerElement)
-
-    return () => {
-      observer.disconnect()
-    }
-  }, [displayCount, hasMore, isLoading, recommendations.length])
+  }
 
   return (
     <div className="space-y-6">
-      {visibleRecommendations.map((rec, index) => (
-        <div key={rec.recommendation_id} data-recommendation-index={index}>
-          <RecommendationCard rec={rec} />
-        </div>
+      {visibleRecommendations.map((rec) => (
+        <RecommendationCard
+          key={rec.recommendation_id}
+          rec={rec}
+          clubContacts={clubContactsMap[rec.club_id] || []}
+        />
       ))}
 
-      {isLoading && hasMore && (
-        <div className="flex justify-center py-8">
-          <div className="flex items-center gap-3 text-muted-foreground">
-            <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm">Loading more recommendations...</span>
-          </div>
-        </div>
-      )}
-
-      {!hasMore && recommendations.length > 1 && (
-        <div className="text-center py-6 text-sm text-muted-foreground">
-          All {recommendations.length} recommendations loaded
+      {hasMore && (
+        <div className="text-center py-4 text-sm text-muted-foreground">
+          Scroll for more... ({displayCount}/{recommendations.length})
         </div>
       )}
     </div>

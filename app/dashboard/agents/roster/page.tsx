@@ -54,6 +54,8 @@ export type RosterPlayer = {
   has_foot_override: boolean
   has_contract_override: boolean
   has_value_override: boolean
+  // SofaScore performance data
+  sf_data: any | null
 }
 
 export default function AgentRosterPage() {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState,useEffect,useMemo,useRef,useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
   Dialog,
@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { Search,Loader2,User,Plus,Check,Calendar,Euro,ChevronsUpDown,Save,FileText,Eye } from 'lucide-react'
+import { Search, Loader2, User, Plus, Check, Calendar, Euro, ChevronsUpDown, Save, FileText, Eye } from 'lucide-react'
 import { toast } from 'sonner'
 import { getCountryFlag } from '@/lib/utils/country-flags'
 import {
@@ -42,6 +42,8 @@ interface Player {
   club_logo_url: string | null
   league_name: string | null
   league_country: string | null
+  has_saved_note: boolean
+  saved_note: string | null
 }
 
 interface AddRosterPlayerModalProps {
@@ -50,284 +52,220 @@ interface AddRosterPlayerModalProps {
   onPlayerAdded: () => void
 }
 
-export default function AddRosterPlayerModal({ isOpen,onClose,onPlayerAdded }: AddRosterPlayerModalProps) {
-  const [searchTerm,setSearchTerm] = useState('')
-  const [agencyFilter,setAgencyFilter] = useState('all')
-  const [positionFilter,setPositionFilter] = useState('all')
-  const [nationalityFilter,setNationalityFilter] = useState('all')
-  const [players,setPlayers] = useState<Player[]>([])
-  const [rosterPlayerIds,setRosterPlayerIds] = useState<Set<number>>(new Set())
-  const [agencies,setAgencies] = useState<string[]>([])
-  const [positions,setPositions] = useState<string[]>([])
-  const [nationalities,setNationalities] = useState<string[]>([])
-  const [expandedPlayerId,setExpandedPlayerId] = useState<number | null>(null)
-  const [notes,setNotes] = useState<Record<number,string>>({})
-  const [savedNotes,setSavedNotes] = useState<Set<number>>(new Set()) // Track which players have saved notes
-  const [loading,setLoading] = useState(false)
-  const [addingPlayerId,setAddingPlayerId] = useState<number | null>(null)
-  const [savingNotePlayerId,setSavingNotePlayerId] = useState<number | null>(null)
+const PAGE_SIZE = 50
 
-  // Infinite scroll state
-  const [displayCount,setDisplayCount] = useState(50)
-  const [loadingMore,setLoadingMore] = useState(false)
+export default function AddRosterPlayerModal({ isOpen, onClose, onPlayerAdded }: AddRosterPlayerModalProps) {
+  // Search and filter state
+  const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [agencyFilter, setAgencyFilter] = useState('all')
+  const [positionFilter, setPositionFilter] = useState('all')
+  const [nationalityFilter, setNationalityFilter] = useState('all')
+
+  // Data state
+  const [players, setPlayers] = useState<Player[]>([])
+  const [totalCount, setTotalCount] = useState(0)
+  const [offset, setOffset] = useState(0)
+  const [hasMore, setHasMore] = useState(true)
+
+  // Filter options (loaded once)
+  const [agencies, setAgencies] = useState<string[]>([])
+  const [positions, setPositions] = useState<string[]>([])
+  const [nationalities, setNationalities] = useState<string[]>([])
+  const [filterOptionsLoaded, setFilterOptionsLoaded] = useState(false)
+
+  // UI state
+  const [expandedPlayerId, setExpandedPlayerId] = useState<number | null>(null)
+  const [notes, setNotes] = useState<Record<number, string>>({})
+  const [loading, setLoading] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [addingPlayerId, setAddingPlayerId] = useState<number | null>(null)
+  const [savingNotePlayerId, setSavingNotePlayerId] = useState<number | null>(null)
+
+  // Refs
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Combobox states
-  const [openAgency,setOpenAgency] = useState(false)
-  const [openPosition,setOpenPosition] = useState(false)
-  const [openNationality,setOpenNationality] = useState(false)
+  const [openAgency, setOpenAgency] = useState(false)
+  const [openPosition, setOpenPosition] = useState(false)
+  const [openNationality, setOpenNationality] = useState(false)
 
   // Dropdown search states
-  const [agencySearch,setAgencySearch] = useState('')
-  const [positionSearch,setPositionSearch] = useState('')
-  const [nationalitySearch,setNationalitySearch] = useState('')
+  const [agencySearch, setAgencySearch] = useState('')
+  const [positionSearch, setPositionSearch] = useState('')
+  const [nationalitySearch, setNationalitySearch] = useState('')
 
   const supabase = createClient()
 
-  // Fetch all players and roster players
+  // Debounce search input
   useEffect(() => {
-    if (!isOpen) return
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
+    }
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearch(searchTerm)
+    }, 300)
 
-    const fetchData = async () => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current)
+      }
+    }
+  }, [searchTerm])
+
+  // Load filter options once when modal opens
+  useEffect(() => {
+    if (!isOpen || filterOptionsLoaded) return
+
+    const loadFilterOptions = async () => {
       try {
-        setLoading(true)
+        const { data, error } = await supabase.rpc('get_player_filter_options')
 
-        if (!supabase) return
+        if (error) throw error
 
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-
-        // Fetch all players with club and league info
-        // NEW CODE - Fetch all players with pagination
-        let playersData: any[] = []
-        let from = 0
-        const pageSize = 1000
-
-        while (true) {
-          const { data,error } = await supabase
-            .from('players_transfermarkt')
-            .select(`
-              id,
-              name,
-              age,
-              main_position,
-              nationality,
-              height,
-              foot,
-              contract_expires,
-              market_value_eur,
-              is_eu_passport,
-              picture_url,
-              transfermarkt_url,
-              player_agent,
-              club_id,
-              clubs_transfermarkt(
-                name,
-                logo_url,
-                leagues_transfermarkt(
-                  name,
-                  country
-                )
-              )
-            `)
-            .order('name')
-            .range(from,from + pageSize - 1)
-
-          if (error) throw error
-          if (!data || data.length === 0) break
-
-          playersData = [...playersData,...data]
-
-          if (data.length < pageSize) break
-          from += pageSize
+        if (data && data[0]) {
+          setPositions(data[0].positions || [])
+          // Extract individual nationalities from dual nationality strings
+          const allNationalities = (data[0].nationalities || [])
+            .flatMap((nat: string) => nat.split(' / ').map((n: string) => n.trim()))
+          const uniqueNationalities = [...new Set(allNationalities)].sort() as string[]
+          setNationalities(uniqueNationalities)
+          setAgencies(data[0].agencies || [])
         }
 
-        // Fetch already rostered players
-        const { data: rosteredData,error: rosteredError } = await supabase
-          .from('agent_rosters')
-          .select('player_id')
-          .eq('agent_id',user.id)
-
-        if (rosteredError) throw rosteredError
-
-        // Fetch saved player notes
-        const { data: notesData,error: notesError } = await supabase
-          .from('agent_player_notes')
-          .select('player_id, notes')
-          .eq('agent_id',user.id)
-
-        if (notesError) throw notesError
-
-        // Create a set of rostered player IDs
-        const rosteredIds = new Set((rosteredData || []).map((r: any) => r.player_id))
-        setRosterPlayerIds(rosteredIds)
-
-        // Load saved notes into state
-        const notesMap: Record<number,string> = {}
-        const savedNotesSet = new Set<number>()
-          ; (notesData || []).forEach((note: any) => {
-            if (note.notes) {
-              notesMap[note.player_id] = note.notes
-              savedNotesSet.add(note.player_id)
-            }
-          })
-        setNotes(notesMap)
-        setSavedNotes(savedNotesSet)
-
-        // Transform and filter out already rostered players
-        const transformedPlayers = (playersData || []).map((player: any) => ({
-          id: player.id,
-          name: player.name,
-          age: player.age,
-          main_position: player.main_position,
-          nationality: player.nationality,
-          height: player.height,
-          foot: player.foot,
-          contract_expires: player.contract_expires,
-          market_value_eur: player.market_value_eur,
-          is_eu_passport: player.is_eu_passport,
-          picture_url: player.picture_url,
-          transfermarkt_url: player.transfermarkt_url,
-          player_agent: player.player_agent,
-          club_id: player.club_id,
-          club_name: player.clubs_transfermarkt?.name || null,
-          club_logo_url: player.clubs_transfermarkt?.logo_url || null,
-          league_name: player.clubs_transfermarkt?.leagues_transfermarkt?.name || null,
-          league_country: player.clubs_transfermarkt?.leagues_transfermarkt?.country || null
-        }))
-
-        const availablePlayers = transformedPlayers.filter(player => !rosteredIds.has(player.id))
-        setPlayers(availablePlayers)
-
-        // Extract unique agencies, positions, and nationalities
-        const uniqueAgencies = [...new Set(
-          availablePlayers
-            .map(p => p.player_agent)
-            .filter(Boolean) as string[]
-        )].sort()
-
-        const uniquePositions = [...new Set(
-          availablePlayers
-            .map(p => p.main_position)
-            .filter(Boolean) as string[]
-        )].sort()
-
-        // Extract individual nationalities from dual nationality strings (e.g., "Lithuania / France")
-        const allNationalities = availablePlayers
-          .map(p => p.nationality)
-          .filter(Boolean)
-          .flatMap(nat => (nat as string).split(' / ').map(n => n.trim()))
-
-        const uniqueNationalities = [...new Set(allNationalities)].sort()
-
-        setAgencies(uniqueAgencies)
-        setPositions(uniquePositions)
-        setNationalities(uniqueNationalities)
+        setFilterOptionsLoaded(true)
       } catch (err) {
-        console.error('Error fetching data:',err)
-      } finally {
-        setLoading(false)
+        console.error('[AddRosterPlayerModal] Error loading filter options:', err)
       }
     }
 
-    fetchData()
-  },[isOpen,supabase])
+    loadFilterOptions()
+  }, [isOpen, filterOptionsLoaded, supabase])
 
-  // Apply filters with useMemo for performance
-  const filteredPlayers = useMemo(() => {
-    let filtered = players
+  // Search players (server-side)
+  const searchPlayers = useCallback(async (resetResults = true) => {
+    if (!isOpen) return
 
-    // Agency filter
-    if (agencyFilter !== 'all') {
-      filtered = filtered.filter(player => player.player_agent === agencyFilter)
-    }
+    try {
+      if (resetResults) {
+        setLoading(true)
+        setOffset(0)
+      } else {
+        setLoadingMore(true)
+      }
 
-    // Position filter
-    if (positionFilter !== 'all') {
-      filtered = filtered.filter(player => player.main_position === positionFilter)
-    }
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
 
-    // Nationality filter (handle dual nationalities like "Lithuania / France")
-    if (nationalityFilter !== 'all') {
-      filtered = filtered.filter(player => {
-        if (!player.nationality) return false
-        const nationalities = player.nationality.split(' / ').map(n => n.trim())
-        return nationalities.includes(nationalityFilter)
+      const currentOffset = resetResults ? 0 : offset
+
+      const { data, error } = await supabase.rpc('search_available_players', {
+        p_agent_id: user.id,
+        p_search: debouncedSearch || null,
+        p_position: positionFilter === 'all' ? null : positionFilter,
+        p_nationality: nationalityFilter === 'all' ? null : nationalityFilter,
+        p_agency: agencyFilter === 'all' ? null : agencyFilter,
+        p_limit: PAGE_SIZE,
+        p_offset: currentOffset
       })
+
+      if (error) throw error
+
+      const transformedPlayers: Player[] = (data || []).map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        age: p.age,
+        main_position: p.main_position,
+        nationality: p.nationality,
+        height: p.height,
+        foot: p.foot,
+        contract_expires: p.contract_expires,
+        market_value_eur: p.market_value_eur,
+        is_eu_passport: p.is_eu_passport,
+        picture_url: p.picture_url,
+        transfermarkt_url: p.transfermarkt_url,
+        player_agent: p.player_agent,
+        club_id: p.club_id,
+        club_name: p.club_name,
+        club_logo_url: p.club_logo_url,
+        league_name: p.league_name,
+        league_country: p.league_country,
+        has_saved_note: p.has_saved_note || false,
+        saved_note: p.saved_note
+      }))
+
+      // Load saved notes into notes state
+      const notesMap: Record<number, string> = { ...notes }
+      transformedPlayers.forEach((p) => {
+        if (p.saved_note && !notesMap[p.id]) {
+          notesMap[p.id] = p.saved_note
+        }
+      })
+      setNotes(notesMap)
+
+      // Get total count from first result
+      const total = data?.[0]?.total_count || 0
+      setTotalCount(total)
+
+      if (resetResults) {
+        setPlayers(transformedPlayers)
+        setOffset(PAGE_SIZE)
+      } else {
+        setPlayers(prev => [...prev, ...transformedPlayers])
+        setOffset(prev => prev + PAGE_SIZE)
+      }
+
+      setHasMore(transformedPlayers.length === PAGE_SIZE && (currentOffset + PAGE_SIZE) < total)
+
+    } catch (err) {
+      console.error('[AddRosterPlayerModal] Error searching players:', err)
+      toast.error('Failed to load players')
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
     }
+  }, [isOpen, supabase, debouncedSearch, positionFilter, nationalityFilter, agencyFilter, offset, notes])
 
-    // Search filter
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase()
-      filtered = filtered.filter(player =>
-        player.name.toLowerCase().includes(searchLower) ||
-        player.club_name?.toLowerCase().includes(searchLower) ||
-        player.player_agent?.toLowerCase().includes(searchLower)
-      )
-    }
-
-    // Sort: Players with saved notes first, then alphabetically
-    filtered.sort((a,b) => {
-      const aHasNote = savedNotes.has(a.id)
-      const bHasNote = savedNotes.has(b.id)
-
-      // If one has notes and the other doesn't, prioritize the one with notes
-      if (aHasNote && !bHasNote) return -1
-      if (!aHasNote && bHasNote) return 1
-
-      // Otherwise, sort alphabetically by name
-      return a.name.localeCompare(b.name)
-    })
-
-    return filtered
-  },[players,agencyFilter,positionFilter,nationalityFilter,searchTerm,savedNotes])
-
-  // Display only a subset of filtered players for performance
-  const displayedPlayers = useMemo(() => {
-    return filteredPlayers.slice(0,displayCount)
-  },[filteredPlayers,displayCount])
-
-  // Reset display count when filters change
+  // Trigger search when filters change
   useEffect(() => {
-    setDisplayCount(50)
+    if (!isOpen) return
+    searchPlayers(true)
+  }, [isOpen, debouncedSearch, positionFilter, nationalityFilter, agencyFilter])
+
+  // Reset scroll when filters change
+  useEffect(() => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = 0
     }
-  },[agencyFilter,positionFilter,nationalityFilter,searchTerm])
+  }, [debouncedSearch, positionFilter, nationalityFilter, agencyFilter])
 
   // Infinite scroll handler
   const handleScroll = useCallback(() => {
     const container = scrollContainerRef.current
-    if (!container || loadingMore) return
+    if (!container || loadingMore || !hasMore) return
 
-    const { scrollTop,scrollHeight,clientHeight } = container
+    const { scrollTop, scrollHeight, clientHeight } = container
     const scrollPercentage = (scrollTop + clientHeight) / scrollHeight
 
     // Load more when scrolled 80% down
-    if (scrollPercentage > 0.8 && displayCount < filteredPlayers.length) {
-      setLoadingMore(true)
-      // Simulate a small delay for smooth UX
-      setTimeout(() => {
-        setDisplayCount(prev => Math.min(prev + 50,filteredPlayers.length))
-        setLoadingMore(false)
-      },300)
+    if (scrollPercentage > 0.8) {
+      searchPlayers(false)
     }
-  },[displayCount,filteredPlayers.length,loadingMore])
+  }, [loadingMore, hasMore, searchPlayers])
 
   // Attach scroll listener
   useEffect(() => {
     const container = scrollContainerRef.current
     if (!container) return
 
-    container.addEventListener('scroll',handleScroll)
-    return () => container.removeEventListener('scroll',handleScroll)
-  },[handleScroll])
+    container.addEventListener('scroll', handleScroll)
+    return () => container.removeEventListener('scroll', handleScroll)
+  }, [handleScroll])
 
   const handleAddPlayer = async (player: Player) => {
     try {
       setAddingPlayerId(player.id)
-
-      if (!supabase) return
 
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
@@ -342,24 +280,18 @@ export default function AddRosterPlayerModal({ isOpen,onClose,onPlayerAdded }: A
 
       if (error) throw error
 
-      // Success - remove from list and update parent
+      // Remove player from list
       setPlayers(prev => prev.filter(p => p.id !== player.id))
-      setRosterPlayerIds(prev => new Set([...prev,player.id]))
+      setTotalCount(prev => prev - 1)
       setExpandedPlayerId(null)
-      setNotes(prev => {
-        const newNotes = { ...prev }
-        delete newNotes[player.id]
-        return newNotes
-      })
 
       // Notify parent to refresh
       onPlayerAdded()
 
-      // Show success toast
       toast.success(`${player.name} added to your roster!`)
     } catch (err: any) {
-      console.error('Error adding player:',err)
-      alert('Failed to add player: ' + err.message)
+      console.error('[AddRosterPlayerModal] Error adding player:', err)
+      toast.error('Failed to add player: ' + err.message)
     } finally {
       setAddingPlayerId(null)
     }
@@ -373,8 +305,6 @@ export default function AddRosterPlayerModal({ isOpen,onClose,onPlayerAdded }: A
     try {
       setSavingNotePlayerId(player.id)
 
-      if (!supabase) return
-
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
@@ -385,17 +315,15 @@ export default function AddRosterPlayerModal({ isOpen,onClose,onPlayerAdded }: A
         const { error } = await supabase
           .from('agent_player_notes')
           .delete()
-          .eq('agent_id',user.id)
-          .eq('player_id',player.id)
+          .eq('agent_id', user.id)
+          .eq('player_id', player.id)
 
         if (error) throw error
 
-        // Remove from saved notes set
-        setSavedNotes(prev => {
-          const newSet = new Set(prev)
-          newSet.delete(player.id)
-          return newSet
-        })
+        // Update player in list
+        setPlayers(prev => prev.map(p =>
+          p.id === player.id ? { ...p, has_saved_note: false, saved_note: null } : p
+        ))
 
         toast.success('Note removed')
       } else {
@@ -407,20 +335,22 @@ export default function AddRosterPlayerModal({ isOpen,onClose,onPlayerAdded }: A
             player_id: player.id,
             notes: noteText,
             updated_at: new Date().toISOString()
-          },{
+          }, {
             onConflict: 'agent_id,player_id'
           })
 
         if (error) throw error
 
-        // Add to saved notes set
-        setSavedNotes(prev => new Set([...prev,player.id]))
+        // Update player in list
+        setPlayers(prev => prev.map(p =>
+          p.id === player.id ? { ...p, has_saved_note: true, saved_note: noteText } : p
+        ))
 
         toast.success(`Note saved for ${player.name}`)
       }
     } catch (err: any) {
-      console.error('Error saving note:',err)
-      alert('Failed to save note: ' + err.message)
+      console.error('[AddRosterPlayerModal] Error saving note:', err)
+      toast.error('Failed to save note: ' + err.message)
     } finally {
       setSavingNotePlayerId(null)
     }
@@ -435,7 +365,7 @@ export default function AddRosterPlayerModal({ isOpen,onClose,onPlayerAdded }: A
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A'
-    return new Date(dateString).toLocaleDateString('en-GB',{
+    return new Date(dateString).toLocaleDateString('en-GB', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
@@ -444,12 +374,16 @@ export default function AddRosterPlayerModal({ isOpen,onClose,onPlayerAdded }: A
 
   const handleClose = () => {
     setSearchTerm('')
+    setDebouncedSearch('')
     setAgencyFilter('all')
     setPositionFilter('all')
     setNationalityFilter('all')
     setExpandedPlayerId(null)
     setNotes({})
-    setDisplayCount(50)
+    setPlayers([])
+    setOffset(0)
+    setTotalCount(0)
+    setHasMore(true)
     onClose()
   }
 
@@ -476,6 +410,9 @@ export default function AddRosterPlayerModal({ isOpen,onClose,onPlayerAdded }: A
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9"
               />
+              {searchTerm !== debouncedSearch && (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+              )}
             </div>
           </div>
 
@@ -645,7 +582,7 @@ export default function AddRosterPlayerModal({ isOpen,onClose,onPlayerAdded }: A
                           setNationalitySearch('')
                         }}
                       >
-                        <span className="mr-2">{getCountryFlag(nationality) || '🌍'}</span>
+                        <span className="mr-2">{getCountryFlag(nationality) || ''}</span>
                         {nationality}
                       </div>
                     ))}
@@ -657,9 +594,9 @@ export default function AddRosterPlayerModal({ isOpen,onClose,onPlayerAdded }: A
 
         {/* Results */}
         <div className="text-sm text-muted-foreground mb-2 flex-shrink-0">
-          {loading ? 'Loading...' : (
-            filteredPlayers.length > 0
-              ? `Showing ${displayedPlayers.length} of ${filteredPlayers.length} players${displayedPlayers.length < filteredPlayers.length ? ' (scroll for more)' : ''}`
+          {loading ? 'Searching...' : (
+            totalCount > 0
+              ? `Showing ${players.length} of ${totalCount} players${hasMore ? ' (scroll for more)' : ''}`
               : 'No players found'
           )}
         </div>
@@ -673,19 +610,15 @@ export default function AddRosterPlayerModal({ isOpen,onClose,onPlayerAdded }: A
             <div className="flex justify-center items-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : filteredPlayers.length === 0 ? (
+          ) : players.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <User className="h-12 w-12 mb-4 opacity-50" />
               <p>No players found</p>
-              <p className="text-sm">
-                {rosterPlayerIds.size > 0 && players.length === 0
-                  ? 'All players have been added to your roster!'
-                  : 'Try adjusting your filters'}
-              </p>
+              <p className="text-sm">Try adjusting your filters or search term</p>
             </div>
           ) : (
             <div className="p-4 space-y-2">
-              {displayedPlayers.map(player => (
+              {players.map(player => (
                 <div key={player.id} className="border rounded-lg overflow-hidden">
                   <div className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -741,7 +674,7 @@ export default function AddRosterPlayerModal({ isOpen,onClose,onPlayerAdded }: A
                           ) : (
                             <p className="font-bold truncate">{player.name}</p>
                           )}
-                          {savedNotes.has(player.id) && (
+                          {player.has_saved_note && (
                             <Badge variant="secondary" className="text-xs h-5 flex items-center gap-1">
                               <FileText className="h-3 w-3" />
                               Note saved
@@ -764,7 +697,7 @@ export default function AddRosterPlayerModal({ isOpen,onClose,onPlayerAdded }: A
                           {/* Nationality */}
                           {player.nationality && (
                             <div className="flex items-center gap-1">
-                              <span>{getCountryFlag(player.nationality) || '🌍'}</span>
+                              <span>{getCountryFlag(player.nationality) || ''}</span>
                               <span>{player.nationality}</span>
                             </div>
                           )}
@@ -823,9 +756,9 @@ export default function AddRosterPlayerModal({ isOpen,onClose,onPlayerAdded }: A
                         variant={expandedPlayerId === player.id ? "secondary" : "outline"}
                         onClick={() => handleToggleNotes(player.id)}
                         disabled={addingPlayerId === player.id}
-                        title={savedNotes.has(player.id) ? "View/edit saved note" : "Add notes about this player"}
+                        title={player.has_saved_note ? "View/edit saved note" : "Add notes about this player"}
                       >
-                        {savedNotes.has(player.id) ? (
+                        {player.has_saved_note ? (
                           <>
                             <Eye className="h-4 w-4 mr-1" />
                             See note
@@ -858,13 +791,13 @@ export default function AddRosterPlayerModal({ isOpen,onClose,onPlayerAdded }: A
                   {expandedPlayerId === player.id && (
                     <div className="p-3 bg-muted/30 border-t space-y-2">
                       <Label htmlFor={`notes-${player.id}`} className="text-xs">
-                        Notes {savedNotes.has(player.id) ? '(Previously saved)' : '(Optional)'}
+                        Notes {player.has_saved_note ? '(Previously saved)' : '(Optional)'}
                       </Label>
                       <Textarea
                         id={`notes-${player.id}`}
                         placeholder="e.g., Strong defender, good in the air, interested in Spain..."
                         value={notes[player.id] || ''}
-                        onChange={(e) => setNotes(prev => ({ ...prev,[player.id]: e.target.value }))}
+                        onChange={(e) => setNotes(prev => ({ ...prev, [player.id]: e.target.value }))}
                         rows={2}
                         className="text-sm resize-none"
                       />
@@ -913,9 +846,9 @@ export default function AddRosterPlayerModal({ isOpen,onClose,onPlayerAdded }: A
               )}
 
               {/* End of results indicator */}
-              {!loadingMore && displayedPlayers.length >= filteredPlayers.length && filteredPlayers.length > 50 && (
+              {!loadingMore && !hasMore && players.length > 0 && (
                 <div className="flex justify-center items-center py-4">
-                  <span className="text-sm text-muted-foreground">All {filteredPlayers.length} players loaded</span>
+                  <span className="text-sm text-muted-foreground">All {totalCount} players loaded</span>
                 </div>
               )}
             </div>
@@ -923,7 +856,7 @@ export default function AddRosterPlayerModal({ isOpen,onClose,onPlayerAdded }: A
         </div>
 
         <div className="text-xs text-muted-foreground flex-shrink-0">
-          <p>💡 Tip: Save notes for players you're interested in - they'll appear first in the list. Add notes without adding to roster to track prospects.</p>
+          <p>Tip: Save notes for players you're interested in - they'll appear first in the list. Add notes without adding to roster to track prospects.</p>
         </div>
       </DialogContent>
     </Dialog>

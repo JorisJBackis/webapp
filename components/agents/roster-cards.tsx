@@ -26,7 +26,8 @@ import {
   LayoutGrid,
   Grid2x2,
   ChevronsUpDown,
-  Search
+  Search,
+  BarChart3
 } from 'lucide-react'
 import {
   AlertDialog,
@@ -45,6 +46,7 @@ import {
 } from '@/components/ui/popover'
 import type { RosterPlayer } from '@/app/dashboard/agents/roster/page'
 import { getCountryFlag, isEUCountry } from '@/lib/utils/country-flags'
+import PlayerStatsModal from './player-stats-modal'
 
 interface RosterCardsProps {
   roster: RosterPlayer[]
@@ -59,6 +61,7 @@ export default function RosterCards({ roster, onPlayerRemoved, onNotesUpdated, o
   const [savingNotes, setSavingNotes] = useState(false)
   const [removingPlayer, setRemovingPlayer] = useState<number | null>(null)
   const [playerToRemove, setPlayerToRemove] = useState<RosterPlayer | null>(null)
+  const [statsModalPlayer, setStatsModalPlayer] = useState<RosterPlayer | null>(null)
 
   // Field editing state
   const [editingField, setEditingField] = useState<{ playerId: number; field: string } | null>(null)
@@ -1339,6 +1342,18 @@ export default function RosterCards({ roster, onPlayerRemoved, onNotesUpdated, o
                         {viewDensity !== 'ultra' && 'Edit Notes'}
                       </Button>
                     )}
+                    {player.sf_data && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setStatsModalPlayer(player)}
+                        className={viewDensity === 'ultra' ? 'h-7 px-2' : ''}
+                        title="View detailed performance stats"
+                      >
+                        <BarChart3 className={viewDensity === 'ultra' ? 'h-2.5 w-2.5' : 'h-3 w-3'} />
+                        {viewDensity !== 'ultra' && <span className="ml-1">Stats</span>}
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="destructive"
@@ -1378,6 +1393,25 @@ export default function RosterCards({ roster, onPlayerRemoved, onNotesUpdated, o
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Player Stats Modal */}
+      <PlayerStatsModal
+        isOpen={!!statsModalPlayer}
+        onClose={() => setStatsModalPlayer(null)}
+        player={statsModalPlayer ? {
+          player_id: statsModalPlayer.player_id,
+          player_name: statsModalPlayer.player_name,
+          picture_url: statsModalPlayer.picture_url,
+          position: statsModalPlayer.position,
+          age: statsModalPlayer.age,
+          nationality: statsModalPlayer.nationality,
+          club_name: statsModalPlayer.club_name,
+          club_logo_url: statsModalPlayer.club_logo_url,
+          market_value_eur: statsModalPlayer.market_value_eur,
+          sf_data: statsModalPlayer.sf_data,
+          league_name: statsModalPlayer.league_name,
+        } : null}
+      />
     </>
   )
 }
