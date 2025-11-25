@@ -83,6 +83,8 @@ export default function PlayerMatchingReview() {
   const [reviewItems, setReviewItems] = useState<ReviewItemWithData[]>([]);
   const [autoApprovedMatches, setAutoApprovedMatches] = useState<AutoApprovedMatch[]>([]);
   const [manuallyApprovedMatches, setManuallyApprovedMatches] = useState<AutoApprovedMatch[]>([]);
+  const [totalAutoApproved, setTotalAutoApproved] = useState<number>(0);
+  const [totalManuallyApproved, setTotalManuallyApproved] = useState<number>(0);
   const [matchDetails, setMatchDetails] = useState<Map<string, MatchDetails>>(new Map());
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<number | null>(null);
@@ -215,11 +217,19 @@ export default function PlayerMatchingReview() {
   }
 
   async function loadAutoApproved() {
+    // First get the total count for display in the tab
+    const { count: totalCount } = await supabase
+      .from("player_matching_candidates")
+      .select("*", { count: "exact", head: true })
+      .eq("match_status", "auto_approved");
+
+    // Then fetch only the most recent 100 for display (to avoid overwhelming the UI)
     const { data, error } = await supabase
       .from("player_matching_candidates")
       .select("*")
       .eq("match_status", "auto_approved")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(100);
 
     if (error) {
       console.error("Error loading auto-approved matches:", error);
@@ -231,7 +241,7 @@ export default function PlayerMatchingReview() {
       return;
     }
 
-    // Fetch player data for each match
+    // Fetch player data for each match (now only 100 max = 200 queries)
     const enrichedMatches = await Promise.all(
       data.map(async (match: any) => {
         const tmPlayer = await fetchTMPlayer(match.tm_player_id);
@@ -255,14 +265,23 @@ export default function PlayerMatchingReview() {
     );
 
     setAutoApprovedMatches(enrichedMatches.filter(Boolean) as AutoApprovedMatch[]);
+    setTotalAutoApproved(totalCount || data.length);
   }
 
   async function loadManuallyApproved() {
+    // First get the total count for display in the tab
+    const { count: totalCount } = await supabase
+      .from("player_matching_candidates")
+      .select("*", { count: "exact", head: true })
+      .eq("match_status", "manually_approved");
+
+    // Then fetch only the most recent 100 for display
     const { data, error } = await supabase
       .from("player_matching_candidates")
       .select("*")
       .eq("match_status", "manually_approved")
-      .order("updated_at", { ascending: false });
+      .order("updated_at", { ascending: false })
+      .limit(100);
 
     if (error) {
       console.error("Error loading manually approved matches:", error);
@@ -271,6 +290,7 @@ export default function PlayerMatchingReview() {
 
     if (!data || data.length === 0) {
       setManuallyApprovedMatches([]);
+      setTotalManuallyApproved(0);
       return;
     }
 
@@ -298,6 +318,7 @@ export default function PlayerMatchingReview() {
     );
 
     setManuallyApprovedMatches(enrichedMatches.filter(Boolean) as AutoApprovedMatch[]);
+    setTotalManuallyApproved(totalCount || data.length);
   }
 
   async function approveMatch(item: ReviewItemWithData, candidateId: number) {
@@ -473,6 +494,8 @@ export default function PlayerMatchingReview() {
               width={70}
               height={70}
               className={`rounded-lg object-cover ${primary ? 'border-2 border-green-300' : ''}`}
+              referrerPolicy="no-referrer"
+              unoptimized
             />
           ) : (
             <div className="w-[70px] h-[70px] bg-muted rounded-lg flex items-center justify-center">
@@ -547,6 +570,8 @@ export default function PlayerMatchingReview() {
               width={100}
               height={100}
               className="rounded-lg object-cover border-2 border-green-300"
+              referrerPolicy="no-referrer"
+              unoptimized
             />
           ) : (
             <div className="w-[100px] h-[100px] bg-muted rounded-lg flex items-center justify-center border-2 border-green-300">
@@ -622,11 +647,11 @@ export default function PlayerMatchingReview() {
           </TabsTrigger>
           <TabsTrigger value="auto-approved" className="text-base">
             <CheckCircle2 className="w-4 h-4 mr-2" />
-            Auto-Approved ({autoApprovedMatches.length})
+            Auto-Approved ({totalAutoApproved})
           </TabsTrigger>
           <TabsTrigger value="manually-approved" className="text-base">
             <CheckCircle2 className="w-4 h-4 mr-2" />
-            Manually Approved ({manuallyApprovedMatches.length})
+            Manually Approved ({totalManuallyApproved})
           </TabsTrigger>
         </TabsList>
 
@@ -799,6 +824,11 @@ export default function PlayerMatchingReview() {
             </Card>
           ) : (
             <div className="space-y-3">
+              {totalAutoApproved > 100 && (
+                <div className="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 px-4 py-3 rounded-lg text-sm">
+                  Showing 100 most recent of {totalAutoApproved} auto-approved matches
+                </div>
+              )}
               {autoApprovedMatches.map((match, idx) => (
                 <Card key={idx} className="p-5 hover:shadow-md transition-shadow">
                   <div className="flex items-center gap-6">
@@ -880,6 +910,8 @@ export default function PlayerMatchingReview() {
                           width={60}
                           height={60}
                           className="rounded-lg object-cover border-2 border-green-200"
+                          referrerPolicy="no-referrer"
+                          unoptimized
                         />
                       ) : (
                         <div className="w-[60px] h-[60px] bg-muted rounded-lg flex items-center justify-center">
@@ -1021,6 +1053,8 @@ export default function PlayerMatchingReview() {
                           width={60}
                           height={60}
                           className="rounded-lg object-cover border-2 border-blue-200"
+                          referrerPolicy="no-referrer"
+                          unoptimized
                         />
                       ) : (
                         <div className="w-[60px] h-[60px] bg-muted rounded-lg flex items-center justify-center">
