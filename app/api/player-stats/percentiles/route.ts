@@ -26,11 +26,13 @@ function extractSeasonStats(sfData: any, tournamentName: string): any {
 }
 
 // Helper function to calculate percentile
-function calculatePercentile(value: number, allValues: number[]): number {
+function calculatePercentile(value: number, allValues: number[], higherIsBetter: boolean = true): number {
   const sortedValues = [...allValues].sort((a, b) => a - b);
   const index = sortedValues.findIndex(v => v >= value);
-  if (index === -1) return 100;
-  return Math.round((index / sortedValues.length) * 100);
+  if (index === -1) return higherIsBetter ? 100 : 0;
+  const percentile = Math.round((index / sortedValues.length) * 100);
+  // Invert for stats where lower is better (e.g., red cards, fouls)
+  return higherIsBetter ? percentile : (100 - percentile);
 }
 
 // Helper function to calculate rank (1-indexed)
@@ -114,9 +116,23 @@ export async function GET(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log(`[PlayerStats] Fetching stats for league=${userLeague}, position=${userPosition}`);
+    // Map tournament names to league IDs for DB filtering
+    const tournamentToLeagueId: { [key: string]: string } = {
+      'Virsliga': 'LET1',
+      'Veikkausliiga': 'FI1'
+    };
 
-    // Query to get all players from the league with sf_data
+    const leagueId = tournamentToLeagueId[userLeague];
+    if (!leagueId) {
+      return NextResponse.json({
+        error: `Unknown league: ${userLeague}`,
+        league: userLeague
+      }, { status: 400 });
+    }
+
+    console.log(`[PlayerStats] Fetching stats for league=${userLeague} (${leagueId}), position=${userPosition}`);
+
+    // Query players filtered by league at DB level (much faster!)
     const { data: players, error } = await supabase
       .from('players_transfermarkt')
       .select(`
@@ -130,41 +146,29 @@ export async function GET(request: NextRequest) {
         club_id,
         transfermarkt_url,
         market_value_eur,
-        clubs_transfermarkt (
+        clubs_transfermarkt!inner (
           id,
           name,
           logo_url,
           league_id,
           transfermarkt_url
         ),
-        sofascore_players_staging (
+        sofascore_players_staging!inner (
           position
         )
       `)
       .not('sf_data', 'is', null)
-      .not('sofascore_id', 'is', null);
+      .not('sofascore_id', 'is', null)
+      .eq('clubs_transfermarkt.league_id', leagueId)
+      .eq('sofascore_players_staging.position', userPosition);
 
     if (error) {
       console.error('[PlayerStats] Error fetching players:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Map league IDs to tournament names
-    const leagueMap: { [key: string]: string } = {
-      'LET1': 'Virsliga',
-      'FI1': 'Veikkausliiga'
-    };
-
-    // Filter players by league AND position
-    const filteredPlayers = players.filter(p => {
-      const club = p.clubs_transfermarkt as any;
-      const sfPosition = (p.sofascore_players_staging as any)?.position;
-
-      if (!club || !sfPosition) return false;
-
-      const playerLeague = leagueMap[club.league_id];
-      return playerLeague === userLeague && sfPosition === userPosition;
-    });
+    // No need for in-memory filtering - already filtered at DB level
+    const filteredPlayers = players;
 
     console.log(`[PlayerStats] Found ${filteredPlayers.length} players in ${userLeague} position ${userPosition}`);
 
@@ -187,7 +191,7 @@ export async function GET(request: NextRequest) {
         club_transfermarkt_url: (player.clubs_transfermarkt as any)?.transfermarkt_url,
         market_value_eur: player.market_value_eur,
         stats: {
-          footyLabsScore: stats.rating || 0,
+          rating: stats.rating || 0,
           goals: stats.goals || 0,
           assists: stats.assists || 0,
           appearances: stats.appearances || 0,
@@ -227,7 +231,7 @@ export async function GET(request: NextRequest) {
 
     // Define all stats to calculate percentiles and ranks for
     const statsConfig = [
-      { key: 'footyLabsScore', higherIsBetter: true },
+      { key: 'rating', higherIsBetter: true },
       { key: 'goals', higherIsBetter: true },
       { key: 'assists', higherIsBetter: true },
       { key: 'appearances', higherIsBetter: true },
@@ -260,7 +264,7 @@ export async function GET(request: NextRequest) {
 
       statsConfig.forEach(config => {
         const value = (player!.stats as any)[config.key];
-        percentiles[config.key] = calculatePercentile(value, statValues[config.key]);
+        percentiles[config.key] = calculatePercentile(value, statValues[config.key], config.higherIsBetter);
         ranks[config.key] = calculateRank(value, statValues[config.key], config.higherIsBetter);
       });
 
@@ -274,7 +278,7 @@ export async function GET(request: NextRequest) {
 
     // Sort by FootyLabs score descending
     playersWithPercentiles.sort((a, b) =>
-      b!.stats.footyLabsScore - a!.stats.footyLabsScore
+      b!.stats.rating - a!.stats.rating
     );
 
     return NextResponse.json({

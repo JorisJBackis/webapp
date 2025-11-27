@@ -23,8 +23,13 @@ import {
   Shield,
   Crosshair,
   Users,
-  Eye
+  Eye,
+  Star,
+  Building2,
+  UserCircle,
+  Check
 } from "lucide-react"
+import { ReviewModal } from "@/components/reviews/review-modal"
 
 type PlayerDashboardData = {
   user: any
@@ -67,12 +72,18 @@ interface PlayerData {
   picture_url: string | null
   position: string
   club: string
+  club_id: number | null
   club_logo: string | null
   transfermarkt_url: string | null
   club_transfermarkt_url: string | null
   market_value_eur: number | null
   league: string
-  season: string
+  league_logo: string | null
+  league_url: string | null
+  agency: string | null
+  agency_id: number | null
+  agency_logo: string | null
+  agency_url: string | null
   stats: PlayerStats
   percentiles: { [key: string]: number }
   ranks: { [key: string]: number }
@@ -106,14 +117,68 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
   const [playerData, setPlayerData] = useState<PlayerData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [reviewModal, setReviewModal] = useState<{
+    isOpen: boolean
+    type: 'club' | 'agency'
+    targetId: number | null
+    targetName: string
+  }>({ isOpen: false, type: 'club', targetId: null, targetName: '' })
+  const [hasClubReview, setHasClubReview] = useState(false)
+  const [hasAgencyReview, setHasAgencyReview] = useState(false)
   const supabase = createClient()
+
+  // Check if user has existing reviews
+  const checkExistingReviews = async (clubId: number | null, agencyId: number | null) => {
+    if (!data.user?.id) return
+
+    try {
+      // Check club review
+      if (clubId) {
+        const { data: clubReview } = await supabase
+          .from("club_reviews")
+          .select("id")
+          .eq("club_transfermarkt_id", clubId)
+          .eq("player_profile_id", data.user.id)
+          .single()
+        setHasClubReview(!!clubReview)
+      }
+
+      // Check agency review
+      if (agencyId) {
+        const { data: agencyReview } = await supabase
+          .from("agent_reviews")
+          .select("id")
+          .eq("agency_id", agencyId)
+          .eq("player_profile_id", data.user.id)
+          .single()
+        setHasAgencyReview(!!agencyReview)
+      }
+    } catch (err) {
+      console.error("Error checking existing reviews:", err)
+    }
+  }
 
   useEffect(() => {
     const fetchPlayerData = async () => {
       setLoading(true)
       setError(null)
 
+      const CACHE_KEY = 'player_dashboard_cache_v3' // v3: added agency and league URLs
+
       try {
+        // Check sessionStorage cache first
+        const cached = sessionStorage.getItem(CACHE_KEY)
+        if (cached) {
+          const cachedData = JSON.parse(cached)
+          console.log('[PlayerDashboard] Using cached data')
+          setPlayerData(cachedData)
+          setLoading(false)
+          return
+        }
+        // Clear old cache versions
+        sessionStorage.removeItem('player_dashboard_cache')
+        sessionStorage.removeItem('player_dashboard_cache_v2')
+
         // Get current user's transfermarkt player ID
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) throw new Error('Not authenticated')
@@ -142,6 +207,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
             sf_data,
             sofascore_id,
             club_id,
+            agency_id,
             transfermarkt_url,
             market_value_eur,
             clubs_transfermarkt (
@@ -151,8 +217,16 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
               league_id,
               transfermarkt_url,
               leagues_transfermarkt (
-                name
+                name,
+                logo_url,
+                url
               )
+            ),
+            agencies_transfermarkt (
+              id,
+              name,
+              image_url,
+              transfermarkt_url
             ),
             sofascore_players_staging (
               position
@@ -166,6 +240,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
 
         const club = tmPlayer.clubs_transfermarkt as any
         const league = club?.leagues_transfermarkt as any
+        const agency = tmPlayer.agencies_transfermarkt as any
         const sfPosition = (tmPlayer.sofascore_players_staging as any)?.position
 
         // Map league ID to tournament name
@@ -201,7 +276,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
           club_logo: club?.logo_url
         })
 
-        setPlayerData({
+        const playerDataToCache = {
           id: tmPlayer.id,
           name: tmPlayer.name,
           age: tmPlayer.age,
@@ -210,12 +285,18 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
           picture_url: tmPlayer.picture_url,
           position: sfPosition || tmPlayer.main_position,
           club: club?.name || 'Unknown Club',
+          club_id: club?.id || null,
           club_logo: club?.logo_url,
           transfermarkt_url: tmPlayer.transfermarkt_url,
           club_transfermarkt_url: club?.transfermarkt_url,
           market_value_eur: tmPlayer.market_value_eur,
           league: league?.name || tournamentName,
-          season: getLatestSeasonId(tmPlayer.sf_data, tournamentName),
+          league_logo: league?.logo_url || null,
+          league_url: league?.url || null,
+          agency: agency?.name || null,
+          agency_id: agency?.id || null,
+          agency_logo: agency?.image_url || null,
+          agency_url: agency?.transfermarkt_url || null,
           stats: {
             rating: stats.rating || 0,
             goals: stats.goals || 0,
@@ -242,7 +323,11 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
           percentiles: playerWithPercentiles?.percentiles || {},
           ranks: playerWithPercentiles?.ranks || {},
           totalPlayers: playerWithPercentiles?.totalPlayers || 0
-        })
+        }
+
+        // Cache for this session
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(playerDataToCache))
+        setPlayerData(playerDataToCache)
 
       } catch (err) {
         console.error('[PlayerDashboard] Error:', err)
@@ -254,6 +339,20 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
 
     fetchPlayerData()
   }, [])
+
+  // Check for existing reviews when playerData loads
+  useEffect(() => {
+    if (playerData) {
+      checkExistingReviews(playerData.club_id, playerData.agency_id)
+    }
+  }, [playerData?.club_id, playerData?.agency_id])
+
+  // Callback when review is added/updated/deleted
+  const handleReviewChange = () => {
+    if (playerData) {
+      checkExistingReviews(playerData.club_id, playerData.agency_id)
+    }
+  }
 
   // Helper function to extract season stats
   function extractSeasonStats(sfData: any, tournamentName: string): any {
@@ -422,7 +521,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                 )}
 
                 {/* Club */}
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
                   {playerData.club_logo && (
                     <img src={playerData.club_logo} alt={playerData.club} className="w-5 h-5 object-contain" />
                   )}
@@ -436,9 +535,65 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                       {playerData.club}
                     </a>
                   ) : (
-                    <p className="text-lg text-muted-foreground">{playerData.club}</p>
+                    <span className="text-lg text-muted-foreground">{playerData.club}</span>
+                  )}
+                  {playerData.club_id && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`h-7 px-2 text-xs ${hasClubReview ? 'text-amber-500 hover:text-amber-600' : 'text-muted-foreground hover:text-primary'}`}
+                      onClick={() => setReviewModal({
+                        isOpen: true,
+                        type: 'club',
+                        targetId: playerData.club_id,
+                        targetName: playerData.club
+                      })}
+                    >
+                      <Star className={`w-3 h-3 mr-1 ${hasClubReview ? 'fill-amber-500' : ''}`} />
+                      {hasClubReview ? 'Reviewed' : 'Review'}
+                      {hasClubReview && <Check className="w-3 h-3 ml-0.5" />}
+                    </Button>
                   )}
                 </div>
+
+                {/* Agency */}
+                {playerData.agency && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <UserCircle className="w-4 h-4 text-muted-foreground" />
+                    {playerData.agency_logo && (
+                      <img src={playerData.agency_logo} alt={playerData.agency} className="w-5 h-5 object-contain rounded" />
+                    )}
+                    {playerData.agency_url ? (
+                      <a
+                        href={playerData.agency_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-primary hover:underline"
+                      >
+                        {playerData.agency}
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground">{playerData.agency}</span>
+                    )}
+                    {playerData.agency_id && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`h-7 px-2 text-xs ${hasAgencyReview ? 'text-amber-500 hover:text-amber-600' : 'text-muted-foreground hover:text-primary'}`}
+                        onClick={() => setReviewModal({
+                          isOpen: true,
+                          type: 'agency',
+                          targetId: playerData.agency_id,
+                          targetName: playerData.agency || ''
+                        })}
+                      >
+                        <Star className={`w-3 h-3 mr-1 ${hasAgencyReview ? 'fill-amber-500' : ''}`} />
+                        {hasAgencyReview ? 'Reviewed' : 'Review'}
+                        {hasAgencyReview && <Check className="w-3 h-3 ml-0.5" />}
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Badges */}
@@ -468,14 +623,6 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                 )}
               </div>
 
-              {/* Season & League Info */}
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="w-4 h-4" />
-                <span>Season {playerData.season}</span>
-                <Separator orientation="vertical" className="h-4" />
-                <MapPin className="w-4 h-4" />
-                <span>{playerData.league}</span>
-              </div>
             </div>
           </div>
         </CardContent>
@@ -591,25 +738,40 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                 </CardTitle>
                 <CardDescription>Your best performing areas vs peers</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {topStats.strengths.map(([key, percentile]) => (
-                  <div key={key} className="space-y-1">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="font-medium">{statLabels[key] || key}</span>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className={`text-xs ${getPercentileColor(percentile)}`}>
-                          {percentile}th
-                        </Badge>
+              <CardContent className="space-y-4">
+                {topStats.strengths.map(([key, percentile]) => {
+                  const statValue = (playerData.stats as any)[key]
+                  const rank = playerData.ranks[key]
+                  const isPercentageStat = key.toLowerCase().includes('percentage')
+                  const displayValue = isPercentageStat
+                    ? `${statValue?.toFixed(1)}%`
+                    : (typeof statValue === 'number' && statValue % 1 !== 0)
+                      ? statValue?.toFixed(2)
+                      : statValue
+                  return (
+                    <div key={key} className="space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">{statLabels[key] || key}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg font-bold">{displayValue}</span>
+                          <span className="text-xs text-muted-foreground">#{rank}/{playerData.totalPlayers}</span>
+                        </div>
+                      </div>
+                      <div className="relative h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${getPercentileBgColor(percentile)} transition-all duration-500 rounded-full`}
+                          style={{ width: `${percentile}%` }}
+                        />
+                        <span
+                          className="absolute top-1/2 -translate-y-1/2 text-[10px] font-semibold text-white drop-shadow-sm"
+                          style={{ left: `${Math.max(percentile - 8, 2)}%` }}
+                        >
+                          {percentile}%
+                        </span>
                       </div>
                     </div>
-                    <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full ${getPercentileBgColor(percentile)} transition-all duration-500`}
-                        style={{ width: `${percentile}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </CardContent>
             </Card>
 
@@ -622,25 +784,40 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                 </CardTitle>
                 <CardDescription>Focus areas for development</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {topStats.weaknesses.map(([key, percentile]) => (
-                  <div key={key} className="space-y-1">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="font-medium">{statLabels[key] || key}</span>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className={`text-xs ${getPercentileColor(percentile)}`}>
-                          {percentile}th
-                        </Badge>
+              <CardContent className="space-y-4">
+                {topStats.weaknesses.map(([key, percentile]) => {
+                  const statValue = (playerData.stats as any)[key]
+                  const rank = playerData.ranks[key]
+                  const isPercentageStat = key.toLowerCase().includes('percentage')
+                  const displayValue = isPercentageStat
+                    ? `${statValue?.toFixed(1)}%`
+                    : (typeof statValue === 'number' && statValue % 1 !== 0)
+                      ? statValue?.toFixed(2)
+                      : statValue
+                  return (
+                    <div key={key} className="space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">{statLabels[key] || key}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg font-bold">{displayValue}</span>
+                          <span className="text-xs text-muted-foreground">#{rank}/{playerData.totalPlayers}</span>
+                        </div>
+                      </div>
+                      <div className="relative h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${getPercentileBgColor(percentile)} transition-all duration-500 rounded-full`}
+                          style={{ width: `${percentile}%` }}
+                        />
+                        <span
+                          className="absolute top-1/2 -translate-y-1/2 text-[10px] font-semibold text-white drop-shadow-sm"
+                          style={{ left: `${Math.max(percentile - 8, 2)}%` }}
+                        >
+                          {percentile}%
+                        </span>
                       </div>
                     </div>
-                    <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full ${getPercentileBgColor(percentile)} transition-all duration-500`}
-                        style={{ width: `${percentile}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </CardContent>
             </Card>
           </div>
@@ -1019,6 +1196,17 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
           </Button>
         </CardContent>
       </Card>
+
+      {/* Review Modal */}
+      <ReviewModal
+        isOpen={reviewModal.isOpen}
+        onClose={() => setReviewModal({ ...reviewModal, isOpen: false })}
+        onReviewChange={handleReviewChange}
+        type={reviewModal.type}
+        targetId={reviewModal.targetId}
+        targetName={reviewModal.targetName}
+        playerProfileId={data.user?.id}
+      />
     </div>
   )
 }
