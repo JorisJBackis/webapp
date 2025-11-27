@@ -30,6 +30,7 @@ interface ClubContact {
 
 interface SmartRecommendationsCardsProps {
   recommendations: SmartRecommendation[]
+  isRecalculating?: boolean
 }
 
 // Skeleton card for loading state
@@ -495,7 +496,10 @@ function RecommendationCard({
   )
 }
 
-export default function SmartRecommendationsCards({ recommendations }: SmartRecommendationsCardsProps) {
+export default function SmartRecommendationsCards({
+  recommendations,
+  isRecalculating = false
+}: SmartRecommendationsCardsProps) {
   const [clubContactsMap, setClubContactsMap] = useState<Record<number, ClubContact[]>>({})
   const [loadingContacts, setLoadingContacts] = useState(true)
   const [displayCount, setDisplayCount] = useState(3)
@@ -580,7 +584,11 @@ export default function SmartRecommendationsCards({ recommendations }: SmartReco
   }
 
   return (
-    <div className="space-y-6">
+    <div
+      className={`space-y-6 transition-opacity duration-300 ${
+        isRecalculating ? 'opacity-50' : 'opacity-100'
+      }`}
+    >
       {visibleRecommendations.map((rec) => (
         <RecommendationCard
           key={rec.recommendation_id}

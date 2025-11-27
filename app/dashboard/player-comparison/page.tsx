@@ -58,20 +58,20 @@ interface StatConfig {
 }
 
 const statConfigs: StatConfig[] = [
-  { key: 'footyLabsScore', label: 'FootyLabs Score', format: (v) => v.toFixed(2), higherIsBetter: true },
-  { key: 'goals', label: 'Goals', format: (v) => v.toString(), higherIsBetter: true },
-  { key: 'assists', label: 'Assists', format: (v) => v.toString(), higherIsBetter: true },
-  { key: 'accuratePassesPercentage', label: 'Pass Accuracy', format: (v) => `${v.toFixed(1)}%`, higherIsBetter: true },
-  { key: 'totalDuelsWonPercentage', label: 'Duels Won', format: (v) => `${v.toFixed(1)}%`, higherIsBetter: true },
-  { key: 'successfulDribblesPercentage', label: 'Dribbles Success', format: (v) => `${v.toFixed(1)}%`, higherIsBetter: true },
-  { key: 'aerialDuelsWonPercentage', label: 'Aerial Duels', format: (v) => `${v.toFixed(1)}%`, higherIsBetter: true },
-  { key: 'ballRecovery', label: 'Ball Recoveries', format: (v) => v.toString(), higherIsBetter: true },
-  { key: 'keyPasses', label: 'Key Passes', format: (v) => v.toString(), higherIsBetter: true },
-  { key: 'shotsOnTarget', label: 'Shots on Target', format: (v) => v.toString(), higherIsBetter: true },
-  { key: 'clearances', label: 'Clearances', format: (v) => v.toString(), higherIsBetter: true },
-  { key: 'accurateCrossesPercentage', label: 'Crossing Accuracy', format: (v) => `${v.toFixed(1)}%`, higherIsBetter: true },
-  { key: 'minutesPlayed', label: 'Minutes Played', format: (v) => v.toString(), higherIsBetter: true },
-  { key: 'appearances', label: 'Appearances', format: (v) => v.toString(), higherIsBetter: true },
+  { key: 'rating', label: 'FootyLabs Score', format: (v) => v?.toFixed(2) ?? '0', higherIsBetter: true },
+  { key: 'goals', label: 'Goals', format: (v) => v?.toString() ?? '0', higherIsBetter: true },
+  { key: 'assists', label: 'Assists', format: (v) => v?.toString() ?? '0', higherIsBetter: true },
+  { key: 'accuratePassesPercentage', label: 'Pass Accuracy', format: (v) => `${v?.toFixed(1) ?? '0'}%`, higherIsBetter: true },
+  { key: 'totalDuelsWonPercentage', label: 'Duels Won', format: (v) => `${v?.toFixed(1) ?? '0'}%`, higherIsBetter: true },
+  { key: 'successfulDribblesPercentage', label: 'Dribbles Success', format: (v) => `${v?.toFixed(1) ?? '0'}%`, higherIsBetter: true },
+  { key: 'aerialDuelsWonPercentage', label: 'Aerial Duels', format: (v) => `${v?.toFixed(1) ?? '0'}%`, higherIsBetter: true },
+  { key: 'ballRecovery', label: 'Ball Recoveries', format: (v) => v?.toString() ?? '0', higherIsBetter: true },
+  { key: 'keyPasses', label: 'Key Passes', format: (v) => v?.toString() ?? '0', higherIsBetter: true },
+  { key: 'shotsOnTarget', label: 'Shots on Target', format: (v) => v?.toString() ?? '0', higherIsBetter: true },
+  { key: 'clearances', label: 'Clearances', format: (v) => v?.toString() ?? '0', higherIsBetter: true },
+  { key: 'accurateCrossesPercentage', label: 'Crossing Accuracy', format: (v) => `${v?.toFixed(1) ?? '0'}%`, higherIsBetter: true },
+  { key: 'minutesPlayed', label: 'Minutes Played', format: (v) => v?.toString() ?? '0', higherIsBetter: true },
+  { key: 'appearances', label: 'Appearances', format: (v) => v?.toString() ?? '0', higherIsBetter: true },
 ];
 
 // Map position codes to full names
@@ -314,15 +314,36 @@ export default function PlayerComparisonPage() {
   const [position, setPosition] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedStat, setSelectedStat] = useState<keyof PlayerStats>('footyLabsScore');
+  const [selectedStat, setSelectedStat] = useState<keyof PlayerStats>('rating');
   const currentPlayerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const CACHE_KEY = 'player_comparison_cache_v2';
+
     const fetchPlayers = async () => {
       setLoading(true);
       setError(null);
 
       try {
+        // Check session cache first
+        const cached = sessionStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const data = JSON.parse(cached);
+          console.log('[PlayerComparison] Using cached data');
+          setPlayers(data.players || []);
+          setCurrentPlayerId(data.currentPlayerId);
+          setLeague(data.league);
+          setPosition(data.position);
+          setLoading(false);
+
+          if (data.currentPlayerId) {
+            setTimeout(() => {
+              currentPlayerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
+          }
+          return;
+        }
+
         // No params needed - API will auto-detect from logged-in player
         const response = await fetch('/api/player-stats/percentiles');
         const data = await response.json();
@@ -332,6 +353,10 @@ export default function PlayerComparisonPage() {
         }
 
         console.log('[PlayerComparison] Fetched data:', data);
+
+        // Cache the data
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(data));
+
         setPlayers(data.players || []);
         setCurrentPlayerId(data.currentPlayerId);
         setLeague(data.league);
