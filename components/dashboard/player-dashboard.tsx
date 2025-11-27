@@ -30,6 +30,8 @@ import {
   Check
 } from "lucide-react"
 import { ReviewModal } from "@/components/reviews/review-modal"
+import { ReviewPromptModal } from "@/components/reviews/review-prompt-modal"
+import { ReviewReminderCard } from "@/components/reviews/review-reminder-card"
 
 type PlayerDashboardData = {
   user: any
@@ -125,7 +127,48 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
   }>({ isOpen: false, type: 'club', targetId: null, targetName: '' })
   const [hasClubReview, setHasClubReview] = useState(false)
   const [hasAgencyReview, setHasAgencyReview] = useState(false)
+  const [showReviewPrompt, setShowReviewPrompt] = useState(false)
   const supabase = createClient()
+
+  // Track visits with 3-day gap logic
+  useEffect(() => {
+    const LAST_VISIT_KEY = "player_last_visit"
+    const LOGIN_COUNT_KEY = "player_login_count"
+
+    const now = Date.now()
+    const lastVisit = localStorage.getItem(LAST_VISIT_KEY)
+    const hoursSinceLastVisit = lastVisit ? (now - parseInt(lastVisit)) / (1000 * 60 * 60) : 999
+
+    // Only count as new "login" if 72+ hours (3 days) have passed
+    if (hoursSinceLastVisit >= 72) {
+      const currentCount = parseInt(localStorage.getItem(LOGIN_COUNT_KEY) || "0")
+      localStorage.setItem(LOGIN_COUNT_KEY, (currentCount + 1).toString())
+    }
+
+    // Update last visit time
+    localStorage.setItem(LAST_VISIT_KEY, now.toString())
+  }, [])
+
+  // Show review prompt on 2nd login if reviews not complete
+  useEffect(() => {
+    const LOGIN_COUNT_KEY = "player_login_count"
+    const PROMPT_SHOWN_SESSION_KEY = "review_prompt_shown_session"
+
+    const loginCount = parseInt(localStorage.getItem(LOGIN_COUNT_KEY) || "0")
+    const alreadyShownThisSession = sessionStorage.getItem(PROMPT_SHOWN_SESSION_KEY)
+
+    // Check if reviews are complete
+    const reviewsComplete = hasClubReview && (hasAgencyReview || !playerData?.agency_id)
+
+    // Show popup on 2nd+ login if reviews not done and not shown this session
+    if (loginCount >= 2 && !reviewsComplete && playerData && !alreadyShownThisSession) {
+      const timer = setTimeout(() => {
+        setShowReviewPrompt(true)
+        sessionStorage.setItem(PROMPT_SHOWN_SESSION_KEY, "true")
+      }, 1500)
+      return () => clearTimeout(timer)
+    }
+  }, [hasClubReview, hasAgencyReview, playerData])
 
   // Check if user has existing reviews
   const checkExistingReviews = async (clubId: number | null, agencyId: number | null) => {
@@ -627,6 +670,26 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
           </div>
         </CardContent>
       </Card>
+
+      {/* Review Reminder Card */}
+      <ReviewReminderCard
+        clubName={playerData.club}
+        agencyName={playerData.agency}
+        hasClubReview={hasClubReview}
+        hasAgencyReview={hasAgencyReview}
+        onReviewClub={() => setReviewModal({
+          isOpen: true,
+          type: 'club',
+          targetId: playerData.club_id,
+          targetName: playerData.club
+        })}
+        onReviewAgency={playerData.agency_id ? () => setReviewModal({
+          isOpen: true,
+          type: 'agency',
+          targetId: playerData.agency_id,
+          targetName: playerData.agency || ''
+        }) : undefined}
+      />
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1207,6 +1270,34 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
         targetName={reviewModal.targetName}
         playerProfileId={data.user?.id}
       />
+
+      {/* Review Prompt Modal (shows on 2nd login) */}
+      {playerData && (
+        <ReviewPromptModal
+          isOpen={showReviewPrompt}
+          onClose={() => setShowReviewPrompt(false)}
+          clubName={playerData.club}
+          agencyName={playerData.agency}
+          onReviewClub={() => {
+            setShowReviewPrompt(false)
+            setReviewModal({
+              isOpen: true,
+              type: 'club',
+              targetId: playerData.club_id,
+              targetName: playerData.club
+            })
+          }}
+          onReviewAgency={playerData.agency_id ? () => {
+            setShowReviewPrompt(false)
+            setReviewModal({
+              isOpen: true,
+              type: 'agency',
+              targetId: playerData.agency_id,
+              targetName: playerData.agency || ''
+            })
+          } : undefined}
+        />
+      )}
     </div>
   )
 }
