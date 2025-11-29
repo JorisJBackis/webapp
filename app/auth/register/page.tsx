@@ -248,6 +248,24 @@ export default function RegisterPage() {
         } else if (role === 'agent') {
           console.log("Agent registration completed")
         }
+
+        // Notify admins of new registration
+        try {
+          await fetch('/api/emails/notify-admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userEmail: email,
+              userType: role === 'club' ? 'club_staff' : role,
+              clubName: selectedClub?.name || null,
+              registeredAt: new Date().toISOString(),
+            }),
+          })
+          console.log("Admin notification sent")
+        } catch (notifyError) {
+          console.error("Failed to notify admins:", notifyError)
+          // Don't block registration if notification fails
+        }
       }
 
       // Show success message
