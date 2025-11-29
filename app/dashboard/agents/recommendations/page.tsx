@@ -21,6 +21,7 @@ export interface SmartRecommendation {
   player_contract_expires: string
   player_market_value: number | null
   player_picture_url: string | null
+  player_sofascore_id: number | null
   player_transfermarkt_url: string | null
   club_id: number
   club_name: string

@@ -258,6 +258,7 @@ export default function RegisterPage() {
             userType: role === 'club' ? 'club_staff' : role,
             clubName: selectedClub?.name || null,
             registeredAt: new Date().toISOString(),
+            registrationNote: registrationNote || null,
           }),
         }).catch(err => console.error("Failed to notify admins:", err))
       }

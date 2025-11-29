@@ -28,6 +28,8 @@ export type RosterPlayer = {
   updated_at: string
   // New fields
   picture_url: string | null
+  picture_url_override: string | null
+  sofascore_id: number | null
   player_transfermarkt_url: string | null
   club_logo_url: string | null
   club_transfermarkt_url: string | null
@@ -54,6 +56,7 @@ export type RosterPlayer = {
   has_foot_override: boolean
   has_contract_override: boolean
   has_value_override: boolean
+  has_picture_override: boolean
   // SofaScore performance data
   sf_data: any | null
 }

@@ -12,12 +12,14 @@ import {
   AlertCircle
 } from 'lucide-react'
 import { getCountryFlag, isEUCountry } from '@/lib/utils/country-flags'
+import { getPlayerImageUrl } from '@/lib/utils'
 
 export interface PlayerCardData {
   player_id?: number
   player_name: string
   player_transfermarkt_url?: string | null
   picture_url?: string | null
+  sofascore_id?: number | null
   position?: string | null
   age?: number | null
   nationality?: string | null
@@ -110,9 +112,9 @@ export default function PlayerComparisonCard({ player, variant = 'your-player', 
                   rel="noopener noreferrer"
                   className="block hover:opacity-80 transition-opacity"
                 >
-                  {player.picture_url ? (
+                  {getPlayerImageUrl(player.picture_url, player.sofascore_id) ? (
                     <img
-                      src={player.picture_url}
+                      src={getPlayerImageUrl(player.picture_url, player.sofascore_id)!}
                       alt={player.player_name}
                       className="w-20 h-20 rounded-lg object-cover border-2 border-background shadow-md cursor-pointer"
                     />
@@ -124,9 +126,9 @@ export default function PlayerComparisonCard({ player, variant = 'your-player', 
                 </a>
               ) : (
                 <>
-                  {player.picture_url ? (
+                  {getPlayerImageUrl(player.picture_url, player.sofascore_id) ? (
                     <img
-                      src={player.picture_url}
+                      src={getPlayerImageUrl(player.picture_url, player.sofascore_id)!}
                       alt={player.player_name}
                       className="w-20 h-20 rounded-lg object-cover border-2 border-background shadow-md"
                     />

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -14,9 +14,71 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { UserCheck, UserX, Clock, RefreshCw, MessageSquare, Mail, MailWarning, AlertCircle } from "lucide-react"
+import { UserCheck, UserX, Clock, RefreshCw, MessageSquare, Mail, MailWarning, AlertCircle, ArrowUpDown, Filter } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { useRouter } from "next/navigation"
+
+// Sort options for each tab
+type SortOption = {
+  value: string
+  label: string
+  sortFn: (a: User, b: User) => number
+}
+
+const pendingSortOptions: SortOption[] = [
+  { value: "newest", label: "Newest First", sortFn: (a, b) => new Date(b.registered_at).getTime() - new Date(a.registered_at).getTime() },
+  { value: "oldest", label: "Oldest First", sortFn: (a, b) => new Date(a.registered_at).getTime() - new Date(b.registered_at).getTime() },
+]
+
+const approvedSortOptions: SortOption[] = [
+  { value: "last_approved", label: "Last Approved", sortFn: (a, b) => new Date(b.approved_at || 0).getTime() - new Date(a.approved_at || 0).getTime() },
+  { value: "first_approved", label: "First Approved", sortFn: (a, b) => new Date(a.approved_at || 0).getTime() - new Date(b.approved_at || 0).getTime() },
+  { value: "last_registered", label: "Last Registered", sortFn: (a, b) => new Date(b.registered_at).getTime() - new Date(a.registered_at).getTime() },
+  { value: "first_registered", label: "First Registered", sortFn: (a, b) => new Date(a.registered_at).getTime() - new Date(b.registered_at).getTime() },
+]
+
+const rejectedSortOptions: SortOption[] = [
+  { value: "last_rejected", label: "Last Rejected", sortFn: (a, b) => new Date(b.approved_at || 0).getTime() - new Date(a.approved_at || 0).getTime() },
+  { value: "first_rejected", label: "First Rejected", sortFn: (a, b) => new Date(a.approved_at || 0).getTime() - new Date(b.approved_at || 0).getTime() },
+  { value: "last_registered", label: "Last Registered", sortFn: (a, b) => new Date(b.registered_at).getTime() - new Date(a.registered_at).getTime() },
+  { value: "first_registered", label: "First Registered", sortFn: (a, b) => new Date(a.registered_at).getTime() - new Date(b.registered_at).getTime() },
+]
+
+// Filter options
+const userTypeOptions = [
+  { value: "all", label: "All Types" },
+  { value: "player", label: "Player" },
+  { value: "club_staff", label: "Club Staff" },
+  { value: "agent", label: "Agent" },
+]
+
+const emailVerifiedOptions = [
+  { value: "all", label: "All" },
+  { value: "verified", label: "Verified Only" },
+  { value: "unverified", label: "Unverified Only" },
+]
+
+// Helper function to get ordinal suffix
+function getOrdinalSuffix(day: number): string {
+  if (day > 3 && day < 21) return 'th'
+  switch (day % 10) {
+    case 1: return 'st'
+    case 2: return 'nd'
+    case 3: return 'rd'
+    default: return 'th'
+  }
+}
+
+// Helper function to format date nicely (e.g., "1st December 2024, 14:30")
+function formatDate(dateString: string): string {
+  const date = new Date(dateString)
+  const day = date.getDate()
+  const month = date.toLocaleDateString('en-GB', { month: 'long' })
+  const year = date.getFullYear()
+  const time = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+
+  return `${day}${getOrdinalSuffix(day)} ${month} ${year}, ${time}`
+}
 
 // Helper function to format user type for display
 function formatUserType(userType: string | null): string {
@@ -73,77 +135,215 @@ export function UserManagementTabs({
   const [approvedUsers, setApprovedUsers] = useState(initialApproved)
   const [rejectedUsers, setRejectedUsers] = useState(initialRejected)
 
+  // Sorting state
+  const [pendingSort, setPendingSort] = useState("newest")
+  const [approvedSort, setApprovedSort] = useState("last_approved")
+  const [rejectedSort, setRejectedSort] = useState("last_rejected")
+
+  // Filtering state
+  const [userTypeFilter, setUserTypeFilter] = useState("all")
+  const [emailVerifiedFilter, setEmailVerifiedFilter] = useState("all")
+
+  // Filter function
+  const filterUsers = (users: User[]) => {
+    return users.filter(user => {
+      // User type filter
+      if (userTypeFilter !== "all" && user.user_type !== userTypeFilter) {
+        return false
+      }
+      // Email verified filter
+      if (emailVerifiedFilter === "verified" && !user.email_confirmed_at) {
+        return false
+      }
+      if (emailVerifiedFilter === "unverified" && user.email_confirmed_at) {
+        return false
+      }
+      return true
+    })
+  }
+
+  // Sorted and filtered users
+  const sortedPendingUsers = useMemo(() => {
+    const sortOption = pendingSortOptions.find(o => o.value === pendingSort) || pendingSortOptions[0]
+    return [...filterUsers(pendingUsers)].sort(sortOption.sortFn)
+  }, [pendingUsers, pendingSort, userTypeFilter, emailVerifiedFilter])
+
+  const sortedApprovedUsers = useMemo(() => {
+    const sortOption = approvedSortOptions.find(o => o.value === approvedSort) || approvedSortOptions[0]
+    return [...filterUsers(approvedUsers)].sort(sortOption.sortFn)
+  }, [approvedUsers, approvedSort, userTypeFilter, emailVerifiedFilter])
+
+  const sortedRejectedUsers = useMemo(() => {
+    const sortOption = rejectedSortOptions.find(o => o.value === rejectedSort) || rejectedSortOptions[0]
+    return [...filterUsers(rejectedUsers)].sort(sortOption.sortFn)
+  }, [rejectedUsers, rejectedSort, userTypeFilter, emailVerifiedFilter])
+
+  // Check if any filters are active
+  const hasActiveFilters = userTypeFilter !== "all" || emailVerifiedFilter !== "all"
+
   return (
-    <Tabs defaultValue="pending" className="w-full">
-      <TabsList className="grid w-full grid-cols-3 mb-6">
-        <TabsTrigger value="pending" className="flex items-center gap-2">
-          <Clock className="h-4 w-4" />
-          Pending ({pendingUsers.length})
-        </TabsTrigger>
-        <TabsTrigger value="approved" className="flex items-center gap-2">
-          <UserCheck className="h-4 w-4" />
-          Approved ({approvedUsers.length})
-        </TabsTrigger>
-        <TabsTrigger value="rejected" className="flex items-center gap-2">
-          <UserX className="h-4 w-4" />
-          Rejected ({rejectedUsers.length})
-        </TabsTrigger>
-      </TabsList>
+    <div className="space-y-4">
+      {/* Filters Bar */}
+      <div className="flex flex-wrap items-center gap-3 p-3 bg-slate-50 rounded-lg border">
+        <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
+          <Filter className="h-4 w-4" />
+          Filters:
+        </div>
+        <Select value={userTypeFilter} onValueChange={setUserTypeFilter}>
+          <SelectTrigger className="w-[140px] h-8 text-sm bg-white">
+            <SelectValue placeholder="User Type" />
+          </SelectTrigger>
+          <SelectContent>
+            {userTypeOptions.map(option => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={emailVerifiedFilter} onValueChange={setEmailVerifiedFilter}>
+          <SelectTrigger className="w-[150px] h-8 text-sm bg-white">
+            <SelectValue placeholder="Email Status" />
+          </SelectTrigger>
+          <SelectContent>
+            {emailVerifiedOptions.map(option => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setUserTypeFilter("all")
+              setEmailVerifiedFilter("all")
+            }}
+            className="h-8 text-xs text-slate-500 hover:text-slate-700"
+          >
+            Clear Filters
+          </Button>
+        )}
+      </div>
 
-      <TabsContent value="pending">
-        <UserList
-          users={pendingUsers}
-          status="pending"
-          onUserUpdate={(userId, newStatus) => {
-            setPendingUsers(prev => prev.filter(u => u.id !== userId))
-            const user = pendingUsers.find(u => u.id === userId)
-            if (!user) return
+      <Tabs defaultValue="pending" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsTrigger value="pending" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Pending ({sortedPendingUsers.length}{hasActiveFilters ? `/${pendingUsers.length}` : ''})
+          </TabsTrigger>
+          <TabsTrigger value="approved" className="flex items-center gap-2">
+            <UserCheck className="h-4 w-4" />
+            Approved ({sortedApprovedUsers.length}{hasActiveFilters ? `/${approvedUsers.length}` : ''})
+          </TabsTrigger>
+          <TabsTrigger value="rejected" className="flex items-center gap-2">
+            <UserX className="h-4 w-4" />
+            Rejected ({sortedRejectedUsers.length}{hasActiveFilters ? `/${rejectedUsers.length}` : ''})
+          </TabsTrigger>
+        </TabsList>
 
-            if (newStatus === 'approved') {
-              setApprovedUsers(prev => [...prev, { ...user, approved_at: new Date().toISOString() }])
-            } else if (newStatus === 'rejected') {
-              setRejectedUsers(prev => [...prev, { ...user, approved_at: new Date().toISOString() }])
-            }
-          }}
-        />
-      </TabsContent>
+        <TabsContent value="pending">
+          <div className="mb-4 flex items-center gap-2">
+            <ArrowUpDown className="h-4 w-4 text-slate-500" />
+            <Select value={pendingSort} onValueChange={setPendingSort}>
+              <SelectTrigger className="w-[160px] h-8 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {pendingSortOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <UserList
+            users={sortedPendingUsers}
+            status="pending"
+            onUserUpdate={(userId, newStatus) => {
+              setPendingUsers(prev => prev.filter(u => u.id !== userId))
+              const user = pendingUsers.find(u => u.id === userId)
+              if (!user) return
 
-      <TabsContent value="approved">
-        <UserList
-          users={approvedUsers}
-          status="approved"
-          onUserUpdate={(userId, newStatus) => {
-            setApprovedUsers(prev => prev.filter(u => u.id !== userId))
-            const user = approvedUsers.find(u => u.id === userId)
-            if (!user) return
+              if (newStatus === 'approved') {
+                setApprovedUsers(prev => [...prev, { ...user, approved_at: new Date().toISOString() }])
+              } else if (newStatus === 'rejected') {
+                setRejectedUsers(prev => [...prev, { ...user, approved_at: new Date().toISOString() }])
+              }
+            }}
+          />
+        </TabsContent>
 
-            if (newStatus === 'pending') {
-              setPendingUsers(prev => [...prev, user])
-            } else if (newStatus === 'rejected') {
-              setRejectedUsers(prev => [...prev, user])
-            }
-          }}
-        />
-      </TabsContent>
+        <TabsContent value="approved">
+          <div className="mb-4 flex items-center gap-2">
+            <ArrowUpDown className="h-4 w-4 text-slate-500" />
+            <Select value={approvedSort} onValueChange={setApprovedSort}>
+              <SelectTrigger className="w-[160px] h-8 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {approvedSortOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <UserList
+            users={sortedApprovedUsers}
+            status="approved"
+            onUserUpdate={(userId, newStatus) => {
+              setApprovedUsers(prev => prev.filter(u => u.id !== userId))
+              const user = approvedUsers.find(u => u.id === userId)
+              if (!user) return
 
-      <TabsContent value="rejected">
-        <UserList
-          users={rejectedUsers}
-          status="rejected"
-          onUserUpdate={(userId, newStatus) => {
-            setRejectedUsers(prev => prev.filter(u => u.id !== userId))
-            const user = rejectedUsers.find(u => u.id === userId)
-            if (!user) return
+              if (newStatus === 'pending') {
+                setPendingUsers(prev => [...prev, user])
+              } else if (newStatus === 'rejected') {
+                setRejectedUsers(prev => [...prev, user])
+              }
+            }}
+          />
+        </TabsContent>
 
-            if (newStatus === 'pending') {
-              setPendingUsers(prev => [...prev, user])
-            } else if (newStatus === 'approved') {
-              setApprovedUsers(prev => [...prev, user])
-            }
-          }}
-        />
-      </TabsContent>
-    </Tabs>
+        <TabsContent value="rejected">
+          <div className="mb-4 flex items-center gap-2">
+            <ArrowUpDown className="h-4 w-4 text-slate-500" />
+            <Select value={rejectedSort} onValueChange={setRejectedSort}>
+              <SelectTrigger className="w-[160px] h-8 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {rejectedSortOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <UserList
+            users={sortedRejectedUsers}
+            status="rejected"
+            onUserUpdate={(userId, newStatus) => {
+              setRejectedUsers(prev => prev.filter(u => u.id !== userId))
+              const user = rejectedUsers.find(u => u.id === userId)
+              if (!user) return
+
+              if (newStatus === 'pending') {
+                setPendingUsers(prev => [...prev, user])
+              } else if (newStatus === 'approved') {
+                setApprovedUsers(prev => [...prev, user])
+              }
+            }}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
   )
 }
 
@@ -300,10 +500,10 @@ function UserList({
                       <span className="font-medium">{getUserDisplayName(user)}</span>
                     </div>
                   )}
-                  <div>Registered: {new Date(user.registered_at).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                  <div>Registered: {formatDate(user.registered_at)}</div>
                   {user.approved_at && (
                     <div>
-                      {status === 'rejected' ? 'Rejected' : 'Approved'}: {new Date(user.approved_at).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      {status === 'rejected' ? 'Rejected' : 'Approved'}: {formatDate(user.approved_at)}
                     </div>
                   )}
                   {user.approved_by_email && <div>By: {user.approved_by_email}</div>}

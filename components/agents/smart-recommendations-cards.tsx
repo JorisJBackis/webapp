@@ -82,6 +82,7 @@ function RecommendationCard({
     player_name: rec.player_name,
     player_transfermarkt_url: rec.player_transfermarkt_url,
     picture_url: rec.player_picture_url,
+    sofascore_id: rec.player_sofascore_id,
     position: rec.player_position,
     age: rec.player_age,
     nationality: rec.player_nationality,

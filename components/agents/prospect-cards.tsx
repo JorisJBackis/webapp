@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import type { ProspectPlayer } from '@/app/dashboard/agents/prospects/page'
 import { getCountryFlag } from '@/lib/utils/country-flags'
+import { getPlayerImageUrl } from '@/lib/utils'
 import { toast } from 'sonner'
 
 interface ProspectCardsProps {
@@ -206,9 +207,9 @@ export default function ProspectCards({ prospects, onProspectRemoved, onNotesUpd
                         rel="noopener noreferrer"
                         className="block hover:opacity-80 transition-opacity"
                       >
-                        {prospect.picture_url ? (
+                        {getPlayerImageUrl(prospect.picture_url, prospect.sofascore_id) ? (
                           <img
-                            src={prospect.picture_url}
+                            src={getPlayerImageUrl(prospect.picture_url, prospect.sofascore_id)!}
                             alt={prospect.name}
                             className="w-24 h-24 object-cover rounded-lg border-2 border-background shadow-md cursor-pointer"
                           />
@@ -220,9 +221,9 @@ export default function ProspectCards({ prospects, onProspectRemoved, onNotesUpd
                       </a>
                     ) : (
                       <>
-                        {prospect.picture_url ? (
+                        {getPlayerImageUrl(prospect.picture_url, prospect.sofascore_id) ? (
                           <img
-                            src={prospect.picture_url}
+                            src={getPlayerImageUrl(prospect.picture_url, prospect.sofascore_id)!}
                             alt={prospect.name}
                             className="w-24 h-24 object-cover rounded-lg border-2 border-background shadow-md"
                           />

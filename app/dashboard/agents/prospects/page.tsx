@@ -20,6 +20,7 @@ export interface ProspectPlayer {
   market_value_eur: number | null
   is_eu_passport: boolean | null
   picture_url: string | null
+  sofascore_id: number | null
   transfermarkt_url: string | null
   player_agent: string | null
   club_id: number | null
@@ -111,6 +112,7 @@ export default function AgentProspectsPage() {
           market_value_eur,
           is_eu_passport,
           picture_url,
+          sofascore_id,
           transfermarkt_url,
           player_agent,
           club_id,
@@ -142,6 +144,7 @@ export default function AgentProspectsPage() {
           market_value_eur: player.market_value_eur,
           is_eu_passport: player.is_eu_passport,
           picture_url: player.picture_url,
+          sofascore_id: player.sofascore_id,
           transfermarkt_url: player.transfermarkt_url,
           player_agent: player.player_agent,
           club_id: player.club_id,

@@ -13,7 +13,7 @@ const ADMIN_EMAILS = [
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { userEmail, userType, clubName, registeredAt, adminEmails } = body
+    const { userEmail, userType, clubName, registeredAt, adminEmails, registrationNote } = body
 
     if (!userEmail) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
           clubName,
           registeredAt,
           adminPanelUrl,
+          registrationNote,
         }),
       })
     )

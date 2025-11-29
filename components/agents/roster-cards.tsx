@@ -27,7 +27,9 @@ import {
   Grid2x2,
   ChevronsUpDown,
   Search,
-  BarChart3
+  BarChart3,
+  Camera,
+  Loader2
 } from 'lucide-react'
 import {
   AlertDialog,
@@ -46,6 +48,7 @@ import {
 } from '@/components/ui/popover'
 import type { RosterPlayer } from '@/app/dashboard/agents/roster/page'
 import { getCountryFlag, isEUCountry } from '@/lib/utils/country-flags'
+import { getPlayerImageUrl } from '@/lib/utils'
 import PlayerStatsModal from './player-stats-modal'
 
 interface RosterCardsProps {
@@ -67,6 +70,9 @@ export default function RosterCards({ roster, onPlayerRemoved, onNotesUpdated, o
   const [editingField, setEditingField] = useState<{ playerId: number; field: string } | null>(null)
   const [fieldValue, setFieldValue] = useState<string>('')
   const [savingField, setSavingField] = useState(false)
+
+  // Image upload state
+  const [uploadingImageForPlayer, setUploadingImageForPlayer] = useState<number | null>(null)
 
   // Nationality dropdown state
   const [nationalitySearch, setNationalitySearch] = useState('')
@@ -476,6 +482,90 @@ export default function RosterCards({ roster, onPlayerRemoved, onNotesUpdated, o
       alert('Failed to reset field: ' + err.message)
     } finally {
       setSavingField(false)
+    }
+  }
+
+  const handleImageUpload = async (playerId: number, file: File) => {
+    try {
+      setUploadingImageForPlayer(playerId)
+
+      if (!supabase) return
+
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        throw new Error('Please upload an image file')
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error('Image must be less than 5MB')
+      }
+
+      // Create unique file name
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${user.id}/${playerId}_${Date.now()}.${fileExt}`
+
+      // Upload to Supabase storage
+      const { error: uploadError } = await supabase.storage
+        .from('player-images')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        })
+
+      if (uploadError) throw uploadError
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('player-images')
+        .getPublicUrl(fileName)
+
+      // Save URL to database via RPC
+      const { error: rpcError } = await supabase.rpc('upsert_player_override', {
+        p_agent_id: user.id,
+        p_player_id: playerId,
+        p_picture_url: publicUrl
+      })
+
+      if (rpcError) throw rpcError
+
+      // Refresh the roster data
+      onRosterRefresh()
+    } catch (err: any) {
+      console.error('Error uploading image:', err)
+      alert('Failed to upload image: ' + err.message)
+    } finally {
+      setUploadingImageForPlayer(null)
+    }
+  }
+
+  const handleResetImage = async (playerId: number) => {
+    try {
+      setUploadingImageForPlayer(playerId)
+
+      if (!supabase) return
+
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+
+      const { error } = await supabase.rpc('reset_player_override_field', {
+        p_agent_id: user.id,
+        p_player_id: playerId,
+        p_field: 'picture'
+      })
+
+      if (error) throw error
+
+      // Refresh the roster data
+      onRosterRefresh()
+    } catch (err: any) {
+      console.error('Error resetting image:', err)
+      alert('Failed to reset image: ' + err.message)
+    } finally {
+      setUploadingImageForPlayer(null)
     }
   }
 
@@ -1003,41 +1093,74 @@ export default function RosterCards({ roster, onPlayerRemoved, onNotesUpdated, o
               {/* Header with player photo */}
               <div className={`relative bg-gradient-to-br from-primary/10 to-primary/5 ${currentDensity.padding}`}>
                 <div className={`flex items-start ${viewDensity === 'ultra' ? 'gap-2' : 'gap-4'}`}>
-                  {/* Player Photo - Clickable */}
-                  <div className="flex-shrink-0">
-                    {player.player_transfermarkt_url ? (
-                      <a
-                        href={player.player_transfermarkt_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block hover:opacity-80 transition-opacity"
-                      >
-                        {player.picture_url ? (
-                          <img
-                            src={player.picture_url}
-                            alt={player.player_name}
-                            className={`${currentDensity.photoSize} rounded-lg object-cover border-2 border-background shadow-md cursor-pointer`}
-                          />
-                        ) : (
-                          <div className={`${currentDensity.photoSize} rounded-lg bg-muted flex items-center justify-center border-2 border-background shadow-md cursor-pointer`}>
-                            <User className={`${viewDensity === 'ultra' ? 'h-8 w-8' : viewDensity === 'compact' ? 'h-10 w-10' : 'h-12 w-12'} text-muted-foreground`} />
-                          </div>
-                        )}
-                      </a>
-                    ) : (
-                      <>
-                        {player.picture_url ? (
-                          <img
-                            src={player.picture_url}
-                            alt={player.player_name}
-                            className={`${currentDensity.photoSize} rounded-lg object-cover border-2 border-background shadow-md`}
-                          />
-                        ) : (
-                          <div className={`${currentDensity.photoSize} rounded-lg bg-muted flex items-center justify-center border-2 border-background shadow-md`}>
-                            <User className={`${viewDensity === 'ultra' ? 'h-8 w-8' : viewDensity === 'compact' ? 'h-10 w-10' : 'h-12 w-12'} text-muted-foreground`} />
-                          </div>
-                        )}
-                      </>
+                  {/* Player Photo with Upload */}
+                  <div className="flex-shrink-0 relative group/photo">
+                    {/* Hidden file input */}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      id={`photo-upload-${player.player_id}`}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          handleImageUpload(player.player_id, file)
+                        }
+                        e.target.value = '' // Reset input
+                      }}
+                      disabled={uploadingImageForPlayer === player.player_id}
+                    />
+
+                    {/* Photo display */}
+                    {getPlayerImageUrl(player.picture_url, player.sofascore_id, player.picture_url_override) ? (
+                      <img
+                        src={getPlayerImageUrl(player.picture_url, player.sofascore_id, player.picture_url_override)!}
+                        alt={player.player_name}
+                        className={`${currentDensity.photoSize} rounded-lg object-cover border-2 ${player.has_picture_override ? 'border-blue-500' : 'border-background'} shadow-md`}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.style.display = 'none'
+                          target.nextElementSibling?.classList.remove('hidden')
+                        }}
+                      />
+                    ) : null}
+                    <div className={`${getPlayerImageUrl(player.picture_url, player.sofascore_id, player.picture_url_override) ? 'hidden' : ''} ${currentDensity.photoSize} rounded-lg bg-muted flex items-center justify-center border-2 border-background shadow-md`}>
+                      <User className={`${viewDensity === 'ultra' ? 'h-8 w-8' : viewDensity === 'compact' ? 'h-10 w-10' : 'h-12 w-12'} text-muted-foreground`} />
+                    </div>
+
+                    {/* Overlay with upload/reset buttons */}
+                    <div className={`absolute inset-0 ${currentDensity.photoSize} rounded-lg bg-black/50 opacity-0 group-hover/photo:opacity-100 transition-opacity flex items-center justify-center gap-1`}>
+                      {uploadingImageForPlayer === player.player_id ? (
+                        <Loader2 className="h-5 w-5 text-white animate-spin" />
+                      ) : (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="h-7 w-7 p-0"
+                            onClick={() => document.getElementById(`photo-upload-${player.player_id}`)?.click()}
+                            title="Upload custom photo"
+                          >
+                            <Camera className="h-3.5 w-3.5" />
+                          </Button>
+                          {player.has_picture_override && (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="h-7 w-7 p-0"
+                              onClick={() => handleResetImage(player.player_id)}
+                              title="Reset to original photo"
+                            >
+                              <RotateCcw className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    {/* Custom photo indicator */}
+                    {player.has_picture_override && (
+                      <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-blue-500 border-2 border-background" title="Custom photo" />
                     )}
                   </div>
 
