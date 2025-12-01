@@ -2,37 +2,68 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useState,useEffect } from "react"
+import { useRouter,useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertCircle, CheckCircle } from "lucide-react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Card,CardContent,CardDescription,CardFooter,CardHeader,CardTitle } from "@/components/ui/card"
+import { AlertCircle,CheckCircle } from "lucide-react"
+import { Alert,AlertDescription } from "@/components/ui/alert"
 import { Logo } from "@/components/logo"
 
 export default function UpdatePasswordPage() {
   const router = useRouter()
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
-  const [hasSession, setHasSession] = useState(false)
+  const searchParams = useSearchParams()
+  const [password,setPassword] = useState("")
+  const [confirmPassword,setConfirmPassword] = useState("")
+  const [loading,setLoading] = useState(false)
+  const [error,setError] = useState<string | null>(null)
+  const [success,setSuccess] = useState(false)
+  const [hasSession,setHasSession] = useState(false)
+  const [isChecking,setIsChecking] = useState(true)
   const supabase = createClient()
 
   useEffect(() => {
     const checkSession = async () => {
-      if (!supabase) return;
-      const { data } = await supabase!.auth.getSession()
-      setHasSession(!!data.session)
+      if (!supabase) return
+
+      const tokenHash = searchParams.get("token_hash")
+      const type = searchParams.get("type")
+
+      // If we have a recovery token, verify it first
+      if (tokenHash && type === "recovery") {
+        try {
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: "recovery",
+          })
+
+          if (error) {
+            setError(error.message)
+            setHasSession(false)
+          } else {
+            // Token verified successfully, now check if we have a session
+            const { data } = await supabase.auth.getSession()
+            setHasSession(!!data.session)
+          }
+        } catch (err: any) {
+          setError(err.message || "Failed to verify recovery token")
+          setHasSession(false)
+        }
+      } else {
+        // No token in URL, just check for existing session
+        const { data } = await supabase.auth.getSession()
+        setHasSession(!!data.session)
+      }
+
+      setIsChecking(false)
     }
 
     checkSession()
-  }, [supabase])
+  },[supabase,searchParams])
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -46,7 +77,7 @@ export default function UpdatePasswordPage() {
     }
 
     try {
-      if (!supabase) return;
+      if (!supabase) return
       const { error } = await supabase.auth.updateUser({
         password,
       })
@@ -60,12 +91,28 @@ export default function UpdatePasswordPage() {
       // Redirect to dashboard after a short delay
       setTimeout(() => {
         router.push("/dashboard")
-      }, 3000)
+      },3000)
     } catch (error: any) {
       setError(error.message || "An error occurred while updating your password")
     } finally {
       setLoading(false)
     }
+  }
+
+  // While checking session validity
+  if (isChecking) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
+        <div className="mb-8">
+          <Logo />
+        </div>
+        <Card className="w-full max-w-md border-0 shadow-lg bg-gray-50">
+          <CardContent className="text-center pt-6">
+            <p className="text-sm text-muted-foreground">Verifying your reset link...</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   // If user doesn't have a valid session
@@ -84,6 +131,12 @@ export default function UpdatePasswordPage() {
           </CardHeader>
           <CardContent className="text-center">
             <p className="text-sm text-muted-foreground">Please request a new password reset link to continue.</p>
+            {error && (
+              <Alert variant="destructive" className="mt-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <Button asChild className="w-full bg-primary hover:bg-primary/90">
