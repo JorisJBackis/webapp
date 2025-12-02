@@ -53,6 +53,9 @@ export interface SmartRecommendation {
       contract_expires: string
       market_value: number | null
       months_diff: number
+      picture_url?: string | null
+      transfermarkt_url?: string | null
+      sofascore_id?: number | null
     }>
     contract_timing_perfect: boolean
     contract_timing_good: boolean

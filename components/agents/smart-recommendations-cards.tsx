@@ -109,8 +109,9 @@ function RecommendationCard({
         map[p.name] = {
           player_id: 0,
           player_name: p.name,
-          player_transfermarkt_url: null,
-          picture_url: null,
+          player_transfermarkt_url: p.transfermarkt_url || null,
+          picture_url: p.picture_url || null,
+          sofascore_id: p.sofascore_id || null,
           position: rec.player_position, // Same position
           age: p.age,
           nationality: null,
