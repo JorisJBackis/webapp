@@ -95,8 +95,8 @@ function RecommendationCard({
     league_tier: rec.player_league_tier,
     league_country: rec.player_club_country,
     league_transfermarkt_url: null,
-    height: null,
-    foot: null,
+    height: rec.player_height,
+    foot: rec.player_foot,
     market_value: rec.player_market_value,
     contract_expires: rec.player_contract_expires,
     is_eu_passport: null
@@ -124,8 +124,8 @@ function RecommendationCard({
           league_tier: rec.league_tier,
           league_country: rec.club_country,
           league_transfermarkt_url: null,
-          height: null,
-          foot: null,
+          height: p.height || null,
+          foot: p.foot || null,
           market_value: p.market_value,
           contract_expires: p.contract_expires,
           is_eu_passport: null
