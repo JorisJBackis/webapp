@@ -86,13 +86,14 @@ function RecommendationCard({
     position: rec.player_position,
     age: rec.player_age,
     nationality: rec.player_nationality,
-    club_name: null, // Player's current club not needed for comparison
-    club_logo_url: null,
-    club_transfermarkt_url: null,
-    club_avg_market_value: null,
-    league_name: null,
-    league_tier: null,
-    league_country: null,
+    // Use player's own club info from the V2 function
+    club_name: rec.player_club_name,
+    club_logo_url: rec.player_club_logo_url,
+    club_transfermarkt_url: rec.player_club_transfermarkt_url,
+    club_avg_market_value: rec.player_club_avg_market_value,
+    league_name: rec.player_league_name,
+    league_tier: rec.player_league_tier,
+    league_country: rec.player_club_country,
     league_transfermarkt_url: null,
     height: null,
     foot: null,
@@ -114,7 +115,7 @@ function RecommendationCard({
           sofascore_id: p.sofascore_id || null,
           position: rec.player_position, // Same position
           age: p.age,
-          nationality: null,
+          nationality: p.nationality || null, // Now available from V2 function
           club_name: rec.club_name,
           club_logo_url: rec.club_logo_url,
           club_transfermarkt_url: rec.club_transfermarkt_url,

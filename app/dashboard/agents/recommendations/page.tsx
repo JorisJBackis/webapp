@@ -23,6 +23,16 @@ export interface SmartRecommendation {
   player_picture_url: string | null
   player_sofascore_id: number | null
   player_transfermarkt_url: string | null
+  // Player's own club info (for green card)
+  player_club_id: number | null
+  player_club_name: string | null
+  player_club_logo_url: string | null
+  player_club_transfermarkt_url: string | null
+  player_club_country: string | null
+  player_club_avg_market_value: number | null
+  player_league_name: string | null
+  player_league_tier: number | null
+  // Target club info (club looking for player)
   club_id: number
   club_name: string
   club_logo_url: string | null
@@ -56,6 +66,7 @@ export interface SmartRecommendation {
       picture_url?: string | null
       transfermarkt_url?: string | null
       sofascore_id?: number | null
+      nationality?: string | null
     }>
     contract_timing_perfect: boolean
     contract_timing_good: boolean
