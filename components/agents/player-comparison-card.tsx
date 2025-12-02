@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -45,6 +46,8 @@ interface PlayerComparisonCardProps {
 }
 
 export default function PlayerComparisonCard({ player, variant = 'your-player', contractInfo }: PlayerComparisonCardProps) {
+  const [imageBroken, setImageBroken] = useState(false)
+
   const formatMarketValue = (value: number | null) => {
     if (!value) return 'N/A'
     if (value >= 1000000) return `€${(value / 1000000).toFixed(1)}M`
@@ -105,40 +108,34 @@ export default function PlayerComparisonCard({ player, variant = 'your-player', 
           <div className="flex items-start gap-3">
             {/* Player Photo - Clickable */}
             <div className="flex-shrink-0">
-              {player.player_transfermarkt_url ? (
-                <a
-                  href={player.player_transfermarkt_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block hover:opacity-80 transition-opacity"
-                >
-                  {getPlayerImageUrl(player.picture_url, player.sofascore_id) ? (
-                    <img
-                      src={getPlayerImageUrl(player.picture_url, player.sofascore_id)!}
-                      alt={player.player_name}
-                      className="w-20 h-20 rounded-lg object-cover border-2 border-background shadow-md cursor-pointer"
-                    />
-                  ) : (
-                    <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center border-2 border-background shadow-md cursor-pointer">
-                      <User className="h-10 w-10 text-muted-foreground" />
-                    </div>
-                  )}
-                </a>
-              ) : (
-                <>
-                  {getPlayerImageUrl(player.picture_url, player.sofascore_id) ? (
-                    <img
-                      src={getPlayerImageUrl(player.picture_url, player.sofascore_id)!}
-                      alt={player.player_name}
-                      className="w-20 h-20 rounded-lg object-cover border-2 border-background shadow-md"
-                    />
-                  ) : (
-                    <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center border-2 border-background shadow-md">
-                      <User className="h-10 w-10 text-muted-foreground" />
-                    </div>
-                  )}
-                </>
-              )}
+              {(() => {
+                const imageUrl = getPlayerImageUrl(player.picture_url, player.sofascore_id)
+                const showPlaceholder = !imageUrl || imageBroken
+
+                const imageContent = showPlaceholder ? (
+                  <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center border-2 border-background shadow-md">
+                    <User className="h-10 w-10 text-muted-foreground" />
+                  </div>
+                ) : (
+                  <img
+                    src={imageUrl}
+                    alt={player.player_name}
+                    className="w-20 h-20 rounded-lg object-cover border-2 border-background shadow-md"
+                    onError={() => setImageBroken(true)}
+                  />
+                )
+
+                return player.player_transfermarkt_url ? (
+                  <a
+                    href={player.player_transfermarkt_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block hover:opacity-80 transition-opacity cursor-pointer"
+                  >
+                    {imageContent}
+                  </a>
+                ) : imageContent
+              })()}
             </div>
 
             {/* Player Info */}

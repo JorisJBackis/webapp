@@ -28,7 +28,7 @@ import {
   ChevronsUpDown,
   Search,
   BarChart3,
-  Camera,
+  Upload,
   Loader2
 } from 'lucide-react'
 import {
@@ -73,6 +73,7 @@ export default function RosterCards({ roster, onPlayerRemoved, onNotesUpdated, o
 
   // Image upload state
   const [uploadingImageForPlayer, setUploadingImageForPlayer] = useState<number | null>(null)
+  const [brokenImages, setBrokenImages] = useState<Set<number>>(new Set())
 
   // Nationality dropdown state
   const [nationalitySearch, setNationalitySearch] = useState('')
@@ -1094,7 +1095,7 @@ export default function RosterCards({ roster, onPlayerRemoved, onNotesUpdated, o
               <div className={`relative bg-gradient-to-br from-primary/10 to-primary/5 ${currentDensity.padding}`}>
                 <div className={`flex items-start ${viewDensity === 'ultra' ? 'gap-2' : 'gap-4'}`}>
                   {/* Player Photo with Upload */}
-                  <div className="flex-shrink-0 relative group/photo">
+                  <div className="flex-shrink-0 relative">
                     {/* Hidden file input */}
                     <input
                       type="file"
@@ -1112,56 +1113,60 @@ export default function RosterCards({ roster, onPlayerRemoved, onNotesUpdated, o
                     />
 
                     {/* Photo display */}
-                    {getPlayerImageUrl(player.picture_url, player.sofascore_id, player.picture_url_override) ? (
-                      <img
-                        src={getPlayerImageUrl(player.picture_url, player.sofascore_id, player.picture_url_override)!}
-                        alt={player.player_name}
-                        className={`${currentDensity.photoSize} rounded-lg object-cover border-2 ${player.has_picture_override ? 'border-blue-500' : 'border-background'} shadow-md`}
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement
-                          target.style.display = 'none'
-                          target.nextElementSibling?.classList.remove('hidden')
-                        }}
-                      />
-                    ) : null}
-                    <div className={`${getPlayerImageUrl(player.picture_url, player.sofascore_id, player.picture_url_override) ? 'hidden' : ''} ${currentDensity.photoSize} rounded-lg bg-muted flex items-center justify-center border-2 border-background shadow-md`}>
-                      <User className={`${viewDensity === 'ultra' ? 'h-8 w-8' : viewDensity === 'compact' ? 'h-10 w-10' : 'h-12 w-12'} text-muted-foreground`} />
-                    </div>
+                    {(() => {
+                      const imageUrl = getPlayerImageUrl(player.picture_url, player.sofascore_id, player.picture_url_override)
+                      const isBroken = brokenImages.has(player.player_id)
+                      const showPlaceholder = !imageUrl || isBroken
 
-                    {/* Overlay with upload/reset buttons */}
-                    <div className={`absolute inset-0 ${currentDensity.photoSize} rounded-lg bg-black/50 opacity-0 group-hover/photo:opacity-100 transition-opacity flex items-center justify-center gap-1`}>
-                      {uploadingImageForPlayer === player.player_id ? (
-                        <Loader2 className="h-5 w-5 text-white animate-spin" />
-                      ) : (
+                      return (
                         <>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            className="h-7 w-7 p-0"
-                            onClick={() => document.getElementById(`photo-upload-${player.player_id}`)?.click()}
-                            title="Upload custom photo"
-                          >
-                            <Camera className="h-3.5 w-3.5" />
-                          </Button>
-                          {player.has_picture_override && (
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="h-7 w-7 p-0"
+                          {imageUrl && !isBroken && (
+                            <img
+                              src={imageUrl}
+                              alt={player.player_name}
+                              className={`${currentDensity.photoSize} rounded-lg object-cover border-2 ${player.has_picture_override ? 'border-blue-500' : 'border-background'} shadow-md`}
+                              onError={() => {
+                                setBrokenImages(prev => new Set(prev).add(player.player_id))
+                              }}
+                            />
+                          )}
+
+                          {/* Placeholder - shows when no image or image failed */}
+                          {showPlaceholder && (
+                            <div className={`${currentDensity.photoSize} rounded-lg bg-muted flex items-center justify-center border-2 border-background shadow-md`}>
+                              <User className={`${viewDensity === 'ultra' ? 'h-8 w-8' : viewDensity === 'compact' ? 'h-10 w-10' : 'h-12 w-12'} text-muted-foreground`} />
+                            </div>
+                          )}
+
+                          {/* Reset button - shows when custom photo exists */}
+                          {player.has_picture_override && !isBroken && (
+                            <button
                               onClick={() => handleResetImage(player.player_id)}
+                              className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center border-2 border-background shadow-md transition-colors cursor-pointer"
                               title="Reset to original photo"
                             >
-                              <RotateCcw className="h-3.5 w-3.5" />
-                            </Button>
+                              <RotateCcw className="h-2.5 w-2.5 text-white" />
+                            </button>
+                          )}
+
+                          {/* Upload button - shows when no image or image failed */}
+                          {showPlaceholder && (
+                            <button
+                              onClick={() => document.getElementById(`photo-upload-${player.player_id}`)?.click()}
+                              disabled={uploadingImageForPlayer === player.player_id}
+                              className="absolute bottom-0 right-0 h-6 w-6 rounded-full bg-primary hover:bg-primary/90 flex items-center justify-center border-2 border-background shadow-md transition-colors cursor-pointer"
+                              title="Upload photo"
+                            >
+                              {uploadingImageForPlayer === player.player_id ? (
+                                <Loader2 className="h-3 w-3 text-primary-foreground animate-spin" />
+                              ) : (
+                                <Upload className="h-3 w-3 text-primary-foreground" />
+                              )}
+                            </button>
                           )}
                         </>
-                      )}
-                    </div>
-
-                    {/* Custom photo indicator */}
-                    {player.has_picture_override && (
-                      <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-blue-500 border-2 border-background" title="Custom photo" />
-                    )}
+                      )
+                    })()}
                   </div>
 
                   {/* Player Info */}
