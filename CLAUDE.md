@@ -100,6 +100,7 @@ Key points:
 - Use `source .env` to load environment variables
 - Use psql with the connection string pattern shown above
 - DO NOT try Python/Node.js/other methods - psql is simpler and always works
+- **NEVER assume table or column names** - always query the schema first to get the exact names (e.g. the table is `agents_transfermarkt`, not `agents`). Run `\dt` to list tables and `\d table_name` to see columns before writing any SQL.
 
 ## Architecture & Key Patterns
 
