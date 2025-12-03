@@ -286,20 +286,12 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
         const agency = tmPlayer.agencies_transfermarkt as any
         const sfPosition = (tmPlayer.sofascore_players_staging as any)?.position
 
-        // Map league ID to tournament name
-        const leagueMap: { [key: string]: string } = {
-          'LET1': 'Virsliga',
-          'FI1': 'Veikkausliiga'
-        }
-
-        const tournamentName = leagueMap[club?.league_id]
-
-        if (!tournamentName || !tmPlayer.sf_data) {
+        if (!tmPlayer.sf_data) {
           throw new Error('No performance data available for your league yet')
         }
 
-        // Extract season stats from sf_data
-        const stats = extractSeasonStats(tmPlayer.sf_data, tournamentName)
+        // Extract season stats from sf_data (prefers player's current league, falls back to first available)
+        const { stats, tournamentName } = extractSeasonStats(tmPlayer.sf_data, league?.name)
         if (!stats) {
           throw new Error('No season statistics found')
         }
@@ -397,36 +389,42 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
     }
   }
 
-  // Helper function to extract season stats
-  function extractSeasonStats(sfData: any, tournamentName: string): any {
-    if (!sfData) return null
+  // Helper function to extract season stats - prefers player's league, falls back to first available
+  function extractSeasonStats(sfData: any, preferredLeague?: string): { stats: any; tournamentName: string } {
+    if (!sfData) return { stats: null, tournamentName: '' }
 
-    for (const playerId in sfData) {
-      const playerData = sfData[playerId]
-      if (playerData.tournament_name === tournamentName && playerData.seasons) {
-        const seasonIds = Object.keys(playerData.seasons)
+    // First pass: try to find the preferred league (from database)
+    if (preferredLeague) {
+      for (const tournamentId in sfData) {
+        const tournamentData = sfData[tournamentId]
+        if (tournamentData.tournament_name === preferredLeague && tournamentData.seasons) {
+          const seasonIds = Object.keys(tournamentData.seasons)
+          if (seasonIds.length === 0) continue
+
+          const latestSeasonId = seasonIds.sort((a, b) => parseInt(b) - parseInt(a))[0]
+          return {
+            stats: tournamentData.seasons[latestSeasonId].statistics,
+            tournamentName: tournamentData.tournament_name
+          }
+        }
+      }
+    }
+
+    // Fallback: get first available tournament with seasons
+    for (const tournamentId in sfData) {
+      const tournamentData = sfData[tournamentId]
+      if (tournamentData.seasons) {
+        const seasonIds = Object.keys(tournamentData.seasons)
         if (seasonIds.length === 0) continue
 
         const latestSeasonId = seasonIds.sort((a, b) => parseInt(b) - parseInt(a))[0]
-        return playerData.seasons[latestSeasonId].statistics
+        return {
+          stats: tournamentData.seasons[latestSeasonId].statistics,
+          tournamentName: tournamentData.tournament_name || ''
+        }
       }
     }
-    return null
-  }
-
-  // Helper to get season ID
-  function getLatestSeasonId(sfData: any, tournamentName: string): string {
-    if (!sfData) return ''
-
-    for (const playerId in sfData) {
-      const playerData = sfData[playerId]
-      if (playerData.tournament_name === tournamentName && playerData.seasons) {
-        const seasonIds = Object.keys(playerData.seasons)
-        if (seasonIds.length === 0) continue
-        return seasonIds.sort((a, b) => parseInt(b) - parseInt(a))[0]
-      }
-    }
-    return ''
+    return { stats: null, tournamentName: '' }
   }
 
   // Get top strengths and weaknesses

@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { Shield, UserCheck, UserX, Clock, LogOut, Link2 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Shield, LogOut, Link2 } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { UserManagementTabs } from "@/components/admin/user-management-tabs"
 import Link from "next/link"
@@ -40,23 +40,6 @@ export default async function AdminDashboard() {
     .select("*")
     .order("rejected_at", { ascending: false })
 
-  // Get stats
-  const { count: pendingCount } = await supabase
-    .from("profiles")
-    .select("*", { count: "exact", head: true })
-    .eq("approval_status", "pending")
-
-  const { count: approvedCount } = await supabase
-    .from("profiles")
-    .select("*", { count: "exact", head: true })
-    .eq("approval_status", "approved")
-
-  const { count: rejectedCount } = await supabase
-    .from("profiles")
-    .select("*", { count: "exact", head: true })
-    .eq("approval_status", "rejected")
-
-
   async function handleSignOut() {
     "use server"
     const supabase = await createClient()
@@ -94,51 +77,9 @@ export default async function AdminDashboard() {
       </header>
 
       <div className="container mx-auto p-6">
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-slate-600">Pending Approval</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center">
-                <Clock className="h-5 w-5 text-yellow-600 mr-2" />
-                <span className="text-3xl font-bold">{pendingCount || 0}</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-slate-600">Total Approved</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center">
-                <UserCheck className="h-5 w-5 text-green-600 mr-2" />
-                <span className="text-3xl font-bold">{approvedCount || 0}</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-slate-600">Total Rejected</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center">
-                <UserX className="h-5 w-5 text-red-600 mr-2" />
-                <span className="text-3xl font-bold">{rejectedCount || 0}</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* User Management Tabs */}
         <Card>
-          <CardHeader>
-            <CardTitle>User Management</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <UserManagementTabs
               pendingUsers={pendingUsers || []}
               approvedUsers={approvedUsers || []}

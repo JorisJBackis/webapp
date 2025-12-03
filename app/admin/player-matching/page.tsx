@@ -6,7 +6,16 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle2, XCircle, AlertCircle, ExternalLink, Calendar, MapPin, User, TrendingUp, X, Check, ArrowRight } from "lucide-react";
+import { CheckCircle2, XCircle, AlertCircle, ExternalLink, Calendar, MapPin, User, TrendingUp, X, Check, ArrowRight, Search, Filter } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -34,6 +43,7 @@ interface TMPlayer {
   nationality: string | null;
   main_position: string | null;
   picture_url: string | null;
+  league_name: string | null;
 }
 
 interface SFPlayer {
@@ -89,11 +99,46 @@ export default function PlayerMatchingReview() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("needs-review");
+
+  // Filter state
+  const [leagues, setLeagues] = useState<string[]>([]);
+  const [selectedLeague, setSelectedLeague] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
   const supabase = createClient();
 
   useEffect(() => {
-    loadData();
+    loadLeagues();
   }, []);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Reload data when filters change
+  useEffect(() => {
+    loadData();
+  }, [selectedLeague, debouncedSearch]);
+
+  async function loadLeagues() {
+    const { data, error } = await supabase
+      .from("sofascore_players_staging")
+      .select("league_name")
+      .not("league_name", "is", null);
+
+    if (error) {
+      console.error("Error loading leagues:", error);
+      return;
+    }
+
+    const uniqueLeagues = [...new Set(data?.map((d) => d.league_name).filter(Boolean) as string[])].sort();
+    setLeagues(uniqueLeagues);
+  }
 
   async function loadData() {
     setLoading(true);
@@ -164,7 +209,10 @@ export default function PlayerMatchingReview() {
         transfermarkt_url,
         clubs_transfermarkt!inner (
           name,
-          logo_url
+          logo_url,
+          leagues_transfermarkt (
+            name
+          )
         )
       `)
       .eq("id", playerId)
@@ -185,6 +233,7 @@ export default function PlayerMatchingReview() {
       nationality: data.nationality,
       main_position: data.main_position,
       picture_url: data.picture_url,
+      league_name: (data as any).clubs_transfermarkt?.leagues_transfermarkt?.name || null,
     };
   }
 
@@ -451,6 +500,47 @@ export default function PlayerMatchingReview() {
     return `${tmPlayerId}-${sfPlayerId}`;
   }
 
+  // Filter functions
+  function filterReviewItems(items: ReviewItemWithData[]): ReviewItemWithData[] {
+    return items.filter((item) => {
+      // League filter
+      if (selectedLeague !== "all" && item.tm_player?.league_name !== selectedLeague) {
+        return false;
+      }
+      // Search filter (name or club)
+      if (debouncedSearch) {
+        const search = debouncedSearch.toLowerCase();
+        const nameMatch = item.tm_player?.name?.toLowerCase().includes(search);
+        const clubMatch = item.tm_player?.club_name?.toLowerCase().includes(search);
+        if (!nameMatch && !clubMatch) return false;
+      }
+      return true;
+    });
+  }
+
+  function filterApprovedMatches(matches: AutoApprovedMatch[]): AutoApprovedMatch[] {
+    return matches.filter((match) => {
+      // League filter
+      if (selectedLeague !== "all" && match.tm_player?.league_name !== selectedLeague) {
+        return false;
+      }
+      // Search filter (name or club)
+      if (debouncedSearch) {
+        const search = debouncedSearch.toLowerCase();
+        const nameMatch = match.tm_player?.name?.toLowerCase().includes(search) ||
+                          match.sf_player?.name?.toLowerCase().includes(search);
+        const clubMatch = match.tm_player?.club_name?.toLowerCase().includes(search) ||
+                          match.sf_player?.current_team_name?.toLowerCase().includes(search);
+        if (!nameMatch && !clubMatch) return false;
+      }
+      return true;
+    });
+  }
+
+  const filteredReviewItems = filterReviewItems(reviewItems);
+  const filteredAutoApproved = filterApprovedMatches(autoApprovedMatches);
+  const filteredManuallyApproved = filterApprovedMatches(manuallyApprovedMatches);
+
   function renderMatchIndicators(tmPlayerId: number, sfPlayerId: number) {
     const details = matchDetails.get(getMatchKey(tmPlayerId, sfPlayerId));
     if (!details) return null;
@@ -489,7 +579,7 @@ export default function PlayerMatchingReview() {
         <div className="flex gap-4 mb-3">
           {candidate.photo_url ? (
             <Image
-              src={candidate.photo_url}
+              src={candidate.photo_url.trim()}
               alt={candidate.name}
               width={70}
               height={70}
@@ -565,7 +655,7 @@ export default function PlayerMatchingReview() {
         <div className="flex gap-5">
           {player.photo_url ? (
             <Image
-              src={player.photo_url}
+              src={player.photo_url.trim()}
               alt={player.name}
               width={100}
               height={100}
@@ -639,34 +729,90 @@ export default function PlayerMatchingReview() {
         </p>
       </div>
 
+      {/* Filters */}
+      <Card className="p-4 mb-6">
+        <div className="flex flex-wrap items-center gap-4">
+          {/* Search */}
+          <div className="relative flex-1 min-w-[200px] max-w-[300px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search player or club..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 pr-8"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full hover:bg-muted flex items-center justify-center"
+              >
+                <X className="h-3 w-3 text-muted-foreground" />
+              </button>
+            )}
+          </div>
+
+          {/* League Filter */}
+          <Select value={selectedLeague} onValueChange={setSelectedLeague}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Leagues" />
+            </SelectTrigger>
+            <SelectContent className="max-h-[300px] overflow-y-auto">
+              <SelectItem value="all">All Leagues</SelectItem>
+              {leagues.map((league) => (
+                <SelectItem key={league} value={league}>
+                  {league}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Reset link - only show when filters active */}
+          {(selectedLeague !== "all" || searchTerm) && (
+            <button
+              onClick={() => {
+                setSearchTerm("");
+                setSelectedLeague("all");
+              }}
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              Reset
+            </button>
+          )}
+        </div>
+      </Card>
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-6">
           <TabsTrigger value="needs-review" className="text-base">
             <AlertCircle className="w-4 h-4 mr-2" />
-            Needs Review ({reviewItems.length})
+            Needs Review ({filteredReviewItems.length !== reviewItems.length ? `${filteredReviewItems.length}/` : ""}{reviewItems.length})
           </TabsTrigger>
           <TabsTrigger value="auto-approved" className="text-base">
             <CheckCircle2 className="w-4 h-4 mr-2" />
-            Auto-Approved ({totalAutoApproved})
+            Auto-Approved ({filteredAutoApproved.length !== autoApprovedMatches.length ? `${filteredAutoApproved.length}/` : ""}{totalAutoApproved})
           </TabsTrigger>
           <TabsTrigger value="manually-approved" className="text-base">
             <CheckCircle2 className="w-4 h-4 mr-2" />
-            Manually Approved ({totalManuallyApproved})
+            Manually Approved ({filteredManuallyApproved.length !== manuallyApprovedMatches.length ? `${filteredManuallyApproved.length}/` : ""}{totalManuallyApproved})
           </TabsTrigger>
         </TabsList>
 
         {/* NEEDS REVIEW TAB */}
         <TabsContent value="needs-review" className="space-y-6">
-          {reviewItems.length === 0 ? (
+          {filteredReviewItems.length === 0 ? (
             <Card className="p-12 text-center">
               <CheckCircle2 className="w-20 h-20 mx-auto mb-4 text-green-500" />
-              <h2 className="text-3xl font-bold mb-2">All Clear!</h2>
+              <h2 className="text-3xl font-bold mb-2">
+                {reviewItems.length === 0 ? "All Clear!" : "No matches for current filters"}
+              </h2>
               <p className="text-muted-foreground text-lg">
-                No players need manual review at the moment.
+                {reviewItems.length === 0
+                  ? "No players need manual review at the moment."
+                  : `${reviewItems.length} items in queue, but none match your filters.`}
               </p>
             </Card>
           ) : (
-            reviewItems.map((item) => (
+            filteredReviewItems.map((item) => (
               <Card key={item.id} className="overflow-hidden">
                 <div className="bg-muted/50 px-6 py-4 border-b">
                   <div className="flex items-center justify-between">
@@ -814,22 +960,26 @@ export default function PlayerMatchingReview() {
 
         {/* AUTO-APPROVED TAB */}
         <TabsContent value="auto-approved" className="space-y-4">
-          {autoApprovedMatches.length === 0 ? (
+          {filteredAutoApproved.length === 0 ? (
             <Card className="p-12 text-center">
               <AlertCircle className="w-20 h-20 mx-auto mb-4 text-muted-foreground" />
-              <h2 className="text-3xl font-bold mb-2">No Auto-Approved Matches Yet</h2>
+              <h2 className="text-3xl font-bold mb-2">
+                {autoApprovedMatches.length === 0 ? "No Auto-Approved Matches Yet" : "No matches for current filters"}
+              </h2>
               <p className="text-muted-foreground text-lg">
-                Run the matching pipeline to see high-confidence matches here.
+                {autoApprovedMatches.length === 0
+                  ? "Run the matching pipeline to see high-confidence matches here."
+                  : `${autoApprovedMatches.length} auto-approved matches loaded, but none match your filters.`}
               </p>
             </Card>
           ) : (
             <div className="space-y-3">
               {totalAutoApproved > 100 && (
                 <div className="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 px-4 py-3 rounded-lg text-sm">
-                  Showing 100 most recent of {totalAutoApproved} auto-approved matches
+                  Showing {filteredAutoApproved.length} of 100 loaded (total: {totalAutoApproved} auto-approved matches)
                 </div>
               )}
-              {autoApprovedMatches.map((match, idx) => (
+              {filteredAutoApproved.map((match, idx) => (
                 <Card key={idx} className="p-5 hover:shadow-md transition-shadow">
                   <div className="flex items-center gap-6">
                     {/* TM Player */}
@@ -905,7 +1055,7 @@ export default function PlayerMatchingReview() {
                     <div className="flex items-center gap-3 flex-1">
                       {match.sf_player.photo_url ? (
                         <Image
-                          src={match.sf_player.photo_url}
+                          src={match.sf_player.photo_url.trim()}
                           alt={match.sf_player.name}
                           width={60}
                           height={60}
@@ -980,17 +1130,21 @@ export default function PlayerMatchingReview() {
 
         {/* MANUALLY APPROVED TAB */}
         <TabsContent value="manually-approved" className="space-y-4">
-          {manuallyApprovedMatches.length === 0 ? (
+          {filteredManuallyApproved.length === 0 ? (
             <Card className="p-12 text-center">
               <AlertCircle className="w-20 h-20 mx-auto mb-4 text-muted-foreground" />
-              <h2 className="text-3xl font-bold mb-2">No Manually Approved Matches Yet</h2>
+              <h2 className="text-3xl font-bold mb-2">
+                {manuallyApprovedMatches.length === 0 ? "No Manually Approved Matches Yet" : "No matches for current filters"}
+              </h2>
               <p className="text-muted-foreground text-lg">
-                Approve matches from the review queue to see them here.
+                {manuallyApprovedMatches.length === 0
+                  ? "Approve matches from the review queue to see them here."
+                  : `${manuallyApprovedMatches.length} manually approved matches loaded, but none match your filters.`}
               </p>
             </Card>
           ) : (
             <div className="space-y-3">
-              {manuallyApprovedMatches.map((match, idx) => (
+              {filteredManuallyApproved.map((match, idx) => (
                 <Card key={idx} className="p-5 hover:shadow-md transition-shadow border-blue-200">
                   <div className="flex items-center gap-6">
                     {/* TM Player */}
@@ -1048,7 +1202,7 @@ export default function PlayerMatchingReview() {
                     <div className="flex items-center gap-3 flex-1">
                       {match.sf_player.photo_url ? (
                         <Image
-                          src={match.sf_player.photo_url}
+                          src={match.sf_player.photo_url.trim()}
                           alt={match.sf_player.name}
                           width={60}
                           height={60}

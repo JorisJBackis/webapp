@@ -52,12 +52,6 @@ const userTypeOptions = [
   { value: "agent", label: "Agent" },
 ]
 
-const emailVerifiedOptions = [
-  { value: "all", label: "All" },
-  { value: "verified", label: "Verified Only" },
-  { value: "unverified", label: "Unverified Only" },
-]
-
 // Helper function to get ordinal suffix
 function getOrdinalSuffix(day: number): string {
   if (day > 3 && day < 21) return 'th'
@@ -116,7 +110,7 @@ type User = {
   admin_notes?: string | null
   approved_by_email?: string | null
   rejected_by_email?: string | null
-  wyscout_player_id?: number | null
+  transfermarkt_player_id?: number | null
   transfermarkt_link?: string | null
 }
 
@@ -142,20 +136,12 @@ export function UserManagementTabs({
 
   // Filtering state
   const [userTypeFilter, setUserTypeFilter] = useState("all")
-  const [emailVerifiedFilter, setEmailVerifiedFilter] = useState("all")
 
   // Filter function
   const filterUsers = (users: User[]) => {
     return users.filter(user => {
       // User type filter
       if (userTypeFilter !== "all" && user.user_type !== userTypeFilter) {
-        return false
-      }
-      // Email verified filter
-      if (emailVerifiedFilter === "verified" && !user.email_confirmed_at) {
-        return false
-      }
-      if (emailVerifiedFilter === "unverified" && user.email_confirmed_at) {
         return false
       }
       return true
@@ -166,70 +152,54 @@ export function UserManagementTabs({
   const sortedPendingUsers = useMemo(() => {
     const sortOption = pendingSortOptions.find(o => o.value === pendingSort) || pendingSortOptions[0]
     return [...filterUsers(pendingUsers)].sort(sortOption.sortFn)
-  }, [pendingUsers, pendingSort, userTypeFilter, emailVerifiedFilter])
+  }, [pendingUsers, pendingSort, userTypeFilter])
 
   const sortedApprovedUsers = useMemo(() => {
     const sortOption = approvedSortOptions.find(o => o.value === approvedSort) || approvedSortOptions[0]
     return [...filterUsers(approvedUsers)].sort(sortOption.sortFn)
-  }, [approvedUsers, approvedSort, userTypeFilter, emailVerifiedFilter])
+  }, [approvedUsers, approvedSort, userTypeFilter])
 
   const sortedRejectedUsers = useMemo(() => {
     const sortOption = rejectedSortOptions.find(o => o.value === rejectedSort) || rejectedSortOptions[0]
     return [...filterUsers(rejectedUsers)].sort(sortOption.sortFn)
-  }, [rejectedUsers, rejectedSort, userTypeFilter, emailVerifiedFilter])
+  }, [rejectedUsers, rejectedSort, userTypeFilter])
 
   // Check if any filters are active
-  const hasActiveFilters = userTypeFilter !== "all" || emailVerifiedFilter !== "all"
+  const hasActiveFilters = userTypeFilter !== "all"
+
+  // Get current sort options based on active tab
+  const [activeTab, setActiveTab] = useState("pending")
+
+  const getCurrentSortOptions = () => {
+    switch (activeTab) {
+      case "pending": return pendingSortOptions
+      case "approved": return approvedSortOptions
+      case "rejected": return rejectedSortOptions
+      default: return pendingSortOptions
+    }
+  }
+
+  const getCurrentSort = () => {
+    switch (activeTab) {
+      case "pending": return pendingSort
+      case "approved": return approvedSort
+      case "rejected": return rejectedSort
+      default: return pendingSort
+    }
+  }
+
+  const setCurrentSort = (value: string) => {
+    switch (activeTab) {
+      case "pending": setPendingSort(value); break
+      case "approved": setApprovedSort(value); break
+      case "rejected": setRejectedSort(value); break
+    }
+  }
 
   return (
     <div className="space-y-4">
-      {/* Filters Bar */}
-      <div className="flex flex-wrap items-center gap-3 p-3 bg-slate-50 rounded-lg border">
-        <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
-          <Filter className="h-4 w-4" />
-          Filters:
-        </div>
-        <Select value={userTypeFilter} onValueChange={setUserTypeFilter}>
-          <SelectTrigger className="w-[140px] h-8 text-sm bg-white">
-            <SelectValue placeholder="User Type" />
-          </SelectTrigger>
-          <SelectContent>
-            {userTypeOptions.map(option => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={emailVerifiedFilter} onValueChange={setEmailVerifiedFilter}>
-          <SelectTrigger className="w-[150px] h-8 text-sm bg-white">
-            <SelectValue placeholder="Email Status" />
-          </SelectTrigger>
-          <SelectContent>
-            {emailVerifiedOptions.map(option => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {hasActiveFilters && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setUserTypeFilter("all")
-              setEmailVerifiedFilter("all")
-            }}
-            className="h-8 text-xs text-slate-500 hover:text-slate-700"
-          >
-            Clear Filters
-          </Button>
-        )}
-      </div>
-
-      <Tabs defaultValue="pending" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="pending" className="flex items-center gap-2">
             <Clock className="h-4 w-4" />
             Pending ({sortedPendingUsers.length}{hasActiveFilters ? `/${pendingUsers.length}` : ''})
@@ -244,22 +214,59 @@ export function UserManagementTabs({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="pending">
-          <div className="mb-4 flex items-center gap-2">
-            <ArrowUpDown className="h-4 w-4 text-slate-500" />
-            <Select value={pendingSort} onValueChange={setPendingSort}>
-              <SelectTrigger className="w-[160px] h-8 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {pendingSortOptions.map(option => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Sorting & Filters Bar */}
+        <div className="flex flex-wrap items-center gap-3 p-3 bg-slate-50 rounded-lg border my-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
+            <ArrowUpDown className="h-4 w-4" />
+            Sort:
           </div>
+          <Select value={getCurrentSort()} onValueChange={setCurrentSort}>
+            <SelectTrigger className="w-[160px] h-8 text-sm bg-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {getCurrentSortOptions().map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <div className="h-6 w-px bg-slate-300 mx-1" />
+
+          <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
+            <Filter className="h-4 w-4" />
+            Filter:
+          </div>
+          <Select value={userTypeFilter} onValueChange={setUserTypeFilter}>
+            <SelectTrigger className="w-[140px] h-8 text-sm bg-white">
+              <SelectValue placeholder="User Type" />
+            </SelectTrigger>
+            <SelectContent>
+              {userTypeOptions.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setUserTypeFilter("all")
+              }}
+              className="h-8 text-xs text-slate-500 hover:text-slate-700"
+            >
+              Clear
+            </Button>
+          )}
+        </div>
+
+        <TabsContent value="pending">
           <UserList
             users={sortedPendingUsers}
             status="pending"
@@ -278,21 +285,6 @@ export function UserManagementTabs({
         </TabsContent>
 
         <TabsContent value="approved">
-          <div className="mb-4 flex items-center gap-2">
-            <ArrowUpDown className="h-4 w-4 text-slate-500" />
-            <Select value={approvedSort} onValueChange={setApprovedSort}>
-              <SelectTrigger className="w-[160px] h-8 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {approvedSortOptions.map(option => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
           <UserList
             users={sortedApprovedUsers}
             status="approved"
@@ -311,21 +303,6 @@ export function UserManagementTabs({
         </TabsContent>
 
         <TabsContent value="rejected">
-          <div className="mb-4 flex items-center gap-2">
-            <ArrowUpDown className="h-4 w-4 text-slate-500" />
-            <Select value={rejectedSort} onValueChange={setRejectedSort}>
-              <SelectTrigger className="w-[160px] h-8 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {rejectedSortOptions.map(option => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
           <UserList
             users={sortedRejectedUsers}
             status="rejected"
@@ -511,7 +488,7 @@ function UserList({
                 </div>
 
                 {/* Player Data Missing Warning */}
-                {user.user_type === 'player' && !user.wyscout_player_id && (
+                {user.user_type === 'player' && !user.transfermarkt_player_id && (
                   <div className="bg-gradient-to-r from-amber-50 to-orange-50 p-4 rounded-lg border-l-4 border-amber-500 shadow-sm">
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0 w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
