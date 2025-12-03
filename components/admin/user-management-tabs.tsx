@@ -199,18 +199,42 @@ export function UserManagementTabs({
   return (
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="pending" className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Pending ({sortedPendingUsers.length}{hasActiveFilters ? `/${pendingUsers.length}` : ''})
+        <TabsList className="grid w-full grid-cols-3 h-12 p-1 bg-slate-100/80">
+          <TabsTrigger
+            value="pending"
+            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-amber-700 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-amber-500 text-slate-600 transition-all duration-200"
+          >
+            <Clock className="h-4 w-4 data-[state=active]:text-amber-500" />
+            <span className="flex items-center gap-1.5">
+              Pending
+              <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-700">
+                {sortedPendingUsers.length}{hasActiveFilters ? `/${pendingUsers.length}` : ''}
+              </span>
+            </span>
           </TabsTrigger>
-          <TabsTrigger value="approved" className="flex items-center gap-2">
+          <TabsTrigger
+            value="approved"
+            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-emerald-700 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-emerald-500 text-slate-600 transition-all duration-200"
+          >
             <UserCheck className="h-4 w-4" />
-            Approved ({sortedApprovedUsers.length}{hasActiveFilters ? `/${approvedUsers.length}` : ''})
+            <span className="flex items-center gap-1.5">
+              Approved
+              <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700">
+                {sortedApprovedUsers.length}{hasActiveFilters ? `/${approvedUsers.length}` : ''}
+              </span>
+            </span>
           </TabsTrigger>
-          <TabsTrigger value="rejected" className="flex items-center gap-2">
+          <TabsTrigger
+            value="rejected"
+            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-rose-700 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-rose-500 text-slate-600 transition-all duration-200"
+          >
             <UserX className="h-4 w-4" />
-            Rejected ({sortedRejectedUsers.length}{hasActiveFilters ? `/${rejectedUsers.length}` : ''})
+            <span className="flex items-center gap-1.5">
+              Rejected
+              <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium rounded-full bg-rose-100 text-rose-700">
+                {sortedRejectedUsers.length}{hasActiveFilters ? `/${rejectedUsers.length}` : ''}
+              </span>
+            </span>
           </TabsTrigger>
         </TabsList>
 
