@@ -93,60 +93,38 @@ export default function PlayerSelectionModal({
     return () => clearTimeout(timer)
   }, [searchTerm])
 
-  // Fetch filter options (positions and nationalities) on modal open
+  // Filter options loaded flag
+  const [filterOptionsLoaded, setFilterOptionsLoaded] = useState(false)
+
+  // Fetch filter options (positions and nationalities) on modal open using RPC
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen || filterOptionsLoaded) return
 
     const fetchFilterOptions = async () => {
       try {
-        if (!supabase) return
+        const { data, error } = await supabase.rpc('get_player_filter_options')
 
-        // Get total count
-        const { count } = await supabase
-          .from('players_transfermarkt')
-          .select('*', { count: 'exact', head: true })
-          .not('club_id', 'is', null)
+        if (error) throw error
 
-        setTotalCount(count || 0)
+        if (data && data[0]) {
+          setPositions(data[0].positions || [])
+          // Extract individual nationalities from dual nationality strings
+          const allNationalities = (data[0].nationalities || [])
+            .flatMap((nat: string) => nat.split(' / ').map((n: string) => n.trim()))
+          const uniqueNationalities = [...new Set(allNationalities)].sort() as string[]
+          setNationalities(uniqueNationalities)
+        }
 
-        // Fetch unique positions
-        const { data: positionsData } = await supabase
-          .from('players_transfermarkt')
-          .select('main_position')
-          .not('club_id', 'is', null)
-          .not('main_position', 'is', null)
-
-        const uniquePositions = [...new Set(
-          positionsData?.map(p => p.main_position).filter(Boolean) as string[]
-        )].sort()
-
-        setPositions(uniquePositions)
-
-        // Fetch unique nationalities
-        const { data: nationalitiesData } = await supabase
-          .from('players_transfermarkt')
-          .select('nationality')
-          .not('club_id', 'is', null)
-          .not('nationality', 'is', null)
-
-        // Extract individual nationalities from dual nationality strings
-        const allNationalities = nationalitiesData
-          ?.map(p => p.nationality)
-          .filter(Boolean)
-          .flatMap(nat => (nat as string).split(' / ').map(n => n.trim())) || []
-
-        const uniqueNationalities = [...new Set(allNationalities)].sort()
-
-        setNationalities(uniqueNationalities)
+        setFilterOptionsLoaded(true)
       } catch (err) {
-        console.error('Error fetching filter options:', err)
+        console.error('[PlayerSelectionModal] Error fetching filter options:', err)
       }
     }
 
     fetchFilterOptions()
-  }, [isOpen, supabase])
+  }, [isOpen, filterOptionsLoaded, supabase])
 
-  // Server-side filtering and pagination function
+  // Server-side filtering and pagination function using RPC
   const fetchPlayers = useCallback(async (append: boolean = false) => {
     try {
       if (append) {
@@ -156,83 +134,42 @@ export default function PlayerSelectionModal({
         setPlayers([])
       }
 
-      if (!supabase) return
+      const currentOffset = append ? players.length : 0
 
-      // Build query with filters
-      let query = supabase
-        .from('players_transfermarkt')
-        .select(`
-          id,
-          name,
-          age,
-          main_position,
-          nationality,
-          height,
-          foot,
-          contract_expires,
-          market_value_eur,
-          is_eu_passport,
-          picture_url,
-          transfermarkt_url,
-          club_id,
-          clubs_transfermarkt!inner(
-            name,
-            logo_url,
-            leagues_transfermarkt!inner(
-              name,
-              country
-            )
-          )
-        `, { count: 'exact' })
-        .not('club_id', 'is', null)
+      const { data, error } = await supabase.rpc('search_players_public', {
+        p_search: debouncedSearchTerm || null,
+        p_position: positionFilter === 'all' ? null : positionFilter,
+        p_nationality: nationalityFilter === 'all' ? null : nationalityFilter,
+        p_limit: BATCH_SIZE,
+        p_offset: currentOffset
+      })
 
-      // Apply position filter
-      if (positionFilter !== 'all') {
-        query = query.eq('main_position', positionFilter)
-      }
+      if (error) throw error
 
-      // Apply nationality filter (handle dual nationalities)
-      if (nationalityFilter !== 'all') {
-        query = query.or(`nationality.eq.${nationalityFilter},nationality.ilike.${nationalityFilter} / %,nationality.ilike.% / ${nationalityFilter},nationality.ilike.% / ${nationalityFilter} / %`)
-      }
-
-      // Apply search filter
-      if (debouncedSearchTerm) {
-        query = query.or(`name.ilike.%${debouncedSearchTerm}%,clubs_transfermarkt.name.ilike.%${debouncedSearchTerm}%`)
-      }
-
-      // Apply pagination
-      const from = append ? players.length : 0
-      const to = from + BATCH_SIZE - 1
-
-      query = query
-        .order('name')
-        .range(from, to)
-
-      const { data: playersData, error: playersError, count } = await query
-
-      if (playersError) throw playersError
-
-      // Transform players
-      const transformedPlayers = (playersData || []).map((player: any) => ({
-        id: player.id,
-        name: player.name,
-        age: player.age,
-        main_position: player.main_position,
-        nationality: player.nationality,
-        height: player.height,
-        foot: player.foot,
-        contract_expires: player.contract_expires,
-        market_value_eur: player.market_value_eur,
-        is_eu_passport: player.is_eu_passport,
-        picture_url: player.picture_url,
-        transfermarkt_url: player.transfermarkt_url,
-        club_id: player.club_id,
-        club_name: player.clubs_transfermarkt?.name || null,
-        club_logo_url: player.clubs_transfermarkt?.logo_url || null,
-        league_name: player.clubs_transfermarkt?.leagues_transfermarkt?.name || null,
-        league_country: player.clubs_transfermarkt?.leagues_transfermarkt?.country || null
+      // Transform players from RPC result
+      const transformedPlayers: Player[] = (data || []).map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        age: p.age,
+        main_position: p.main_position,
+        nationality: p.nationality,
+        height: p.height,
+        foot: p.foot,
+        contract_expires: p.contract_expires,
+        market_value_eur: p.market_value_eur,
+        is_eu_passport: p.is_eu_passport,
+        picture_url: p.picture_url,
+        transfermarkt_url: p.transfermarkt_url,
+        club_id: p.club_id,
+        club_name: p.club_name,
+        club_logo_url: p.club_logo_url,
+        league_name: p.league_name,
+        league_country: p.league_country
       }))
+
+      // Get total count from first result
+      const total = data?.[0]?.total_count || 0
+      setTotalCount(total)
 
       if (append) {
         setPlayers(prev => [...prev, ...transformedPlayers])
@@ -241,12 +178,11 @@ export default function PlayerSelectionModal({
       }
 
       // Update hasMore based on total count
-      const totalResults = count || 0
       const currentCount = append ? players.length + transformedPlayers.length : transformedPlayers.length
-      setHasMore(currentCount < totalResults)
+      setHasMore(transformedPlayers.length === BATCH_SIZE && currentCount < total)
 
     } catch (err) {
-      console.error('Error fetching players:', err)
+      console.error('[PlayerSelectionModal] Error fetching players:', err)
     } finally {
       setLoading(false)
       setLoadingMore(false)
@@ -315,6 +251,7 @@ export default function PlayerSelectionModal({
     setNationalityFilter('all')
     setPlayers([])
     setHasMore(true)
+    setTotalCount(0)
     onClose()
   }
 
