@@ -155,6 +155,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
   const [selectedSeasonId, setSelectedSeasonId] = useState<string>('')
   const [defaultTournamentId, setDefaultTournamentId] = useState<string>('')
   const [defaultSeasonId, setDefaultSeasonId] = useState<string>('')
+  const [percentilesLoading, setPercentilesLoading] = useState(false)
 
   const supabase = createClient()
 
@@ -382,9 +383,21 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
           ? getStatsForSelection(tmPlayer.sf_data, useTournamentId, useSeasonId) || stats
           : stats
 
-        // Fetch percentiles for context
-        const response = await fetch('/api/player-stats/percentiles')
+        // Fetch percentiles for the selected tournament/season
+        const percentilesParams = new URLSearchParams({
+          tournamentId: useTournamentId,
+          seasonId: useSeasonId,
+          position: sfPosition || tmPlayer.main_position || ''
+        })
+        const response = await fetch(`/api/player-stats/percentiles?${percentilesParams}`)
         const percentilesData = await response.json()
+
+        console.log('[PlayerDashboard] Percentiles response:', {
+          tournamentId: useTournamentId,
+          seasonId: useSeasonId,
+          position: sfPosition || tmPlayer.main_position,
+          totalPlayers: percentilesData.totalPlayers
+        })
 
         // Find this player in the percentiles data
         const playerWithPercentiles = percentilesData.players?.find(
@@ -513,14 +526,61 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
   }
 
   // Update displayed stats based on selection
-  const updateStatsForSelection = (tournamentId: string, seasonId: string) => {
+  const updateStatsForSelection = async (tournamentId: string, seasonId: string) => {
     if (!rawSfData || !playerData) return
 
     const newStats = getStatsForSelection(rawSfData, tournamentId, seasonId)
     if (newStats) {
-      // Update playerData with new stats
-      const updatedPlayerData = { ...playerData, stats: newStats }
+      // Update playerData with new stats first (immediate feedback)
+      let updatedPlayerData = { ...playerData, stats: newStats }
       setPlayerData(updatedPlayerData)
+
+      // Fetch new percentiles for this tournament/season
+      setPercentilesLoading(true)
+      try {
+        const percentilesParams = new URLSearchParams({
+          tournamentId,
+          seasonId,
+          position: playerData.position || ''
+        })
+        const response = await fetch(`/api/player-stats/percentiles?${percentilesParams}`)
+        const percentilesData = await response.json()
+
+        console.log('[PlayerDashboard] Refetched percentiles:', {
+          tournamentId,
+          seasonId,
+          position: playerData.position,
+          totalPlayers: percentilesData.totalPlayers
+        })
+
+        // Find this player in the percentiles data
+        const playerWithPercentiles = percentilesData.players?.find(
+          (p: any) => p.id === playerData.id
+        )
+
+        if (playerWithPercentiles) {
+          updatedPlayerData = {
+            ...updatedPlayerData,
+            percentiles: playerWithPercentiles.percentiles || {},
+            ranks: playerWithPercentiles.ranks || {},
+            totalPlayers: playerWithPercentiles.totalPlayers || 0
+          }
+          setPlayerData(updatedPlayerData)
+        } else {
+          // Player not found in this tournament/season - clear percentiles
+          updatedPlayerData = {
+            ...updatedPlayerData,
+            percentiles: {},
+            ranks: {},
+            totalPlayers: 0
+          }
+          setPlayerData(updatedPlayerData)
+        }
+      } catch (err) {
+        console.error('[PlayerDashboard] Error fetching percentiles:', err)
+      } finally {
+        setPercentilesLoading(false)
+      }
 
       // Save selection to localStorage (persists across sessions)
       const SELECTION_CACHE_KEY = `player_stats_selection_${playerData.id}`
@@ -1064,7 +1124,12 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
             <div className="text-3xl font-bold text-primary">
               {playerData.stats.rating.toFixed(2)}
             </div>
-            {playerData.percentiles.rating !== undefined && (
+            {percentilesLoading ? (
+              <div className="flex items-center gap-2 mt-2">
+                <span className="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-primary"></span>
+                <span className="text-xs text-muted-foreground">Updating...</span>
+              </div>
+            ) : playerData.percentiles.rating !== undefined ? (
               <div className="flex items-center gap-2 mt-2">
                 <div className={`text-xs font-medium ${getPercentileColor(playerData.percentiles.rating)}`}>
                   {playerData.percentiles.rating}th percentile
@@ -1073,6 +1138,8 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                   #{playerData.ranks.rating}/{playerData.totalPlayers}
                 </Badge>
               </div>
+            ) : (
+              <div className="text-xs text-muted-foreground mt-2">No comparison data</div>
             )}
           </CardContent>
         </Card>
@@ -1087,7 +1154,12 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
             <div className="text-3xl font-bold text-green-600">
               {playerData.stats.goals}
             </div>
-            {playerData.percentiles.goals !== undefined && (
+            {percentilesLoading ? (
+              <div className="flex items-center gap-2 mt-2">
+                <span className="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-green-500"></span>
+                <span className="text-xs text-muted-foreground">Updating...</span>
+              </div>
+            ) : playerData.percentiles.goals !== undefined ? (
               <div className="flex items-center gap-2 mt-2">
                 <div className={`text-xs font-medium ${getPercentileColor(playerData.percentiles.goals)}`}>
                   {playerData.percentiles.goals}th percentile
@@ -1096,6 +1168,8 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                   #{playerData.ranks.goals}/{playerData.totalPlayers}
                 </Badge>
               </div>
+            ) : (
+              <div className="text-xs text-muted-foreground mt-2">No comparison data</div>
             )}
           </CardContent>
         </Card>
@@ -1110,7 +1184,12 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
             <div className="text-3xl font-bold text-blue-600">
               {playerData.stats.assists}
             </div>
-            {playerData.percentiles.assists !== undefined && (
+            {percentilesLoading ? (
+              <div className="flex items-center gap-2 mt-2">
+                <span className="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500"></span>
+                <span className="text-xs text-muted-foreground">Updating...</span>
+              </div>
+            ) : playerData.percentiles.assists !== undefined ? (
               <div className="flex items-center gap-2 mt-2">
                 <div className={`text-xs font-medium ${getPercentileColor(playerData.percentiles.assists)}`}>
                   {playerData.percentiles.assists}th percentile
@@ -1119,6 +1198,8 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                   #{playerData.ranks.assists}/{playerData.totalPlayers}
                 </Badge>
               </div>
+            ) : (
+              <div className="text-xs text-muted-foreground mt-2">No comparison data</div>
             )}
           </CardContent>
         </Card>
@@ -1152,18 +1233,26 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className={`grid md:grid-cols-2 gap-4 ${percentilesLoading ? 'opacity-60' : ''} transition-opacity`}>
             {/* Top Strengths */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUpIcon className="w-5 h-5 text-green-500" />
                   Top 5 Strengths
+                  {percentilesLoading && (
+                    <span className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-green-500 ml-2"></span>
+                  )}
                 </CardTitle>
                 <CardDescription>Your best performing areas vs peers</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {topStats.strengths.map(([key, percentile]) => {
+                {topStats.strengths.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>No comparison data available for this tournament/season</p>
+                    <p className="text-sm mt-1">Try selecting a different tournament or season</p>
+                  </div>
+                ) : topStats.strengths.map(([key, percentile]) => {
                   const statValue = (playerData.stats as any)[key]
                   const rank = playerData.ranks[key]
                   const isPercentageStat = key.toLowerCase().includes('percentage')
@@ -1205,11 +1294,19 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                 <CardTitle className="flex items-center gap-2">
                   <TrendingDownIcon className="w-5 h-5 text-orange-500" />
                   Areas to Improve
+                  {percentilesLoading && (
+                    <span className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500 ml-2"></span>
+                  )}
                 </CardTitle>
                 <CardDescription>Focus areas for development</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {topStats.weaknesses.map(([key, percentile]) => {
+                {topStats.weaknesses.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>No comparison data available for this tournament/season</p>
+                    <p className="text-sm mt-1">Try selecting a different tournament or season</p>
+                  </div>
+                ) : topStats.weaknesses.map(([key, percentile]) => {
                   const statValue = (playerData.stats as any)[key]
                   const rank = playerData.ranks[key]
                   const isPercentageStat = key.toLowerCase().includes('percentage')
