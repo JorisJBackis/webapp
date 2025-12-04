@@ -122,37 +122,57 @@ export async function GET(request: NextRequest) {
 
     // Query ALL players with sf_data (we'll filter by tournament/season in memory)
     // This is necessary because we need to check if each player has data for this specific tournament/season
-    const { data: allPlayers, error } = await supabase
-      .from('players_transfermarkt')
-      .select(`
-        id,
-        name,
-        age,
-        picture_url,
-        main_position,
-        sf_data,
-        sofascore_id,
-        club_id,
-        transfermarkt_url,
-        market_value_eur,
-        clubs_transfermarkt (
+    // Note: We need to fetch all players since Supabase has a default limit of 1000-5000
+    // We'll paginate through all results to ensure we get everyone
+    let allPlayers: any[] = [];
+    let page = 0;
+    const pageSize = 1000;
+    let hasMore = true;
+
+    while (hasMore) {
+      const { data: batch, error } = await supabase
+        .from('players_transfermarkt')
+        .select(`
           id,
           name,
-          logo_url,
-          league_id,
-          transfermarkt_url
-        ),
-        sofascore_players_staging (
-          position
-        )
-      `)
-      .not('sf_data', 'is', null)
-      .not('sofascore_id', 'is', null);
+          age,
+          picture_url,
+          main_position,
+          sf_data,
+          sofascore_id,
+          club_id,
+          transfermarkt_url,
+          market_value_eur,
+          clubs_transfermarkt (
+            id,
+            name,
+            logo_url,
+            league_id,
+            transfermarkt_url
+          ),
+          sofascore_players_staging (
+            position
+          )
+        `)
+        .not('sf_data', 'is', null)
+        .not('sofascore_id', 'is', null)
+        .range(page * pageSize, (page + 1) * pageSize - 1);
 
-    if (error) {
-      console.error('[PlayerStats] Error fetching players:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      if (error) {
+        console.error('[PlayerStats] Error fetching players batch:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      if (batch && batch.length > 0) {
+        allPlayers = allPlayers.concat(batch);
+        page++;
+        hasMore = batch.length === pageSize;
+      } else {
+        hasMore = false;
+      }
     }
+
+    console.log(`[PlayerStats] Total players from Supabase: ${allPlayers?.length}`);
 
     // Filter players who have this tournament/season AND match position
     const playersWithStats = allPlayers
