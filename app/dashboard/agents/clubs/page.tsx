@@ -1,19 +1,20 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState,useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card,CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Loader2, AlertCircle, Plus, Building2 } from 'lucide-react'
+import { Alert,AlertDescription,AlertTitle } from '@/components/ui/alert'
+import { Loader2,AlertCircle,Plus,Building2 } from 'lucide-react'
 import FavoriteClubsCards from '@/components/agents/favorite-clubs-cards'
 import AddFavoriteClubModal from '@/components/agents/add-favorite-club-modal'
 
 export interface ClubContact {
   name: string | null
-  email: string | null
-  phone: string | null
-  role: string | null
+  email?: string | null
+  phone?: string | null
+  role?: string | null
+  url?: string | null
 }
 
 export interface FavoriteClub {
@@ -36,11 +37,11 @@ export interface FavoriteClub {
 }
 
 export default function AgentClubsPage() {
-  const [clubs, setClubs] = useState<FavoriteClub[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [agentId, setAgentId] = useState<string | null>(null)
-  const [showAddModal, setShowAddModal] = useState(false)
+  const [clubs,setClubs] = useState<FavoriteClub[]>([])
+  const [loading,setLoading] = useState(true)
+  const [error,setError] = useState<string | null>(null)
+  const [agentId,setAgentId] = useState<string | null>(null)
+  const [showAddModal,setShowAddModal] = useState(false)
 
   const supabase = createClient()
 
@@ -54,7 +55,7 @@ export default function AgentClubsPage() {
         const { data: profile } = await supabase
           .from('profiles')
           .select('user_type')
-          .eq('id', user.id)
+          .eq('id',user.id)
           .single()
 
         if (profile?.user_type === 'agent') {
@@ -70,9 +71,28 @@ export default function AgentClubsPage() {
     }
 
     getAgentId()
-  }, [supabase])
+  },[supabase])
 
-  // Fetch favorite clubs
+  // Transform contacts from my_clubs_data format
+  const transformContacts = (clubData: any): ClubContact[] => {
+    const contacts: ClubContact[] = []
+
+    for (let i = 1; i <= 4; i++) {
+      const nameKey = `contact_${i}_name`
+      const urlKey = `contact_${i}_url`
+
+      if (clubData[nameKey]) {
+        contacts.push({
+          name: clubData[nameKey],
+          url: clubData[urlKey] || undefined
+        })
+      }
+    }
+
+    return contacts
+  }
+
+  // Fetch favorite clubs with contact data
   const fetchFavoriteClubs = async () => {
     if (!agentId) return
 
@@ -82,32 +102,44 @@ export default function AgentClubsPage() {
 
       if (!supabase) return
 
-      console.log('[My Clubs] Fetching favorite clubs for agent:', agentId)
+      console.log('[My Clubs] Fetching favorite clubs for agent:',agentId)
 
-      const { data, error: fetchError } = await supabase.rpc('get_agent_favorite_clubs', {
+      // Fetch favorite clubs
+      const { data,error: fetchError } = await supabase.rpc('get_agent_favorite_clubs',{
         p_agent_id: agentId
       })
 
-      console.log('[My Clubs] Response:', { data, error: fetchError })
-
       if (fetchError) {
-        console.error('[My Clubs] Error:', fetchError)
+        console.error('[My Clubs] Error:',fetchError)
         throw fetchError
       }
 
-      // Ensure contacts is always an array
+      // Fetch my_clubs_data for contact information
+      const { data: clubsDataList,error: clubsDataError } = await supabase
+        .from('my_clubs_data')
+        .select('club_id, contact_1_name, contact_1_url, contact_2_name, contact_2_url, contact_3_name, contact_3_url, contact_4_name, contact_4_url')
+
+      if (clubsDataError) {
+        console.error('[My Clubs] Error fetching my_clubs_data:',clubsDataError)
+      }
+
+      // Create a map of club_id to contacts
+      const contactsMap = new Map<number,ClubContact[]>()
+      if (clubsDataList) {
+        clubsDataList.forEach(clubData => {
+          contactsMap.set(clubData.club_id,transformContacts(clubData))
+        })
+      }
+
+      // Merge contact data with favorite clubs
       const normalizedData = (data || []).map(club => ({
         ...club,
-        contacts: Array.isArray(club.contacts)
-          ? club.contacts
-          : typeof club.contacts === 'string'
-            ? JSON.parse(club.contacts)
-            : []
+        contacts: contactsMap.get(club.club_id) || []
       }))
 
       setClubs(normalizedData)
     } catch (err: any) {
-      console.error('Error fetching favorite clubs:', err)
+      console.error('Error fetching favorite clubs:',err)
       setError('Failed to load favorite clubs')
     } finally {
       setLoading(false)
@@ -118,7 +150,7 @@ export default function AgentClubsPage() {
     if (agentId) {
       fetchFavoriteClubs()
     }
-  }, [agentId, supabase])
+  },[agentId,supabase])
 
   const handleClubAdded = () => {
     // Refresh the list after modal closes with all additions
@@ -130,20 +162,20 @@ export default function AgentClubsPage() {
     setClubs(prev => prev.filter(club => club.club_id !== clubId))
   }
 
-  const handleNotesUpdated = (clubId: number, newNotes: string) => {
+  const handleNotesUpdated = (clubId: number,newNotes: string) => {
     // Update local state
     setClubs(prev => prev.map(club =>
       club.club_id === clubId
-        ? { ...club, notes: newNotes }
+        ? { ...club,notes: newNotes }
         : club
     ))
   }
 
-  const handleContactsUpdated = (clubId: number, contacts: ClubContact[]) => {
+  const handleContactsUpdated = (clubId: number,contacts: ClubContact[]) => {
     // Update local state with new contacts array
     setClubs(prev => prev.map(club =>
       club.club_id === clubId
-        ? { ...club, contacts }
+        ? { ...club,contacts }
         : club
     ))
   }

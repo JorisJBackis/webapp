@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { useState,useEffect,useMemo,useRef,useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
   Dialog,
@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { Search, Loader2, Building2, Plus, Check, ChevronsUpDown } from 'lucide-react'
+import { Search,Loader2,Building2,Plus,Check,ChevronsUpDown } from 'lucide-react'
 import { toast } from 'sonner'
 import { getCountryFlag } from '@/lib/utils/country-flags'
 import {
@@ -43,32 +43,32 @@ interface AddFavoriteClubModalProps {
   onClubAdded: () => void
 }
 
-export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: AddFavoriteClubModalProps) {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [competitionFilter, setCompetitionFilter] = useState('all')
-  const [countryFilter, setCountryFilter] = useState('all')
-  const [clubs, setClubs] = useState<Club[]>([])
-  const [favoritedClubIds, setFavoritedClubIds] = useState<Set<number>>(new Set())
-  const [leagueOptions, setLeagueOptions] = useState<LeagueOption[]>([])
-  const [countries, setCountries] = useState<string[]>([])
-  const [expandedClubId, setExpandedClubId] = useState<number | null>(null)
-  const [notes, setNotes] = useState<Record<number, string>>({})
-  const [loading, setLoading] = useState(false)
-  const [addingClubId, setAddingClubId] = useState<number | null>(null)
-  const [clubsAddedInSession, setClubsAddedInSession] = useState(false)
+export default function AddFavoriteClubModal({ isOpen,onClose,onClubAdded }: AddFavoriteClubModalProps) {
+  const [searchTerm,setSearchTerm] = useState('')
+  const [competitionFilter,setCompetitionFilter] = useState('all')
+  const [countryFilter,setCountryFilter] = useState('all')
+  const [clubs,setClubs] = useState<Club[]>([])
+  const [favoritedClubIds,setFavoritedClubIds] = useState<Set<number>>(new Set())
+  const [leagueOptions,setLeagueOptions] = useState<LeagueOption[]>([])
+  const [countries,setCountries] = useState<string[]>([])
+  const [expandedClubId,setExpandedClubId] = useState<number | null>(null)
+  const [notes,setNotes] = useState<Record<number,string>>({})
+  const [loading,setLoading] = useState(false)
+  const [addingClubId,setAddingClubId] = useState<number | null>(null)
+  const [clubsAddedInSession,setClubsAddedInSession] = useState(false)
 
   // Infinite scroll state
-  const [displayCount, setDisplayCount] = useState(50)
-  const [loadingMore, setLoadingMore] = useState(false)
+  const [displayCount,setDisplayCount] = useState(50)
+  const [loadingMore,setLoadingMore] = useState(false)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   // Combobox states
-  const [openCountry, setOpenCountry] = useState(false)
-  const [openLeague, setOpenLeague] = useState(false)
+  const [openCountry,setOpenCountry] = useState(false)
+  const [openLeague,setOpenLeague] = useState(false)
 
   // Dropdown search states
-  const [countrySearch, setCountrySearch] = useState('')
-  const [leagueSearch, setLeagueSearch] = useState('')
+  const [countrySearch,setCountrySearch] = useState('')
+  const [leagueSearch,setLeagueSearch] = useState('')
 
   const supabase = createClient()
 
@@ -89,7 +89,7 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
         if (!user) return
 
         // Fetch all clubs with league info
-        const { data: clubsData, error: clubsError } = await supabase
+        const { data: clubsData,error: clubsError } = await supabase
           .from('clubs_transfermarkt')
           .select(`
             id,
@@ -104,7 +104,7 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
         if (clubsError) throw clubsError
 
         // Fetch already favorited clubs
-        const { data: favoritedData, error: favoritedError } = await supabase.rpc('get_agent_favorite_clubs', {
+        const { data: favoritedData,error: favoritedError } = await supabase.rpc('get_agent_favorite_clubs',{
           p_agent_id: user.id
         })
 
@@ -128,16 +128,16 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
         setClubs(availableClubs)
 
         // Extract unique leagues with their tiers, sorted by tier
-        const leaguesMap = new Map<string, number>()
+        const leaguesMap = new Map<string,number>()
         availableClubs.forEach(club => {
           if (club.league_name && club.league_tier) {
-            leaguesMap.set(club.league_name, club.league_tier)
+            leaguesMap.set(club.league_name,club.league_tier)
           }
         })
 
         const uniqueLeagues = Array.from(leaguesMap.entries())
-          .map(([name, tier]) => ({ name, tier }))
-          .sort((a, b) => a.tier - b.tier || a.name.localeCompare(b.name))
+          .map(([name,tier]) => ({ name,tier }))
+          .sort((a,b) => a.tier - b.tier || a.name.localeCompare(b.name))
 
         const uniqueCountries = [...new Set(
           availableClubs
@@ -148,36 +148,36 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
         setLeagueOptions(uniqueLeagues)
         setCountries(uniqueCountries)
       } catch (err) {
-        console.error('Error fetching data:', err)
+        console.error('Error fetching data:',err)
       } finally {
         setLoading(false)
       }
     }
 
     fetchData()
-  }, [isOpen, supabase])
+  },[isOpen,supabase])
 
   // Reset league filter when country changes
   useEffect(() => {
     setCompetitionFilter('all')
-  }, [countryFilter])
+  },[countryFilter])
 
   // Get filtered leagues based on selected country
   const filteredLeagues = countryFilter === 'all'
     ? leagueOptions
     : (() => {
-        const leaguesMap = new Map<string, number>()
-        clubs
-          .filter(club => club.country === countryFilter)
-          .forEach(club => {
-            if (club.league_name && club.league_tier) {
-              leaguesMap.set(club.league_name, club.league_tier)
-            }
-          })
-        return Array.from(leaguesMap.entries())
-          .map(([name, tier]) => ({ name, tier }))
-          .sort((a, b) => a.tier - b.tier || a.name.localeCompare(b.name))
-      })()
+      const leaguesMap = new Map<string,number>()
+      clubs
+        .filter(club => club.country === countryFilter)
+        .forEach(club => {
+          if (club.league_name && club.league_tier) {
+            leaguesMap.set(club.league_name,club.league_tier)
+          }
+        })
+      return Array.from(leaguesMap.entries())
+        .map(([name,tier]) => ({ name,tier }))
+        .sort((a,b) => a.tier - b.tier || a.name.localeCompare(b.name))
+    })()
 
   // Apply filters with useMemo for performance
   const filteredClubs = useMemo(() => {
@@ -203,12 +203,12 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
     }
 
     return filtered
-  }, [clubs, competitionFilter, countryFilter, searchTerm])
+  },[clubs,competitionFilter,countryFilter,searchTerm])
 
   // Display only a subset of filtered clubs for performance
   const displayedClubs = useMemo(() => {
-    return filteredClubs.slice(0, displayCount)
-  }, [filteredClubs, displayCount])
+    return filteredClubs.slice(0,displayCount)
+  },[filteredClubs,displayCount])
 
   // Reset display count when filters change
   useEffect(() => {
@@ -216,14 +216,14 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = 0
     }
-  }, [competitionFilter, countryFilter, searchTerm])
+  },[competitionFilter,countryFilter,searchTerm])
 
   // Infinite scroll handler
   const handleScroll = useCallback(() => {
     const container = scrollContainerRef.current
     if (!container || loadingMore) return
 
-    const { scrollTop, scrollHeight, clientHeight } = container
+    const { scrollTop,scrollHeight,clientHeight } = container
     const scrollPercentage = (scrollTop + clientHeight) / scrollHeight
 
     // Load more when scrolled 80% down
@@ -231,20 +231,20 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
       setLoadingMore(true)
       // Simulate a small delay for smooth UX
       setTimeout(() => {
-        setDisplayCount(prev => Math.min(prev + 50, filteredClubs.length))
+        setDisplayCount(prev => Math.min(prev + 50,filteredClubs.length))
         setLoadingMore(false)
-      }, 300)
+      },300)
     }
-  }, [displayCount, filteredClubs.length, loadingMore])
+  },[displayCount,filteredClubs.length,loadingMore])
 
   // Attach scroll listener
   useEffect(() => {
     const container = scrollContainerRef.current
     if (!container) return
 
-    container.addEventListener('scroll', handleScroll)
-    return () => container.removeEventListener('scroll', handleScroll)
-  }, [handleScroll])
+    container.addEventListener('scroll',handleScroll)
+    return () => container.removeEventListener('scroll',handleScroll)
+  },[handleScroll])
 
   const handleAddClub = async (club: Club) => {
     try {
@@ -255,7 +255,7 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
-      const { error } = await supabase.rpc('add_favorite_club', {
+      const { error } = await supabase.rpc('add_favorite_club',{
         p_agent_id: user.id,
         p_club_id: club.id,
         p_notes: notes[club.id] || null
@@ -263,9 +263,13 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
 
       if (error) throw error
 
+      // Trigger scraping for this club in the background (don't wait for it)
+      fetch(`http://34.88.228.95:8080/scrape/${club.id}`)
+        .catch(err => console.error('Error triggering scrape:',err))
+
       // Success - remove from list and update parent
       setClubs(prev => prev.filter(c => c.id !== club.id))
-      setFavoritedClubIds(prev => new Set([...prev, club.id]))
+      setFavoritedClubIds(prev => new Set([...prev,club.id]))
       setExpandedClubId(null)
       setNotes(prev => {
         const newNotes = { ...prev }
@@ -281,7 +285,7 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
       // Show success toast
       toast.success(`${club.name} added to favorites!`)
     } catch (err: any) {
-      console.error('Error adding club:', err)
+      console.error('Error adding club:',err)
       alert('Failed to add club: ' + err.message)
     } finally {
       setAddingClubId(null)
@@ -559,7 +563,7 @@ export default function AddFavoriteClubModal({ isOpen, onClose, onClubAdded }: A
                         id={`notes-${club.id}`}
                         placeholder="e.g., Main contact: John Doe, Met at conference 2024..."
                         value={notes[club.id] || ''}
-                        onChange={(e) => setNotes(prev => ({ ...prev, [club.id]: e.target.value }))}
+                        onChange={(e) => setNotes(prev => ({ ...prev,[club.id]: e.target.value }))}
                         rows={2}
                         className="mt-1 text-sm resize-none"
                       />

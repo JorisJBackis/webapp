@@ -116,7 +116,7 @@ export default function FavoriteClubsCards({ clubs,onClubRemoved,onNotesUpdated,
   }
 
   const handleAddContact = () => {
-    setContactsBeingEdited(prev => [...prev,{ name: '',email: '',phone: '',role: '' }])
+    setContactsBeingEdited(prev => [...prev,{ name: '',email: '',phone: '',role: '',url: '' }])
     setEditingContactIndex(contactsBeingEdited.length)
   }
 
@@ -439,6 +439,12 @@ export default function FavoriteClubsCards({ clubs,onClubRemoved,onNotesUpdated,
                                 type="tel"
                                 className="h-7 text-xs"
                               />
+                              <Input
+                                value={contact.url || ''}
+                                onChange={(e) => handleUpdateContact(index,'url',e.target.value)}
+                                placeholder="Profile URL"
+                                className="h-7 text-xs"
+                              />
                             </div>
                           ))}
                         </div>
@@ -503,7 +509,19 @@ export default function FavoriteClubsCards({ clubs,onClubRemoved,onNotesUpdated,
                                 {contact.name && (
                                   <div className="flex items-center gap-1.5">
                                     <User className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                                    <span className="font-medium truncate">{contact.name}</span>
+                                    {contact.url ? (
+                                      <a
+                                        href={contact.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="font-medium truncate text-primary hover:underline"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        {contact.name}
+                                      </a>
+                                    ) : (
+                                      <span className="font-medium truncate">{contact.name}</span>
+                                    )}
                                   </div>
                                 )}
                                 {contact.role && (
