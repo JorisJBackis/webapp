@@ -319,3 +319,4 @@ export default function LeaguePlayerBrowser({ initialUserClubId }: { initialUser
       </div>
   );
 }
+

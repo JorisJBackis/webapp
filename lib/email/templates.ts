@@ -97,6 +97,7 @@ interface AdminNotificationData {
   clubName?: string
   registeredAt: string
   adminPanelUrl: string
+  registrationNote?: string
 }
 
 export function adminNotificationTemplate(data: AdminNotificationData): string {
@@ -137,6 +138,15 @@ export function adminNotificationTemplate(data: AdminNotificationData): string {
               <span class="info-value">${new Date(data.registeredAt).toLocaleString()}</span>
             </div>
           </div>
+
+          ${data.registrationNote ? `
+            <div style="margin: 24px 0;">
+              <p style="color: #6b7280; font-size: 14px; margin-bottom: 8px;"><strong>About themselves:</strong></p>
+              <div style="background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 16px; border-radius: 4px;">
+                <p style="margin: 0; color: #1e40af; font-style: italic;">"${data.registrationNote}"</p>
+              </div>
+            </div>
+          ` : ''}
 
           <div style="text-align: center;">
             <a href="${data.adminPanelUrl}" class="button">

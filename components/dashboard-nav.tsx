@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname,useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/logo"
@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { BarChart, Home, LogOut, Settings, User, ShoppingCart, Search } from "lucide-react"
+import { BarChart, Home, LogOut, Settings, User, ShoppingCart, Search, Users, Briefcase, Building2, Lightbulb, FileText, Target, ClipboardList } from "lucide-react"
 import { useState, useEffect } from "react"
 import {ModeToggleInstant} from "@/components/mode-toggle";
 
@@ -21,7 +21,7 @@ export default function DashboardNav() {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
-  const [userType, setUserType] = useState<string | null>(null)
+  const [userType,setUserType] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchUserType = async () => {
@@ -31,13 +31,13 @@ export default function DashboardNav() {
         const { data: profile } = await supabase
           .from('profiles')
           .select('user_type')
-          .eq('id', user.id)
+          .eq('id',user.id)
           .single()
         setUserType(profile?.user_type || null)
       }
     }
     fetchUserType()
-  }, [])
+  },[])
 
   const handleSignOut = async () => {
     if (!supabase) return;
@@ -54,27 +54,106 @@ export default function DashboardNav() {
         </div>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <nav className="flex items-center space-x-2">
-            <Link href="/dashboard">
-              <Button
-                variant={pathname === "/dashboard" ? "default" : "ghost"}
-                size="sm"
-                className={pathname === "/dashboard" ? "bg-primary text-primary-foreground" : "text-foreground"}
-              >
-                <Home className="mr-2 h-4 w-4" />
-                Dashboard
-              </Button>
-            </Link>
-            <Link href="/dashboard/analytics">
-              <Button
-                variant={pathname === "/dashboard/analytics" ? "default" : "ghost"}
-                size="sm"
-                className={pathname === "/dashboard/analytics" ? "bg-primary text-primary-foreground" : "text-foreground"}
-              >
-                <BarChart className="mr-2 h-4 w-4" />
-                Insights
-              </Button>
-            </Link>
-            {userType !== 'player' && (
+            {userType !== 'agent' && userType !== 'player' && (
+              <>
+                <Link href="/dashboard">
+                  <Button
+                    variant={pathname === "/dashboard" ? "default" : "ghost"}
+                    size="sm"
+                    className={pathname === "/dashboard" ? "bg-primary text-primary-foreground" : "text-foreground"}
+                  >
+                    <Home className="mr-2 h-4 w-4" />
+                    My Team
+                  </Button>
+                </Link>
+                <Link href="/dashboard/analytics">
+                  <Button
+                    variant={pathname === "/dashboard/analytics" ? "default" : "ghost"}
+                    size="sm"
+                    className={pathname === "/dashboard/analytics" ? "bg-primary text-primary-foreground" : "text-foreground"}
+                  >
+                    <BarChart className="mr-2 h-4 w-4" />
+                    Insights
+                  </Button>
+                </Link>
+              </>
+            )}
+            {userType === 'player' && (
+              <Link href="/dashboard">
+                <Button
+                  variant={pathname === "/dashboard" ? "default" : "ghost"}
+                  size="sm"
+                  className={pathname === "/dashboard" ? "bg-primary text-primary-foreground" : "text-foreground"}
+                >
+                  <Home className="mr-2 h-4 w-4" />
+                  Dashboard
+                </Button>
+              </Link>
+            )}
+            {userType === 'agent' ? (
+              <>
+                <Link href="/dashboard/agents/roster">
+                  <Button
+                    variant={pathname.startsWith("/dashboard/agents/roster") ? "default" : "ghost"}
+                    size="sm"
+                    className={pathname.startsWith("/dashboard/agents/roster") ? "bg-primary text-primary-foreground" : "text-foreground"}
+                  >
+                    <Users className="mr-2 h-4 w-4" />
+                    My Roster
+                  </Button>
+                </Link>
+                <Link href="/dashboard/agents/prospects">
+                  <Button
+                    variant={pathname.startsWith("/dashboard/agents/prospects") ? "default" : "ghost"}
+                    size="sm"
+                    className={pathname.startsWith("/dashboard/agents/prospects") ? "bg-primary text-primary-foreground" : "text-foreground"}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Prospects
+                  </Button>
+                </Link>
+                <Link href="/dashboard/agents/clubs">
+                  <Button
+                    variant={pathname.startsWith("/dashboard/agents/clubs") ? "default" : "ghost"}
+                    size="sm"
+                    className={pathname.startsWith("/dashboard/agents/clubs") ? "bg-primary text-primary-foreground" : "text-foreground"}
+                  >
+                    <Building2 className="mr-2 h-4 w-4" />
+                    My Clubs
+                  </Button>
+                </Link>
+                <Link href="/dashboard/agents/opportunities">
+                  <Button
+                    variant={pathname.startsWith("/dashboard/agents/opportunities") ? "default" : "ghost"}
+                    size="sm"
+                    className={pathname.startsWith("/dashboard/agents/opportunities") ? "bg-primary text-primary-foreground" : "text-foreground"}
+                  >
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    Ads
+                  </Button>
+                </Link>
+                <Link href="/dashboard/agents/wishlist-ads">
+                  <Button
+                    variant={pathname.startsWith("/dashboard/agents/wishlist-ads") ? "default" : "ghost"}
+                    size="sm"
+                    className={pathname.startsWith("/dashboard/agents/wishlist-ads") ? "bg-primary text-primary-foreground" : "text-foreground"}
+                  >
+                    <ClipboardList className="mr-2 h-4 w-4" />
+                    Wishlists
+                  </Button>
+                </Link>
+                <Link href="/dashboard/agents/recommendations">
+                  <Button
+                    variant={pathname.startsWith("/dashboard/agents/recommendations") ? "default" : "ghost"}
+                    size="sm"
+                    className={pathname.startsWith("/dashboard/agents/recommendations") ? "bg-primary text-primary-foreground" : "text-foreground"}
+                  >
+                    <Lightbulb className="mr-2 h-4 w-4" />
+                    Recommendations
+                  </Button>
+                </Link>
+              </>
+            ) : userType !== 'player' && (
               <>
                 <Link href="/dashboard/marketplace">
                   <Button
@@ -86,7 +165,7 @@ export default function DashboardNav() {
                     Marketplace
                   </Button>
                 </Link>
-                <Link href="/dashboard/scouting">
+                {/* <Link href="/dashboard/scouting">
                   <Button
                     variant={pathname.startsWith("/dashboard/scouting") ? "default" : "ghost"}
                     size="sm"
@@ -94,6 +173,30 @@ export default function DashboardNav() {
                   >
                     <Search className="mr-2 h-4 w-4" />
                     Scouting
+                  </Button>
+                </Link> */}
+              </>
+            )}
+            {userType === 'player' && (
+              <>
+                <Link href="/dashboard/opportunities">
+                  <Button
+                    variant={pathname.startsWith("/dashboard/opportunities") ? "default" : "ghost"}
+                    size="sm"
+                    className={pathname.startsWith("/dashboard/opportunities") ? "bg-primary text-primary-foreground" : "text-foreground"}
+                  >
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    Opportunities
+                  </Button>
+                </Link>
+                <Link href="/dashboard/player-comparison">
+                  <Button
+                    variant={pathname.startsWith("/dashboard/player-comparison") ? "default" : "ghost"}
+                    size="sm"
+                    className={pathname.startsWith("/dashboard/player-comparison") ? "bg-primary text-primary-foreground" : "text-foreground"}
+                  >
+                    <Target className="mr-2 h-4 w-4" />
+                    Benchmark
                   </Button>
                 </Link>
               </>

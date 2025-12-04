@@ -29,9 +29,40 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
       .eq('id', playerId)
       .single()
 
+    // Get Transfermarkt player data
+    let playerData = null
+    if (profile?.transfermarkt_player_id) {
+      const { data: tmPlayer } = await supabase
+        .from('players_transfermarkt')
+        .select(`
+          id,
+          name,
+          picture_url,
+          main_position,
+          sofascore_players_staging (
+            position
+          )
+        `)
+        .eq('id', profile.transfermarkt_player_id)
+        .single()
+
+      if (tmPlayer) {
+        playerData = {
+          name: tmPlayer.name,
+          picture_url: tmPlayer.picture_url,
+          position: (tmPlayer.sofascore_players_staging as any)?.position || tmPlayer.main_position
+        }
+      }
+    }
+
     return (
         <div className="container">
-          <BentoGridEditor editorMode={false} initialBlocks={initialBlocks} initialLayouts={initialLayouts}/>
+          <BentoGridEditor
+            editorMode={false}
+            initialBlocks={initialBlocks}
+            initialLayouts={initialLayouts}
+            playerData={playerData}
+          />
         </div>
     )
   } catch (error) {

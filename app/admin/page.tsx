@@ -1,11 +1,10 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { Shield, UserCheck, UserX, Clock, LogOut } from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Shield, UserCheck, UserX, Clock, LogOut, Link2 } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
+import { UserManagementTabs } from "@/components/admin/user-management-tabs"
+import Link from "next/link"
 
 export default async function AdminDashboard() {
   const supabase = await createClient()
@@ -29,6 +28,18 @@ export default async function AdminDashboard() {
     .select("*")
     .order("registered_at", { ascending: false })
 
+  // Get approved users
+  const { data: approvedUsers } = await supabase
+    .from("approved_users")
+    .select("*")
+    .order("approved_at", { ascending: false })
+
+  // Get rejected users
+  const { data: rejectedUsers } = await supabase
+    .from("rejected_users")
+    .select("*")
+    .order("rejected_at", { ascending: false })
+
   // Get stats
   const { count: pendingCount } = await supabase
     .from("profiles")
@@ -45,39 +56,6 @@ export default async function AdminDashboard() {
     .select("*", { count: "exact", head: true })
     .eq("approval_status", "rejected")
 
-  async function approveUser(formData: FormData) {
-    "use server"
-    const supabase = await createClient()
-    const userId = formData.get("userId") as string
-    const adminNotes = formData.get("adminNotes") as string
-
-    await supabase.rpc("approve_user", {
-      target_user_id: userId,
-      admin_notes_text: adminNotes || null,
-    })
-
-    redirect("/admin")
-  }
-
-  async function rejectUser(formData: FormData) {
-    "use server"
-    const supabase = await createClient()
-    const userId = formData.get("userId") as string
-    const reason = formData.get("reason") as string
-    const adminNotes = formData.get("adminNotes") as string
-
-    if (!reason) {
-      throw new Error("Rejection reason is required")
-    }
-
-    await supabase.rpc("reject_user", {
-      target_user_id: userId,
-      reason: reason,
-      admin_notes_text: adminNotes || null,
-    })
-
-    redirect("/admin")
-  }
 
   async function handleSignOut() {
     "use server"
@@ -95,15 +73,23 @@ export default async function AdminDashboard() {
             <Shield className="h-7 w-7 text-blue-600 mr-3" />
             <div>
               <h1 className="text-2xl font-bold text-slate-900">FootyLabs Admin</h1>
-              <p className="text-sm text-slate-600">User Approval Dashboard</p>
+              <p className="text-sm text-slate-600">User Management Dashboard</p>
             </div>
           </div>
-          <form action={handleSignOut}>
-            <Button variant="outline" type="submit">
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
-          </form>
+          <div className="flex items-center gap-3">
+            <Link href="/admin/player-matching">
+              <Button variant="outline">
+                <Link2 className="h-4 w-4 mr-2" />
+                Player Matching
+              </Button>
+            </Link>
+            <form action={handleSignOut}>
+              <Button variant="outline" type="submit">
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+            </form>
+          </div>
         </div>
       </header>
 
@@ -147,115 +133,17 @@ export default async function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Pending Users List */}
+        {/* User Management Tabs */}
         <Card>
           <CardHeader>
-            <CardTitle>Pending Registrations</CardTitle>
-            <CardDescription>Review and approve or reject user registrations</CardDescription>
+            <CardTitle>User Management</CardTitle>
           </CardHeader>
           <CardContent>
-            {!pendingUsers || pendingUsers.length === 0 ? (
-              <div className="text-center py-12 text-slate-500">
-                <Clock className="h-12 w-12 mx-auto mb-3 text-slate-400" />
-                <p className="font-medium">No pending registrations</p>
-                <p className="text-sm mt-1">All caught up! 🎉</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {pendingUsers.map((user) => (
-                  <Card key={user.id} className="border-2 border-slate-200">
-                    <CardContent className="pt-6">
-                      <div className="space-y-4">
-                        {/* User Info */}
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold text-lg text-slate-900">{user.email}</h3>
-                              {user.email_confirmed_at && (
-                                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                                  ✓ Verified
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="flex gap-4 text-sm text-slate-600">
-                              <span>
-                                Type: <span className="font-medium capitalize text-slate-900">{user.user_type}</span>
-                              </span>
-                              {user.club_name && (
-                                <span>
-                                  Club: <span className="font-medium text-slate-900">{user.club_name}</span>
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-xs text-slate-500">
-                              Registered: {new Date(user.registered_at).toLocaleString()}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex gap-3 pt-3 border-t border-slate-200">
-                          {/* Approve Form */}
-                          <form action={approveUser} className="flex-1">
-                            <input type="hidden" name="userId" value={user.id} />
-                            <div className="space-y-2">
-                              <Label htmlFor={`approve-notes-${user.id}`} className="text-xs text-slate-600">
-                                Admin Notes (Optional)
-                              </Label>
-                              <Textarea
-                                id={`approve-notes-${user.id}`}
-                                name="adminNotes"
-                                placeholder="Internal notes about this approval..."
-                                className="text-sm h-20 resize-none"
-                              />
-                              <Button type="submit" className="w-full bg-green-600 hover:bg-green-700">
-                                <UserCheck className="h-4 w-4 mr-2" />
-                                Approve User
-                              </Button>
-                            </div>
-                          </form>
-
-                          {/* Reject Form */}
-                          <form action={rejectUser} className="flex-1">
-                            <input type="hidden" name="userId" value={user.id} />
-                            <div className="space-y-2">
-                              <Label htmlFor={`reject-reason-${user.id}`} className="text-xs text-slate-600">
-                                Rejection Reason <span className="text-red-600">*</span>
-                              </Label>
-                              <Textarea
-                                id={`reject-reason-${user.id}`}
-                                name="reason"
-                                placeholder="Reason user will see..."
-                                className="text-sm h-20 resize-none"
-                                required
-                              />
-                              <details className="text-xs">
-                                <summary className="cursor-pointer text-slate-600 hover:text-slate-900 mb-2">
-                                  + Add internal notes
-                                </summary>
-                                <Textarea
-                                  name="adminNotes"
-                                  placeholder="Internal notes (user won't see this)..."
-                                  className="text-sm h-16 resize-none"
-                                />
-                              </details>
-                              <Button
-                                type="submit"
-                                variant="destructive"
-                                className="w-full"
-                              >
-                                <UserX className="h-4 w-4 mr-2" />
-                                Reject User
-                              </Button>
-                            </div>
-                          </form>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+            <UserManagementTabs
+              pendingUsers={pendingUsers || []}
+              approvedUsers={approvedUsers || []}
+              rejectedUsers={rejectedUsers || []}
+            />
           </CardContent>
         </Card>
       </div>

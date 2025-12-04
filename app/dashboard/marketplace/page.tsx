@@ -1,11 +1,13 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs,TabsContent,TabsList,TabsTrigger } from "@/components/ui/tabs";
 import BrowseListings from "@/components/marketplace/browse-listings";
 import BrowseNeeds from "@/components/marketplace/browse-needs";
 import AgencyRBProspectsTab from "@/components/marketplace/agency-rb-prospects-tab"; // <<< IMPORT
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card,CardContent,CardHeader,CardTitle } from "@/components/ui/card";
 import { Lock } from "lucide-react";
+import MyListings from "@/components/marketplace/my-listings";
+import MyNeeds from "@/components/marketplace/my-needs";
 
 export default async function MarketplacePage() {
     const supabase = await createClient();
@@ -16,7 +18,7 @@ export default async function MarketplacePage() {
         const { data: profile } = await supabase
             .from('profiles')
             .select('user_type')
-            .eq('id', user.id)
+            .eq('id',user.id)
             .single();
 
         // If player, show access denied message
@@ -53,16 +55,19 @@ export default async function MarketplacePage() {
                 <p className="text-muted-foreground">Discover talent: Browse club listings, our curated prospects, or define your recruitment needs.</p>
             </div>
 
-            <Tabs defaultValue="agency-rb-prospects" className="space-y-6">
+            <Tabs defaultValue="browse-players" className="space-y-6">
                 <TabsList className="bg-muted text-muted-foreground">
-                    <TabsTrigger value="agency-rb-prospects" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                       Recommended Players
-                    </TabsTrigger>
+                    {/* <TabsTrigger value="agency-rb-prospects" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                        Recommended Players
+                    </TabsTrigger> */}
                     <TabsTrigger value="browse-players" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                         On Transfer List
                     </TabsTrigger>
                     <TabsTrigger value="club-needs" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                         Club Requests
+                    </TabsTrigger>
+                    <TabsTrigger value="my-activity" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                        My Club's Activity
                     </TabsTrigger>
                 </TabsList>
 
@@ -76,6 +81,11 @@ export default async function MarketplacePage() {
 
                 <TabsContent value="club-needs">
                     <BrowseNeeds />
+                </TabsContent>
+
+                <TabsContent value="my-activity" className="space-y-6">
+                    <MyListings />
+                    <MyNeeds />
                 </TabsContent>
             </Tabs>
         </div>

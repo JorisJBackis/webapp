@@ -6,7 +6,7 @@ import {Button} from '@/components/ui/button'
 import {Card} from '@/components/ui/card'
 import { Plus, User, Link2, Image, FileText, Share2, Eye, Edit3, Square, RectangleHorizontal, RectangleVertical } from 'lucide-react'
 import {GridLayout, initialBlocks, initialLayouts} from "@/components/player/init-data";
-import {Avatar, AvatarFallback} from "@/components/ui/avatar";
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {AnimatePresence, motion} from "framer-motion";
 
 function findAvailablePosition(
@@ -86,7 +86,23 @@ function compactGrid(layouts: GridLayout[]): GridLayout[] {
   return compacted
 }
 
-export function BentoGridEditor({editorMode, initialBlocks, initialLayouts} : {editorMode: boolean, initialBlocks:BentoBlockData[], initialLayouts: GridLayout[]}) {
+interface PlayerData {
+  name: string
+  picture_url: string | null
+  position: string
+}
+
+export function BentoGridEditor({
+  editorMode,
+  initialBlocks,
+  initialLayouts,
+  playerData
+}: {
+  editorMode: boolean
+  initialBlocks: BentoBlockData[]
+  initialLayouts: GridLayout[]
+  playerData?: PlayerData | null
+}) {
   const [blocks, setBlocks] = useState<BentoBlockData[]>(initialBlocks)
   const [layouts, setLayouts] = useState<GridLayout[]>(initialLayouts)
   const [isEditing, setIsEditing] = useState(editorMode)
@@ -247,15 +263,18 @@ export function BentoGridEditor({editorMode, initialBlocks, initialLayouts} : {e
           <div className="flex justify-between gap-6">
             <div className=" flex flex-col max-h-screen justify-start items-start min-w-40 gap-6">
               <Avatar className="size-48">
+                {playerData?.picture_url && (
+                  <AvatarImage src={playerData.picture_url} alt={playerData.name} />
+                )}
                 <AvatarFallback className="text-xs">
-                  image
+                  {playerData?.name?.charAt(0) || 'P'}
                 </AvatarFallback>
               </Avatar>
               <div className="text-xl">
-                Sviatoslav
+                {playerData?.name || 'Player Name'}
               </div>
               <div className="text-lg text-muted-foreground">
-                Goalkeeper
+                {playerData?.position || 'Position'}
               </div>
             </div>
             <div className="flex justify-center items-center">
