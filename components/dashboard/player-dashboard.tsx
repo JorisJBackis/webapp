@@ -1273,11 +1273,11 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                       <div className="relative h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                         <div
                           className={`h-full ${getPercentileBgColor(percentile)} transition-all duration-500 rounded-full`}
-                          style={{ width: `${Math.max(percentile, 3)}%` }}
+                          style={{ width: `${percentile}%` }}
                         />
                         <span
-                          className={`absolute top-1/2 -translate-y-1/2 text-[10px] font-semibold drop-shadow-sm ${percentile < 15 ? 'text-gray-600 dark:text-gray-300' : 'text-white'}`}
-                          style={{ left: percentile < 15 ? `${Math.max(percentile, 3) + 2}%` : `${Math.max(percentile - 8, 2)}%` }}
+                          className="absolute top-1/2 -translate-y-1/2 text-[10px] font-semibold text-white drop-shadow-sm"
+                          style={{ left: `${Math.max(percentile - 8, 2)}%` }}
                         >
                           {percentile}%
                         </span>
@@ -1327,11 +1327,11 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                       <div className="relative h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                         <div
                           className={`h-full ${getPercentileBgColor(percentile)} transition-all duration-500 rounded-full`}
-                          style={{ width: `${Math.max(percentile, 3)}%` }}
+                          style={{ width: `${percentile}%` }}
                         />
                         <span
-                          className={`absolute top-1/2 -translate-y-1/2 text-[10px] font-semibold drop-shadow-sm ${percentile < 15 ? 'text-gray-600 dark:text-gray-300' : 'text-white'}`}
-                          style={{ left: percentile < 15 ? `${Math.max(percentile, 3) + 2}%` : `${Math.max(percentile - 8, 2)}%` }}
+                          className="absolute top-1/2 -translate-y-1/2 text-[10px] font-semibold text-white drop-shadow-sm"
+                          style={{ left: `${Math.max(percentile - 8, 2)}%` }}
                         >
                           {percentile}%
                         </span>
