@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { BarChart, Home, LogOut, Settings, User, ShoppingCart, Search, Users, Briefcase, Building2, Lightbulb, FileText, Target } from "lucide-react"
+import { BarChart, Home, LogOut, Settings, User, ShoppingCart, Search, Users, Briefcase, Building2, Lightbulb, FileText, Target, ClipboardList } from "lucide-react"
 import { useState, useEffect } from "react"
 import {ModeToggleInstant} from "@/components/mode-toggle";
 
@@ -130,6 +130,16 @@ export default function DashboardNav() {
                   >
                     <Briefcase className="mr-2 h-4 w-4" />
                     Ads
+                  </Button>
+                </Link>
+                <Link href="/dashboard/agents/wishlist-ads">
+                  <Button
+                    variant={pathname.startsWith("/dashboard/agents/wishlist-ads") ? "default" : "ghost"}
+                    size="sm"
+                    className={pathname.startsWith("/dashboard/agents/wishlist-ads") ? "bg-primary text-primary-foreground" : "text-foreground"}
+                  >
+                    <ClipboardList className="mr-2 h-4 w-4" />
+                    Wishlists
                   </Button>
                 </Link>
                 <Link href="/dashboard/agents/recommendations">
