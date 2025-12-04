@@ -1047,24 +1047,6 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
                 </SelectContent>
               </Select>
 
-              {/* Reset to Default Button (only shown if using custom selection) */}
-              {isUsingCustomSelection() && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs text-muted-foreground hover:text-foreground"
-                  onClick={resetToDefault}
-                >
-                  Reset to current league
-                </Button>
-              )}
-
-              {/* Indicator when viewing non-default stats */}
-              {isUsingCustomSelection() && (
-                <Badge variant="secondary" className="text-xs">
-                  Custom selection
-                </Badge>
-              )}
             </div>
           </CardContent>
         </Card>
