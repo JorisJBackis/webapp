@@ -8,6 +8,13 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   TrendingUp,
   Calendar,
   Target,
@@ -27,7 +34,8 @@ import {
   Star,
   Building2,
   UserCircle,
-  Check
+  Check,
+  ChevronDown
 } from "lucide-react"
 import { ReviewModal } from "@/components/reviews/review-modal"
 import { ReviewPromptModal } from "@/components/reviews/review-prompt-modal"
@@ -92,6 +100,17 @@ interface PlayerData {
   totalPlayers: number
 }
 
+interface SeasonOption {
+  id: string
+  label: string // e.g., "24/25" or "2024/2025"
+}
+
+interface TournamentOption {
+  id: string
+  name: string
+  seasons: SeasonOption[]
+}
+
 const positionNames: { [key: string]: string } = {
   'G': 'Goalkeeper',
   'D': 'Defender',
@@ -128,6 +147,15 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
   const [hasClubReview, setHasClubReview] = useState(false)
   const [hasAgencyReview, setHasAgencyReview] = useState(false)
   const [showReviewPrompt, setShowReviewPrompt] = useState(false)
+
+  // Tournament/Season selection state
+  const [rawSfData, setRawSfData] = useState<any>(null)
+  const [availableTournaments, setAvailableTournaments] = useState<TournamentOption[]>([])
+  const [selectedTournamentId, setSelectedTournamentId] = useState<string>('')
+  const [selectedSeasonId, setSelectedSeasonId] = useState<string>('')
+  const [defaultTournamentId, setDefaultTournamentId] = useState<string>('')
+  const [defaultSeasonId, setDefaultSeasonId] = useState<string>('')
+
   const supabase = createClient()
 
   // Track visits with 3-day gap logic
@@ -206,21 +234,31 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
       setLoading(true)
       setError(null)
 
-      const CACHE_KEY = 'player_dashboard_cache_v3' // v3: added agency and league URLs
+      const CACHE_KEY = 'player_dashboard_cache_v4' // v4: tournament/season selection support
 
       try {
-        // Check sessionStorage cache first
+        // Check sessionStorage cache first (includes tournament/season data)
         const cached = sessionStorage.getItem(CACHE_KEY)
         if (cached) {
           const cachedData = JSON.parse(cached)
           console.log('[PlayerDashboard] Using cached data')
-          setPlayerData(cachedData)
+          setPlayerData(cachedData.playerData)
+          // Restore tournament/season state from cache
+          if (cachedData.rawSfData) {
+            setRawSfData(cachedData.rawSfData)
+            setAvailableTournaments(cachedData.availableTournaments || [])
+            setSelectedTournamentId(cachedData.selectedTournamentId || '')
+            setSelectedSeasonId(cachedData.selectedSeasonId || '')
+            setDefaultTournamentId(cachedData.defaultTournamentId || '')
+            setDefaultSeasonId(cachedData.defaultSeasonId || '')
+          }
           setLoading(false)
           return
         }
         // Clear old cache versions
         sessionStorage.removeItem('player_dashboard_cache')
         sessionStorage.removeItem('player_dashboard_cache_v2')
+        sessionStorage.removeItem('player_dashboard_cache_v3')
 
         // Get current user's transfermarkt player ID
         const { data: { user } } = await supabase.auth.getUser()
@@ -290,11 +328,59 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
           throw new Error('No performance data available for your league yet')
         }
 
+        // Store raw sf_data for tournament/season selection
+        setRawSfData(tmPlayer.sf_data)
+
+        // Extract available tournaments and seasons
+        const tournaments = extractTournamentsFromSfData(tmPlayer.sf_data)
+        setAvailableTournaments(tournaments)
+
+        // Check localStorage for saved selection
+        const SELECTION_CACHE_KEY = `player_stats_selection_${tmPlayer.id}`
+        const savedSelection = localStorage.getItem(SELECTION_CACHE_KEY)
+        let savedTournamentId = ''
+        let savedSeasonId = ''
+        if (savedSelection) {
+          try {
+            const parsed = JSON.parse(savedSelection)
+            savedTournamentId = parsed.tournamentId || ''
+            savedSeasonId = parsed.seasonId || ''
+          } catch (e) {
+            console.warn('[PlayerDashboard] Failed to parse saved selection')
+          }
+        }
+
         // Extract season stats from sf_data (prefers player's current league, falls back to first available)
-        const { stats, tournamentName } = extractSeasonStats(tmPlayer.sf_data, league?.name)
+        const { stats, tournamentName, matchedTournamentId, matchedSeasonId } = extractSeasonStats(tmPlayer.sf_data, league?.name)
         if (!stats) {
           throw new Error('No season statistics found')
         }
+
+        // Set defaults (what the system auto-detected)
+        setDefaultTournamentId(matchedTournamentId || '')
+        setDefaultSeasonId(matchedSeasonId || '')
+
+        // Use saved selection if valid, otherwise use defaults
+        let useTournamentId = matchedTournamentId || ''
+        let useSeasonId = matchedSeasonId || ''
+
+        if (savedTournamentId && savedSeasonId) {
+          // Verify saved selection is still valid
+          const savedTournament = tmPlayer.sf_data[savedTournamentId]
+          if (savedTournament?.seasons?.[savedSeasonId]) {
+            useTournamentId = savedTournamentId
+            useSeasonId = savedSeasonId
+            console.log('[PlayerDashboard] Using saved selection:', savedTournamentId, savedSeasonId)
+          }
+        }
+
+        setSelectedTournamentId(useTournamentId)
+        setSelectedSeasonId(useSeasonId)
+
+        // Get stats for the selected tournament/season (might differ from default if user had saved selection)
+        const selectedStats = useTournamentId !== matchedTournamentId || useSeasonId !== matchedSeasonId
+          ? getStatsForSelection(tmPlayer.sf_data, useTournamentId, useSeasonId) || stats
+          : stats
 
         // Fetch percentiles for context
         const response = await fetch('/api/player-stats/percentiles')
@@ -311,6 +397,11 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
           club_logo: club?.logo_url
         })
 
+        // Get the tournament name for the selected (possibly saved) stats
+        const selectedTournamentName = useTournamentId
+          ? (tmPlayer.sf_data[useTournamentId]?.tournament_name || tournamentName)
+          : tournamentName
+
         const playerDataToCache = {
           id: tmPlayer.id,
           name: tmPlayer.name,
@@ -325,7 +416,7 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
           transfermarkt_url: tmPlayer.transfermarkt_url,
           club_transfermarkt_url: club?.transfermarkt_url,
           market_value_eur: tmPlayer.market_value_eur,
-          league: league?.name || tournamentName,
+          league: league?.name || selectedTournamentName,
           league_logo: league?.logo_url || null,
           league_url: league?.url || null,
           agency: agency?.name || null,
@@ -333,35 +424,44 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
           agency_logo: agency?.image_url || null,
           agency_url: agency?.transfermarkt_url || null,
           stats: {
-            rating: stats.rating || 0,
-            goals: stats.goals || 0,
-            assists: stats.assists || 0,
-            appearances: stats.appearances || 0,
-            minutesPlayed: stats.minutesPlayed || 0,
-            matchesStarted: stats.matchesStarted || 0,
-            accuratePassesPercentage: stats.accuratePassesPercentage || 0,
-            totalDuelsWonPercentage: stats.totalDuelsWonPercentage || 0,
-            successfulDribblesPercentage: stats.successfulDribblesPercentage || 0,
-            aerialDuelsWonPercentage: stats.aerialDuelsWonPercentage || 0,
-            ballRecovery: stats.ballRecovery || 0,
-            keyPasses: stats.keyPasses || 0,
-            shotsOnTarget: stats.shotsOnTarget || 0,
-            totalShots: stats.totalShots || 0,
-            goalConversionPercentage: stats.goalConversionPercentage || 0,
-            clearances: stats.clearances || 0,
-            accurateCrossesPercentage: stats.accurateCrossesPercentage || 0,
-            yellowCards: stats.yellowCards || 0,
-            redCards: stats.redCards || 0,
-            fouls: stats.fouls || 0,
-            wasFouled: stats.wasFouled || 0,
+            rating: selectedStats.rating || 0,
+            goals: selectedStats.goals || 0,
+            assists: selectedStats.assists || 0,
+            appearances: selectedStats.appearances || 0,
+            minutesPlayed: selectedStats.minutesPlayed || 0,
+            matchesStarted: selectedStats.matchesStarted || 0,
+            accuratePassesPercentage: selectedStats.accuratePassesPercentage || 0,
+            totalDuelsWonPercentage: selectedStats.totalDuelsWonPercentage || 0,
+            successfulDribblesPercentage: selectedStats.successfulDribblesPercentage || 0,
+            aerialDuelsWonPercentage: selectedStats.aerialDuelsWonPercentage || 0,
+            ballRecovery: selectedStats.ballRecovery || 0,
+            keyPasses: selectedStats.keyPasses || 0,
+            shotsOnTarget: selectedStats.shotsOnTarget || 0,
+            totalShots: selectedStats.totalShots || 0,
+            goalConversionPercentage: selectedStats.goalConversionPercentage || 0,
+            clearances: selectedStats.clearances || 0,
+            accurateCrossesPercentage: selectedStats.accurateCrossesPercentage || 0,
+            yellowCards: selectedStats.yellowCards || 0,
+            redCards: selectedStats.redCards || 0,
+            fouls: selectedStats.fouls || 0,
+            wasFouled: selectedStats.wasFouled || 0,
           },
           percentiles: playerWithPercentiles?.percentiles || {},
           ranks: playerWithPercentiles?.ranks || {},
           totalPlayers: playerWithPercentiles?.totalPlayers || 0
         }
 
-        // Cache for this session
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify(playerDataToCache))
+        // Cache for this session (includes tournament/season data for dropdown functionality)
+        const cacheBundle = {
+          playerData: playerDataToCache,
+          rawSfData: tmPlayer.sf_data,
+          availableTournaments: tournaments,
+          selectedTournamentId: useTournamentId,
+          selectedSeasonId: useSeasonId,
+          defaultTournamentId: matchedTournamentId || '',
+          defaultSeasonId: matchedSeasonId || ''
+        }
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(cacheBundle))
         setPlayerData(playerDataToCache)
 
       } catch (err) {
@@ -389,42 +489,260 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
     }
   }
 
+  // Handle tournament selection change
+  const handleTournamentChange = (tournamentId: string) => {
+    setSelectedTournamentId(tournamentId)
+
+    // Find the tournament and get its latest season
+    const tournament = availableTournaments.find(t => t.id === tournamentId)
+    if (tournament && tournament.seasons.length > 0) {
+      const latestSeasonId = tournament.seasons[0].id // Already sorted newest first
+      setSelectedSeasonId(latestSeasonId)
+
+      // Update displayed stats
+      updateStatsForSelection(tournamentId, latestSeasonId)
+    }
+  }
+
+  // Handle season selection change
+  const handleSeasonChange = (seasonId: string) => {
+    setSelectedSeasonId(seasonId)
+
+    // Update displayed stats
+    updateStatsForSelection(selectedTournamentId, seasonId)
+  }
+
+  // Update displayed stats based on selection
+  const updateStatsForSelection = (tournamentId: string, seasonId: string) => {
+    if (!rawSfData || !playerData) return
+
+    const newStats = getStatsForSelection(rawSfData, tournamentId, seasonId)
+    if (newStats) {
+      // Update playerData with new stats
+      const updatedPlayerData = { ...playerData, stats: newStats }
+      setPlayerData(updatedPlayerData)
+
+      // Save selection to localStorage (persists across sessions)
+      const SELECTION_CACHE_KEY = `player_stats_selection_${playerData.id}`
+      localStorage.setItem(SELECTION_CACHE_KEY, JSON.stringify({
+        tournamentId,
+        seasonId
+      }))
+
+      // Update session cache with new selection (keeps cache valid but with updated stats)
+      const CACHE_KEY = 'player_dashboard_cache_v4'
+      const cacheBundle = {
+        playerData: updatedPlayerData,
+        rawSfData: rawSfData,
+        availableTournaments: availableTournaments,
+        selectedTournamentId: tournamentId,
+        selectedSeasonId: seasonId,
+        defaultTournamentId: defaultTournamentId,
+        defaultSeasonId: defaultSeasonId
+      }
+      sessionStorage.setItem(CACHE_KEY, JSON.stringify(cacheBundle))
+
+      console.log('[PlayerDashboard] Selection saved:', tournamentId, seasonId)
+    }
+  }
+
+  // Get current tournament and season names for display
+  const getCurrentSelectionNames = () => {
+    const tournament = availableTournaments.find(t => t.id === selectedTournamentId)
+    const season = tournament?.seasons.find(s => s.id === selectedSeasonId)
+    return {
+      tournamentName: tournament?.name || '',
+      seasonLabel: season?.label || ''
+    }
+  }
+
+  // Check if current selection is different from the default (auto-detected) selection
+  const isUsingCustomSelection = () => {
+    return selectedTournamentId !== defaultTournamentId || selectedSeasonId !== defaultSeasonId
+  }
+
+  // Reset to default selection
+  const resetToDefault = () => {
+    setSelectedTournamentId(defaultTournamentId)
+    setSelectedSeasonId(defaultSeasonId)
+    updateStatsForSelection(defaultTournamentId, defaultSeasonId)
+
+    // Remove saved selection from localStorage
+    if (playerData) {
+      const SELECTION_CACHE_KEY = `player_stats_selection_${playerData.id}`
+      localStorage.removeItem(SELECTION_CACHE_KEY)
+    }
+  }
+
+  // Normalize league name for comparison (handles punctuation differences)
+  function normalizeLeagueName(name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/[.,\-–—]/g, ' ')  // Replace punctuation with spaces
+      .replace(/\s+/g, ' ')        // Collapse multiple spaces
+      .trim()
+  }
+
+  // Known league name mappings (Transfermarkt name → Sofascore name)
+  const leagueNameAliases: { [key: string]: string } = {
+    'chance liga': 'czech first league',                // Czech league rebranding
+    'premyer liqa': 'misli premier league',             // Azerbaijan league rebranding
+    'obos ligaen': 'norwegian 1st division',            // Norwegian 2nd tier sponsor name
+    'super league kerala': 'kerala premier league',     // Indian state league rebranding
+    'liga puerto rico apertura': 'lpr pro apertura',    // Puerto Rico abbreviation
+  }
+
   // Helper function to extract season stats - prefers player's league, falls back to first available
-  function extractSeasonStats(sfData: any, preferredLeague?: string): { stats: any; tournamentName: string } {
+  function extractSeasonStats(sfData: any, preferredLeague?: string): {
+    stats: any;
+    tournamentName: string;
+    matchedTournamentId?: string;
+    matchedSeasonId?: string;
+  } {
     if (!sfData) return { stats: null, tournamentName: '' }
 
-    // First pass: try to find the preferred league (from database)
+    const getLatestStats = (tournamentData: any, tournamentId: string) => {
+      const seasonIds = Object.keys(tournamentData.seasons)
+      if (seasonIds.length === 0) return null
+      const latestSeasonId = seasonIds.sort((a, b) => parseInt(b) - parseInt(a))[0]
+      return {
+        stats: tournamentData.seasons[latestSeasonId].statistics,
+        tournamentName: tournamentData.tournament_name,
+        matchedTournamentId: tournamentId,
+        matchedSeasonId: latestSeasonId
+      }
+    }
+
     if (preferredLeague) {
+      const normalizedPreferred = normalizeLeagueName(preferredLeague)
+      const aliasedPreferred = leagueNameAliases[normalizedPreferred] || normalizedPreferred
+
+      // Pass 1: Exact match
       for (const tournamentId in sfData) {
         const tournamentData = sfData[tournamentId]
         if (tournamentData.tournament_name === preferredLeague && tournamentData.seasons) {
-          const seasonIds = Object.keys(tournamentData.seasons)
-          if (seasonIds.length === 0) continue
+          const result = getLatestStats(tournamentData, tournamentId)
+          if (result) return result
+        }
+      }
 
-          const latestSeasonId = seasonIds.sort((a, b) => parseInt(b) - parseInt(a))[0]
-          return {
-            stats: tournamentData.seasons[latestSeasonId].statistics,
-            tournamentName: tournamentData.tournament_name
-          }
+      // Pass 2: Normalized match (handles punctuation differences like "Betclic 1 Liga" vs "Betclic 1. Liga")
+      for (const tournamentId in sfData) {
+        const tournamentData = sfData[tournamentId]
+        if (!tournamentData.seasons) continue
+        const normalizedTournament = normalizeLeagueName(tournamentData.tournament_name || '')
+        if (normalizedTournament === normalizedPreferred || normalizedTournament === aliasedPreferred) {
+          const result = getLatestStats(tournamentData, tournamentId)
+          if (result) return result
+        }
+      }
+
+      // Pass 3: Partial match (handles "Serie C - Girone C" matching "Serie C, Girone C")
+      for (const tournamentId in sfData) {
+        const tournamentData = sfData[tournamentId]
+        if (!tournamentData.seasons) continue
+        const normalizedTournament = normalizeLeagueName(tournamentData.tournament_name || '')
+        // Check if one contains the other (for partial matches)
+        if (normalizedTournament.includes(aliasedPreferred) || aliasedPreferred.includes(normalizedTournament)) {
+          const result = getLatestStats(tournamentData, tournamentId)
+          if (result) return result
         }
       }
     }
 
-    // Fallback: get first available tournament with seasons
+    // Fallback: get tournament with the MOST RECENT season (highest season ID = newest)
+    let bestMatch: { stats: any; tournamentName: string; matchedTournamentId?: string; matchedSeasonId?: string } | null = null
+    let mostRecentSeasonId = 0
     for (const tournamentId in sfData) {
       const tournamentData = sfData[tournamentId]
       if (tournamentData.seasons) {
-        const seasonIds = Object.keys(tournamentData.seasons)
-        if (seasonIds.length === 0) continue
-
-        const latestSeasonId = seasonIds.sort((a, b) => parseInt(b) - parseInt(a))[0]
-        return {
-          stats: tournamentData.seasons[latestSeasonId].statistics,
-          tournamentName: tournamentData.tournament_name || ''
+        const seasonIds = Object.keys(tournamentData.seasons).map(id => parseInt(id))
+        const latestSeasonId = Math.max(...seasonIds)
+        if (latestSeasonId > mostRecentSeasonId) {
+          mostRecentSeasonId = latestSeasonId
+          const result = getLatestStats(tournamentData, tournamentId)
+          if (result) bestMatch = result
         }
       }
     }
-    return { stats: null, tournamentName: '' }
+    return bestMatch || { stats: null, tournamentName: '' }
+  }
+
+  // Extract all available tournaments and seasons from sf_data
+  function extractTournamentsFromSfData(sfData: any): TournamentOption[] {
+    if (!sfData) return []
+
+    const tournaments: TournamentOption[] = []
+
+    // Season labels based on relative position (newest first)
+    const seasonLabels = [
+      'Current Season',
+      'Previous Season',
+      '2 Seasons Ago',
+      '3 Seasons Ago',
+      '4 Seasons Ago',
+      '5 Seasons Ago'
+    ]
+
+    for (const tournamentId in sfData) {
+      const tournamentData = sfData[tournamentId]
+      if (!tournamentData.seasons) continue
+
+      const seasons: SeasonOption[] = []
+      const seasonIds = Object.keys(tournamentData.seasons).sort((a, b) => parseInt(b) - parseInt(a)) // newest first
+
+      seasonIds.forEach((seasonId, index) => {
+        // Use friendly labels for the first few seasons, then fall back to generic
+        const label = index < seasonLabels.length ? seasonLabels[index] : `${index + 1} Seasons Ago`
+        seasons.push({ id: seasonId, label })
+      })
+
+      if (seasons.length > 0) {
+        tournaments.push({
+          id: tournamentId,
+          name: tournamentData.tournament_name || `Tournament ${tournamentId}`,
+          seasons
+        })
+      }
+    }
+
+    // Sort tournaments alphabetically
+    tournaments.sort((a, b) => a.name.localeCompare(b.name))
+
+    return tournaments
+  }
+
+  // Get stats for a specific tournament and season
+  function getStatsForSelection(sfData: any, tournamentId: string, seasonId: string): PlayerStats | null {
+    if (!sfData || !tournamentId || !seasonId) return null
+
+    const tournament = sfData[tournamentId]
+    if (!tournament?.seasons?.[seasonId]?.statistics) return null
+
+    const stats = tournament.seasons[seasonId].statistics
+    return {
+      rating: stats.rating || 0,
+      goals: stats.goals || 0,
+      assists: stats.assists || 0,
+      appearances: stats.appearances || 0,
+      minutesPlayed: stats.minutesPlayed || 0,
+      matchesStarted: stats.matchesStarted || 0,
+      accuratePassesPercentage: stats.accuratePassesPercentage || 0,
+      totalDuelsWonPercentage: stats.totalDuelsWonPercentage || 0,
+      successfulDribblesPercentage: stats.successfulDribblesPercentage || 0,
+      aerialDuelsWonPercentage: stats.aerialDuelsWonPercentage || 0,
+      ballRecovery: stats.ballRecovery || 0,
+      keyPasses: stats.keyPasses || 0,
+      shotsOnTarget: stats.shotsOnTarget || 0,
+      totalShots: stats.totalShots || 0,
+      goalConversionPercentage: stats.goalConversionPercentage || 0,
+      clearances: stats.clearances || 0,
+      accurateCrossesPercentage: stats.accurateCrossesPercentage || 0,
+      yellowCards: stats.yellowCards || 0,
+      redCards: stats.redCards || 0,
+      fouls: stats.fouls || 0,
+      wasFouled: stats.wasFouled || 0,
+    }
   }
 
   // Get top strengths and weaknesses
@@ -688,6 +1006,69 @@ export default function PlayerDashboard({ data }: { data: PlayerDashboardData })
           targetName: playerData.agency || ''
         }) : undefined}
       />
+
+      {/* Tournament/Season Selector */}
+      {availableTournaments.length > 0 && (
+        <Card className="border-none shadow-sm bg-muted/30">
+          <CardContent className="py-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-muted-foreground">Stats for:</span>
+              </div>
+
+              {/* Tournament Selector */}
+              <Select value={selectedTournamentId} onValueChange={handleTournamentChange}>
+                <SelectTrigger className="w-[220px] bg-background">
+                  <SelectValue placeholder="Select tournament" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableTournaments.map(tournament => (
+                    <SelectItem key={tournament.id} value={tournament.id}>
+                      {tournament.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Season Selector */}
+              <Select value={selectedSeasonId} onValueChange={handleSeasonChange}>
+                <SelectTrigger className="w-[140px] bg-background">
+                  <SelectValue placeholder="Select season" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableTournaments
+                    .find(t => t.id === selectedTournamentId)
+                    ?.seasons.map(season => (
+                      <SelectItem key={season.id} value={season.id}>
+                        {season.label}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+
+              {/* Reset to Default Button (only shown if using custom selection) */}
+              {isUsingCustomSelection() && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                  onClick={resetToDefault}
+                >
+                  Reset to current league
+                </Button>
+              )}
+
+              {/* Indicator when viewing non-default stats */}
+              {isUsingCustomSelection() && (
+                <Badge variant="secondary" className="text-xs">
+                  Custom selection
+                </Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
