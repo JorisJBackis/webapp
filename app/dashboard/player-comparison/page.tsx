@@ -310,7 +310,7 @@ function PlayerCard({ player, isCurrentPlayer, selectedStat }: {
 export default function PlayerComparisonPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [currentPlayerId, setCurrentPlayerId] = useState<number | null>(null);
-  const [league, setLeague] = useState<string>('');
+  const [tournamentName, setTournamentName] = useState<string>('');
   const [position, setPosition] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -318,21 +318,51 @@ export default function PlayerComparisonPage() {
   const currentPlayerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const CACHE_KEY = 'player_comparison_cache_v2';
-
     const fetchPlayers = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        // Check session cache first
+        // Get the user's saved tournament/season selection from the dashboard
+        // First we need to get the player ID to find their selection
+        const dashboardCache = sessionStorage.getItem('player_dashboard_cache_v4');
+        let savedTournamentId = '';
+        let savedSeasonId = '';
+        let playerPosition = '';
+
+        if (dashboardCache) {
+          try {
+            const dashboardData = JSON.parse(dashboardCache);
+            savedTournamentId = dashboardData.selectedTournamentId || '';
+            savedSeasonId = dashboardData.selectedSeasonId || '';
+            playerPosition = dashboardData.playerData?.position || '';
+
+            // Also check localStorage for the specific player's selection
+            if (dashboardData.playerData?.id) {
+              const selectionKey = `player_stats_selection_${dashboardData.playerData.id}`;
+              const savedSelection = localStorage.getItem(selectionKey);
+              if (savedSelection) {
+                const parsed = JSON.parse(savedSelection);
+                savedTournamentId = parsed.tournamentId || savedTournamentId;
+                savedSeasonId = parsed.seasonId || savedSeasonId;
+              }
+            }
+          } catch (e) {
+            console.warn('[PlayerComparison] Failed to parse dashboard cache');
+          }
+        }
+
+        // Build cache key that includes the selection
+        const CACHE_KEY = `player_comparison_cache_v3_${savedTournamentId}_${savedSeasonId}`;
+
+        // Check session cache first (but only if selection matches)
         const cached = sessionStorage.getItem(CACHE_KEY);
         if (cached) {
           const data = JSON.parse(cached);
-          console.log('[PlayerComparison] Using cached data');
+          console.log('[PlayerComparison] Using cached data for', savedTournamentId, savedSeasonId);
           setPlayers(data.players || []);
           setCurrentPlayerId(data.currentPlayerId);
-          setLeague(data.league);
+          setTournamentName(data.tournamentName || '');
           setPosition(data.position);
           setLoading(false);
 
@@ -344,22 +374,52 @@ export default function PlayerComparisonPage() {
           return;
         }
 
-        // No params needed - API will auto-detect from logged-in player
-        const response = await fetch('/api/player-stats/percentiles');
+        // Build API URL with tournament/season params if available
+        let apiUrl = '/api/player-stats/percentiles';
+        const params = new URLSearchParams();
+        if (savedTournamentId) params.set('tournamentId', savedTournamentId);
+        if (savedSeasonId) params.set('seasonId', savedSeasonId);
+        if (playerPosition) params.set('position', playerPosition);
+
+        if (params.toString()) {
+          apiUrl += '?' + params.toString();
+        }
+
+        console.log('[PlayerComparison] Fetching from:', apiUrl);
+        const response = await fetch(apiUrl);
         const data = await response.json();
 
         if (!response.ok) {
           throw new Error(data.error || 'Failed to fetch players');
         }
 
-        console.log('[PlayerComparison] Fetched data:', data);
+        console.log('[PlayerComparison] Fetched data:', {
+          tournamentId: data.tournamentId,
+          seasonId: data.seasonId,
+          position: data.position,
+          totalPlayers: data.totalPlayers
+        });
 
-        // Cache the data
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify(data));
+        // Get tournament name from the response or dashboard cache
+        let fetchedTournamentName = '';
+        if (dashboardCache) {
+          try {
+            const dashboardData = JSON.parse(dashboardCache);
+            const tournaments = dashboardData.availableTournaments || [];
+            const tournament = tournaments.find((t: any) => t.id === data.tournamentId);
+            fetchedTournamentName = tournament?.name || '';
+          } catch (e) {}
+        }
+
+        // Cache the data with the selection-specific key
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+          ...data,
+          tournamentName: fetchedTournamentName
+        }));
 
         setPlayers(data.players || []);
         setCurrentPlayerId(data.currentPlayerId);
-        setLeague(data.league);
+        setTournamentName(fetchedTournamentName);
         setPosition(data.position);
 
         // Scroll to current player card after a short delay
@@ -420,7 +480,7 @@ export default function PlayerComparisonPage() {
           <CardHeader>
             <CardTitle>Ranking Options</CardTitle>
             <CardDescription>
-              {players.length} {positionNames[position] || position}s in {league}
+              {players.length} {positionNames[position] || position}s{tournamentName ? ` in ${tournamentName}` : ''}
             </CardDescription>
           </CardHeader>
           <CardContent>
