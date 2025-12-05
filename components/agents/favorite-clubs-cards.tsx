@@ -116,7 +116,7 @@ export default function FavoriteClubsCards({ clubs,onClubRemoved,onNotesUpdated,
   }
 
   const handleAddContact = () => {
-    setContactsBeingEdited(prev => [...prev,{ name: '',email: '',phone: '',role: '',url: '' }])
+    setContactsBeingEdited(prev => [...prev,{ name: '',email: '',phone: '',role: '',url: '',isFromScraper: false }])
     setEditingContactIndex(contactsBeingEdited.length)
   }
 
@@ -408,6 +408,7 @@ export default function FavoriteClubsCards({ clubs,onClubRemoved,onNotesUpdated,
                                     e.stopPropagation()
                                     handleDeleteContact(index)
                                   }}
+                                  disabled={contact.isFromScraper === true}
                                   className="h-5 w-5 p-0"
                                 >
                                   <Trash2 className="h-3 w-3 text-destructive" />

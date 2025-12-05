@@ -539,7 +539,7 @@ export default function AddFavoriteClubModal({ isOpen,onClose,onClubAdded }: Add
                       <Button
                         size="sm"
                         onClick={() => handleAddClub(club)}
-                        disabled={addingClubId === club.id}
+                        disabled={addingClubId !== null}
                       >
                         {addingClubId === club.id ? (
                           <Loader2 className="h-4 w-4 animate-spin" />

@@ -15,6 +15,7 @@ export interface ClubContact {
   phone?: string | null
   role?: string | null
   url?: string | null
+  isFromScraper?: boolean
 }
 
 export interface FavoriteClub {
@@ -74,6 +75,7 @@ export default function AgentClubsPage() {
   },[supabase])
 
   // Transform contacts from my_clubs_data format
+  // Transform contacts from my_clubs_data format
   const transformContacts = (clubData: any): ClubContact[] => {
     const contacts: ClubContact[] = []
 
@@ -84,13 +86,15 @@ export default function AgentClubsPage() {
       if (clubData[nameKey]) {
         contacts.push({
           name: clubData[nameKey],
-          url: clubData[urlKey] || undefined
+          url: clubData[urlKey] || undefined,
+          isFromScraper: true  // ← Add this flag
         })
       }
     }
 
     return contacts
   }
+
 
   // Fetch favorite clubs with contact data
   const fetchFavoriteClubs = async () => {
