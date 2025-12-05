@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import {createClient} from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
@@ -10,12 +10,12 @@ export async function GET(request: Request) {
         const league = searchParams.get("league");
 
         if (!league) {
-            return NextResponse.json({ error: "League parameter is required" }, { status: 400 });
+            return NextResponse.json({ error: "League parameter is required" },{ status: 400 });
         }
 
-      
-        
-        const { data, error } = await supabase
+
+
+        const { data,error } = await supabase
             .from("clubs")
             .select(`
         id,
@@ -28,7 +28,7 @@ export async function GET(request: Request) {
           created_at
         )
       `)
-            .eq("league", league);
+            .eq("league",league);
 
         if (error) throw error;
 
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
             }
 
             let totalWeightedScore = 0;
-            const categorySums = { p: 0, c: 0, m: 0, s: 0 };
+            const categorySums = { p: 0,c: 0,m: 0,s: 0 };
 
             reviews.forEach(review => {
                 const catRatings = review.category_ratings || {}; // Ensure it's an object
@@ -62,7 +62,7 @@ export async function GET(request: Request) {
                 ].filter(r => typeof r === 'number');
 
                 const categoryAverage = categoryValues.length > 0
-                    ? categoryValues.reduce((a, b) => a + b, 0) / categoryValues.length
+                    ? categoryValues.reduce((a,b) => a + b,0) / categoryValues.length
                     : review.overall_rating;
 
                 const weightedScore = (review.overall_rating * 0.5) + (categoryAverage * 0.5);
@@ -89,7 +89,8 @@ export async function GET(request: Request) {
         return NextResponse.json(aggregatedData);
 
     } catch (error: any) {
-        console.error("Error fetching club reviews:", error);
-        return NextResponse.json({ error: `Failed to fetch club reviews: ${error.message}` }, { status: 500 });
+        console.error("Error fetching club reviews:",error);
+        return NextResponse.json({ error: `Failed to fetch club reviews: ${error.message}` },{ status: 500 });
     }
 }
+

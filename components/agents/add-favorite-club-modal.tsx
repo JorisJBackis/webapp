@@ -264,8 +264,11 @@ export default function AddFavoriteClubModal({ isOpen,onClose,onClubAdded }: Add
       if (error) throw error
 
       // Trigger scraping for this club in the background (don't wait for it)
-      fetch(`http://34.88.228.95:8080/scrape/${club.id}`)
-        .catch(err => console.error('Error triggering scrape:',err))
+      fetch('/api/scrape',{
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clubId: club.id })
+      }).catch(err => console.error('Error triggering scrape:',err))
 
       // Success - remove from list and update parent
       setClubs(prev => prev.filter(c => c.id !== club.id))
